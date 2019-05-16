@@ -1,5 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from datetime import datetime
 
 class Menu(models.Model):
     """
@@ -91,3 +92,37 @@ class UserProfile(AbstractUser):
 
     def __str__(self):
         return self.username
+
+class AuthCode(models.Model):
+    """
+    短信验证码表模型
+    """
+    code = models.CharField(max_length=10, verbose_name='验证码')
+    mobile = models.CharField(max_length=11, verbose_name='手机号')
+    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+
+    def __str__(self):
+        return self.code
+
+    class Meta:
+        verbose_name = '验证码'
+        verbose_name_plural = verbose_name
+
+class Company(models.Model):
+    """
+    公司表模型
+    """
+    name = models.CharField(max_length=80, verbose_name='公司名')
+    account = models.CharField(max_length=80, verbose_name='公司账号')
+    mobile = models.CharField(max_length=11, verbose_name='手机号')
+    password = models.CharField(max_length=128, verbose_name='密码')
+    avatar = models.ImageField(max_length=100, upload_to='static/%Y/%m', default='image/default.png',
+                               verbose_name='公司头像')
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = '公司'
+        verbose_name_plural = verbose_name
+        ordering = ['id']
