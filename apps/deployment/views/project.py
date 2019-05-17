@@ -18,10 +18,10 @@ class ProjectViewSet(ModelViewSet):
     '''
     项目管理：增删改查
     '''
-    perms_map = (
-        {'*': 'admin'}, {'*': 'project_all'}, {'get': 'project_list'}, {'post': 'project_create'},
-        {'put': 'project_edit'},
-        {'delete': 'project_delete'})
+    #perms_map = (
+    #    {'*': 'admin'}, {'*': 'project_all'}, {'get': 'project_list'}, {'post': 'project_create'},
+    #    {'put': 'project_edit'},
+    #    {'delete': 'project_delete'})
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
     pagination_class = CommonPagination
@@ -29,8 +29,8 @@ class ProjectViewSet(ModelViewSet):
     filter_fields = ('environment', 'status',)
     search_fields = ('name',)
     ordering_fields = ('id',)
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (RbacPermission,)
+    #authentication_classes = (JSONWebTokenAuthentication,)
+    #permission_classes = (RbacPermission,)
 
     def get_serializer_class(self):
         # 根据请求类型动态变更serializer
