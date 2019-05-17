@@ -27,9 +27,13 @@ urlpatterns = [
     path(r'auth/build/menus/', user.UserBuildMenuView.as_view(), name='build_menus'),
     # 获取组织树
     path(r'api/organization/tree/', organization.OrganizationTreeView.as_view(), name='organizations_tree'),
+    # 获取组织用户树
     path(r'api/organization/user/tree/', organization.OrganizationUserTreeView.as_view(),
          name='organization_user_tree'),
+    # 获取菜单树
     path(r'api/menu/tree/', menu.MenuTreeView.as_view(), name='menus_tree'),
+    # 获取权限树
     path(r'api/permission/tree/', permission.PermissionTreeView.as_view(), name='permissions_tree'),
+    # 获取用户列表
     path(r'api/user/list/', user.UserListView.as_view(), name='user_list'),
 ]
