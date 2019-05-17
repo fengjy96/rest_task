@@ -15,6 +15,13 @@ DEBUG = True
 # 这是一个安全措施，用来预防 HTTP Host header attacks
 ALLOWED_HOSTS = ['*']
 
+# mini 对外 ip
+HOST = '192.168.1.117'
+# pro 对外 ip
+# HOST = '192.168.1.165'
+# 内网 centos 对外 ip
+# HOST = '192.168.1.110'
+
 # 在 Django 项目中需要安装的应用列表
 INSTALLED_APPS = [
     'django.contrib.auth',
@@ -49,7 +56,7 @@ MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    # 'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -65,8 +72,7 @@ ROOT_URLCONF = 'rest_xops.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [os.path.join(BASE_DIR, 'templates')]
-        ,
+        'DIRS': [os.path.join(BASE_DIR, 'templates')],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -86,8 +92,13 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'rest_xops',
+        # 'HOST': 'localhost',
+        # 'HOST': HOST,
+        # 内网 centos mysql IP
         'HOST': '192.168.1.110',
         'USER': 'root',
+        # 'PASSWORD': 'mysql',
+        # 内网 centos mysql 密码
         'PASSWORD': 'mikai',
         'PORT': '3306',
         'OPTIONS': {'init_command': 'SET storage_engine=INNODB;'}
@@ -113,11 +124,11 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
-    # 'DEFAULT_AUTHENTICATION_CLASSES': (
-    # 'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
-    # 'rest_framework.authentication.BasicAuthentication',#
-    # 'rest_framework.authentication.SessionAuthentication',#
-    # ),
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
     # 自定义异常处理
     'EXCEPTION_HANDLER': 'apps.common.custom.xops_exception_handler',
     # 'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',# 过滤功能
@@ -132,8 +143,11 @@ JWT_AUTH = {
     'JWT_AUTH_HEADER_PREFIX': 'Bearer',
 }
 
-## redis 数据库相关配置
-REDIS_HOST = 'localhost'
+## redis 数据库相关设置
+# REDIS_HOST = 'localhost'
+# REDIS_HOST = HOST
+# 内网 centOS
+REDIS_HOST = '192.168.1.110'
 REDIS_PORT = 6379
 REDIS_DB = 0
 REDIS_PASSWORD = None
