@@ -1,12 +1,14 @@
+from datetime import datetime
+
 from django.db import models
 from django.contrib.auth.models import AbstractUser
-from datetime import datetime
 
 
 class Menu(models.Model):
     """
     菜单
     """
+
     name = models.CharField(max_length=30, unique=True, verbose_name="菜单名")
     icon = models.CharField(max_length=50, null=True, blank=True, verbose_name="图标")
     path = models.CharField(max_length=158, null=True, blank=True, verbose_name="链接地址")
@@ -29,6 +31,7 @@ class Permission(models.Model):
     """
     权限
     """
+
     name = models.CharField(max_length=30, unique=True, verbose_name="权限名")
     method = models.CharField(max_length=50, null=True, blank=True, verbose_name="方法")
     pid = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, verbose_name="父权限")
@@ -46,6 +49,7 @@ class Role(models.Model):
     """
     角色
     """
+
     name = models.CharField(max_length=32, unique=True, verbose_name="角色")
     permissions = models.ManyToManyField("Permission", blank=True, verbose_name="权限")
     menus = models.ManyToManyField("Menu", blank=True, verbose_name="菜单")
@@ -56,6 +60,7 @@ class Organization(models.Model):
     """
     组织架构
     """
+
     organization_type_choices = (
         ("company", "公司"),
         ("department", "部门")
@@ -73,9 +78,10 @@ class Organization(models.Model):
 
 
 class UserProfile(AbstractUser):
-    '''
+    """
     用户
-    '''
+    """
+
     name = models.CharField(max_length=20, default="", verbose_name="姓名")
     mobile = models.CharField(max_length=11, default="", verbose_name="手机号码")
     email = models.EmailField(max_length=50, verbose_name="邮箱")
@@ -99,6 +105,7 @@ class AuthCode(models.Model):
     """
     短信验证码表模型
     """
+
     code = models.CharField(max_length=10, verbose_name='验证码')
     mobile = models.CharField(max_length=11, verbose_name='手机号')
     add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
@@ -115,6 +122,7 @@ class Company(models.Model):
     """
     公司表模型
     """
+
     name = models.CharField(max_length=80, verbose_name='公司名')
     account = models.CharField(max_length=80, verbose_name='公司账号')
     mobile = models.CharField(max_length=11, verbose_name='手机号')
