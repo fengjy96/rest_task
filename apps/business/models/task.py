@@ -40,9 +40,8 @@ class Task(models.Model):
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
     is_finished = models.IntegerField(default=0, verbose_name='是否完成')
 
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
-    update_time = models.DateTimeField(null=True, blank=True, verbose_name='更新时间')
-    delete_time = models.DateTimeField(null=True, blank=True, verbose_name='删除时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
     def __str__(self):
         return self.name
@@ -63,7 +62,7 @@ class TaskAllocateReason(models.Model):
     sender = models.ForeignKey(UserProfile, verbose_name='发送者', on_delete=models.CASCADE, related_name='task_allocate_reason_sender')
     receiver = models.ForeignKey(UserProfile, verbose_name='接收者', on_delete=models.CASCADE, related_name='task_allocate_reason_receiver')
 
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
     def __str__(self):
         return self.reason

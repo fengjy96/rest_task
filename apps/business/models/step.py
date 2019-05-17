@@ -32,9 +32,8 @@ class Step(models.Model):
     end_time = models.DateTimeField(null=True, blank=True, verbose_name='步骤结束时间')
     duration = models.FloatField(default=0,verbose_name='步骤时长')
 
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
-    update_time = models.DateTimeField(null=True, blank=True, verbose_name='更新时间')
-    delete_time = models.DateTimeField(null=True, blank=True, verbose_name='删除时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
+    modify_time = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
     def __str__(self):
         return self.name
@@ -57,7 +56,7 @@ class StepRejectReason(models.Model):
     receiver = models.ForeignKey(UserProfile, verbose_name='接收者', on_delete=models.CASCADE,
                                  related_name='step_reject_reason_receiver')
 
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
     def __str__(self):
         return self.reason

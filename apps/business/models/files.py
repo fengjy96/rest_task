@@ -13,7 +13,7 @@ class Files(models.Model):
     path = models.CharField(default='',max_length=300, verbose_name='文件路径')
     type = models.IntegerField(default=1, verbose_name='类型')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
     def __str__(self):
         return self.name
@@ -30,7 +30,7 @@ class ProgressTexts(models.Model):
     type = models.IntegerField(default=0, verbose_name='类型')
     content = models.TextField(default='',max_length=80, verbose_name='内容')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
     def __str__(self):
         return self.type
@@ -47,7 +47,7 @@ class FeedBacks(models.Model):
     name = models.CharField(default='',max_length=150, verbose_name='文件名称')
     path = models.CharField(default='',max_length=300, verbose_name='文件路径')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
     def __str__(self):
         return self.file.name
@@ -64,7 +64,7 @@ class FeedBackTexts(models.Model):
     type = models.IntegerField(default=0, verbose_name='类型')
     content = models.TextField(default='',max_length=80, verbose_name='内容')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
     def __str__(self):
         return self.type
