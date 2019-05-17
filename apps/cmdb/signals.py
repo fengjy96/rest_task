@@ -1,5 +1,3 @@
-# @Time    : 2019/2/17 0:56
-# @Author  : xufqing
 import os
 
 from django.dispatch import receiver
