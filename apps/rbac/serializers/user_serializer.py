@@ -5,7 +5,7 @@ import re
 
 class UserListSerializer(serializers.ModelSerializer):
     """
-    用户列表的序列化
+    用户列表序列化
     """
 
     roles = serializers.SerializerMethodField()
@@ -21,9 +21,10 @@ class UserListSerializer(serializers.ModelSerializer):
 
 
 class UserModifySerializer(serializers.ModelSerializer):
-    '''
-    用户编辑的序列化
-    '''
+    """
+    用户编辑序列化
+    """
+
     mobile = serializers.CharField(max_length=11)
 
     class Meta:
@@ -39,9 +40,10 @@ class UserModifySerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
-    '''
+    """
     创建用户序列化
-    '''
+    """
+
     username = serializers.CharField(required=True, allow_blank=False)
     mobile = serializers.CharField(max_length=11)
 
@@ -66,7 +68,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 class UserInfoListSerializer(serializers.ModelSerializer):
     '''
-    公共users
+    公共 users
     '''
 
     class Meta:
