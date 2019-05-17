@@ -1,39 +1,44 @@
-# @Time    : 2019/2/21 13:02
-# @Author  : xufqing
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.generics import ListAPIView
-from ..serializers.asset_serializer import DeviceInfoSerializer, DeviceInfoListSerializer, DeviceListSerializer
-from common.custom import CommonPagination, RbacPermission
 from rest_framework.filters import SearchFilter, OrderingFilter
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from rest_framework.permissions import IsAuthenticated
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Q
+
+from ..serializers.asset_serializer import DeviceInfoSerializer, DeviceInfoListSerializer, DeviceListSerializer
 from ..models import DeviceInfo
+from common.custom import CommonPagination, RbacPermission
 from deployment.models import Project
 from rest_xops.basic import XopsResponse
 from rest_xops.code import *
-from django.db.models import Q
 
 
 class DeviceInfoViewSet(ModelViewSet):
-    '''
-    字典管理：增删改查
-    '''
+    """
+    设备管理：增删改查
+    """
     perms_map = (
-        {'*': 'admin'}, {'*': 'device_all'}, {'get': 'device_list'}, {'post': 'device_create'}, {'put': 'device_edit'},
-        {'delete': 'device_delete'}, {'get': 'group_list'})
+        {'*': 'admin'},
+        {'*': 'device_all'},
+        {'get': 'device_list'},
+        {'post': 'device_create'},
+        {'put': 'device_edit'},
+        {'delete': 'device_delete'},
+        {'get': 'group_list'}
+    )
     queryset = DeviceInfo.objects.all()
     serializer_class = DeviceInfoSerializer
     pagination_class = CommonPagination
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    filter_fields = ('status','os_type', 'device_type', 'groups', 'businesses', 'labels')
+    filter_fields = ('status', 'os_type', 'device_type', 'groups', 'businesses', 'labels')
     search_fields = ('hostname', 'os_type')
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (RbacPermission,)
 
     def get_serializer_class(self):
-        # 根据请求类型动态变更serializer
+        # 根据请求类型动态变更 serializer
         if self.action == 'list':
             return DeviceInfoListSerializer
         return DeviceInfoSerializer
@@ -43,7 +48,8 @@ class DeviceInfoViewSet(ModelViewSet):
         instance = self.get_object()
         id = str(kwargs['pk'])
         projects = Project.objects.filter(
-            Q(server_ids__icontains=id + ',') | Q(server_ids__in=id) | Q(server_ids__endswith=',' + id)).values()
+            Q(server_ids__icontains=id + ',') | Q(server_ids__in=id) | Q(server_ids__endswith=',' + id)
+        ).values()
         if projects:
             for project in projects:
                 server_ids = project['server_ids'].split(',')

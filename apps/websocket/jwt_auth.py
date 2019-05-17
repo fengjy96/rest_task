@@ -11,6 +11,7 @@ from django.db import close_old_connections
 warn_logger = logging.getLogger('warn')
 settings = LazySettings()
 
+
 class TokenAuthMiddleware:
     def __init__(self, inner):
         self.inner = inner
@@ -38,7 +39,8 @@ class TokenAuthMiddleware:
 
             return self.inner(scope)
         except:
-            scope['user']=AnonymousUser()
+            scope['user'] = AnonymousUser()
             return self.inner(scope)
+
 
 TokenAuthMiddlewareStack = lambda inner: TokenAuthMiddleware(AuthMiddlewareStack(inner))

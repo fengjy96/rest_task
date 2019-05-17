@@ -1,4 +1,3 @@
-
 from django.utils import six
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
@@ -32,4 +31,3 @@ class XopsResponse(Response):
         if headers:
             for name, value in six.iteritems(headers):
                 self[name] = value
-
