@@ -1,13 +1,12 @@
-# @Time    : 2019/4/13 8:22
-# @Author  : xufqing
+import os, time, logging
+
+from django.conf import settings
+from celery import Task
 
 from deployment.models import Project, DeployRecord
 from utils.shell_excu import Shell, connect_init
 from utils.common import includes_format, excludes_format
 from utils.websocket_tail import Tailf
-from django.conf import settings
-import os, time, logging
-from celery import Task
 from rest_xops.celery import app
 from common.custom import RedisObj
 
@@ -88,9 +87,11 @@ class DeployExcu(Task):
             self.record_id = record_id
 
     def do_prev_deploy(self, log):
-        '''
+        """
         代码检出前要做的基础工作
-        '''
+        :param log:
+        :return:
+        """
         self.sequence = 1
         with open(log, 'a') as f:
             f.write('[INFO]------正在执行代码检出前的工作[%s]------\n' % (self.sequence))
@@ -101,10 +102,14 @@ class DeployExcu(Task):
                     continue
                 with self.localhost.cd(self.local_code_path):
                     self.result = self.localhost.local(command, write=log)
+
     def do_checkout(self, version, log):
-        '''
+        """
         检出代码
-        '''
+        :param version:
+        :param log:
+        :return:
+        """
         self.sequence = 2
         with open(log, 'a') as f:
             f.write('[INFO]------正在执行代码检出[%s]------\n' % (self.sequence))
@@ -122,9 +127,11 @@ class DeployExcu(Task):
                 self.result = self.localhost.local(command, write=log)
 
     def do_post_deploy(self, log):
-        '''
+        """
         检出代码后的工作：如编译
-        '''
+        :param log:
+        :return:
+        """
         if self.result.exited == 0:
             self.sequence = 3
             with open(log, 'a') as f:
@@ -163,9 +170,12 @@ class DeployExcu(Task):
                             self.result = self.localhost.local(command, write=log)
 
     def do_prev_release(self, log, connect):
-        '''
+        """
         部署代码到目标机器前执行
-        '''
+        :param log:
+        :param connect:
+        :return:
+        """
         if self.result.exited == 0:
             self.sequence = 4
             with open(log, 'a') as f:
@@ -173,7 +183,7 @@ class DeployExcu(Task):
 
             target_release_version = "%s/%s" % (self.target_releases, self.release_version)
 
-            # 创建远程target_releases目录
+            # 创建远程 target_releases 目录
             command = '[ -d %s ] || mkdir -p %s' % (target_release_version, target_release_version)
             if self.result.exited == 0:
                 self.result = connect.run(command, write=log)
@@ -222,9 +232,12 @@ class DeployExcu(Task):
                             self.result = connect.run(command, write=log)
 
     def do_release(self, log, connect):
-        '''
+        """
         执行部署到目标机器：生成软链等
-        '''
+        :param log:
+        :param connect:
+        :return:
+        """
         if self.result.exited == 0:
             self.sequence = 5
             with open(log, 'a') as f:
@@ -259,8 +272,8 @@ class DeployExcu(Task):
                         self.result = connect.run(command, write=log)
                     # 复制文件到webroot
                     command = 'cp -r %s/%s/* %s && echo %s > %s' % (self.target_releases,
-                                                                      self.release_version, self.target_root,
-                                                                      self.release_version, version_file)
+                                                                    self.release_version, self.target_root,
+                                                                    self.release_version, version_file)
                     if self.result.exited == 0:
                         self.result = connect.run(command, write=log)
             else:
@@ -272,16 +285,18 @@ class DeployExcu(Task):
                         self.result = connect.run(command, write=log)
                 else:
                     command = 'cp -r %s/%s/* %s && echo %s > %s' % (self.target_releases,
-                                                                      self.release_version, self.target_root,
-                                                                      self.release_version, version_file)
+                                                                    self.release_version, self.target_root,
+                                                                    self.release_version, version_file)
                     if self.result.exited == 0:
                         self.result = connect.run(command, write=log)
 
-
     def do_post_release(self, log, connect):
-        '''
+        """
         部署代码到目标机器后执行
-        '''
+        :param log:
+        :param connect:
+        :return:
+        """
         if self.result.exited == 0:
             self.sequence = 6
             with open(log, 'a') as f:
@@ -346,17 +361,17 @@ class DeployExcu(Task):
                     Tailf.send_message(webuser, '[ERROR] 服务器为空或ID %s 可能已被删除!' % sid)
                     Tailf.send_message(webuser, '[ERROR] 错误信息:' % e)
                     error_logger.error('[部署任务错误] 开始时间：%s 记录ID：%s 部署版本：%s 用户：%s 项目ID：%s 信息：%s' % (
-                    start_time, record_id, version, webuser, id, e))
+                        start_time, record_id, version, webuser, id, e))
             self.end(serverid, record_id)
             info_logger.info('[部署任务已结束] 记录ID：%s 部署版本：%s 用户：%s 项目ID：%s' % (record_id, version, webuser, id))
         except Exception as e:
             Tailf.send_message(webuser, '[ERROR] 错误信息: %s' % e)
             error_logger.error('[部署任务错误] 开始时间：%s 记录ID：%s 部署版本：%s 用户：%s 项目ID：%s 信息：%s' % (
-            start_time, record_id, version, webuser, id, e))
+                start_time, record_id, version, webuser, id, e))
         finally:
             if self.localhost:
                 self.localhost.close()
-            # 关闭local_tailf死循环
+            # 关闭 local_tailf 死循环
             redis.set('deploy_' + str(webuser) + '_' + str(id), '1')
 
 

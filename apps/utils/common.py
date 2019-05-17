@@ -1,6 +1,3 @@
-# @Time    : 2019/2/15 14:02
-# @Author  : xufqing
-
 import os, yaml, logging, nmap
 from django.conf import settings
 
@@ -44,9 +41,10 @@ class ConfigFileMixin:
 
 
 class ScanSettingsLoad(ConfigFileMixin):
-    '''
+    """
     加载扫描设置
-    '''
+    """
+
     config_file = os.path.join(settings.YML_CONF_DIR, 'scan_settings.yml')
 
     def get_net_address(self):
@@ -75,9 +73,12 @@ class ScanSettingsLoad(ConfigFileMixin):
         return online_hosts
 
 def excludes_format(path, excludes_string=None):
-    '''
+    """
     排除文件，支持正则匹配，支持多选字符串
-    '''
+    :param path:
+    :param excludes_string:
+    :return:
+    """
     if not excludes_string:
         return path
 
@@ -88,9 +89,12 @@ def excludes_format(path, excludes_string=None):
 
 
 def includes_format(path, includes_string=None):
-    '''
+    """
     指定发布文件，支持正则匹配，如：*.war。支持多行字符串。
-    '''
+    :param path:
+    :param includes_string:
+    :return:
+    """
     if not includes_string:
         return path
     includes = []

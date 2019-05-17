@@ -1,20 +1,26 @@
-# @Time    : 2019/2/12 16:12
-# @Author  : xufqing
-
 from rest_framework.viewsets import ModelViewSet
-from ..models import Dict
 from rest_framework.response import Response
-from ..serializers.dict_serializer import DictSerializer, DictTreeSerializer
-from common.custom import CommonPagination, RbacPermission, TreeAPIView
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
+from ..models import Dict
+from ..serializers.dict_serializer import DictSerializer, DictTreeSerializer
+from common.custom import CommonPagination, RbacPermission, TreeAPIView
+
+
 class DictViewSet(ModelViewSet):
-    '''
+    """
     字典管理：增删改查
-    '''
-    perms_map = ({'*': 'admin'}, {'*': 'dict_all'}, {'get': 'dict_list'}, {'post': 'dict_create'}, {'put': 'dict_edit'},
-                 {'delete': 'dict_delete'})
+    """
+
+    perms_map = (
+        {'*': 'admin'},
+        {'*': 'dict_all'},
+        {'get': 'dict_list'},
+        {'post': 'dict_create'},
+        {'put': 'dict_edit'},
+        {'delete': 'dict_delete'}
+    )
     queryset = Dict.objects.all()
     serializer_class = DictSerializer
     pagination_class = CommonPagination
@@ -25,9 +31,15 @@ class DictViewSet(ModelViewSet):
     permission_classes = (RbacPermission,)
 
     def list(self, request, *args, **kwargs):
-        '''
-        重写list方法，即可返回树机构又可以请求参数key过滤对应的key，支持多个
-        '''
+        """
+        重写 list 方法，即可返回树结构又可以请求参数 key 过滤对应的 key，支持多个
+        :param request:
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        # 获取键列表
         keys = self.request.query_params.get('key', '').replace(',', ' ').split()
         if not keys:
             queryset = self.filter_queryset(self.get_queryset())
@@ -55,14 +67,14 @@ class DictViewSet(ModelViewSet):
             for key in keys:
                 queryset = Dict.objects.filter(pid__key=key)
                 serializer = self.get_serializer(queryset, many=True)
-                results.append({key:serializer.data})
+                results.append({key: serializer.data})
         return Response(results)
 
 
-
 class DictTreeView(TreeAPIView):
-    '''
+    """
     字典树
-    '''
+    """
+
     queryset = Dict.objects.all()
     serializer_class = DictTreeSerializer

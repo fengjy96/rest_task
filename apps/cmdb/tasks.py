@@ -1,11 +1,12 @@
-# @Time    : 2019/2/19 14:42
-# @Author  : xufqing
 import time, logging
+
 from utils.common import ScanSettingsLoad
 from utils.shell_excu import Shell
 from .models import DeviceScanInfo
 from rest_xops.celery import app
+
 info_logger = logging.getLogger('info')
+
 
 @app.task
 def scan_execution():
@@ -38,11 +39,12 @@ def scan_execution():
                 kwargs['password'] = scan_settings_load.get_conf_content('hosts', 'ssh_password')
             else:
                 kwargs['password'] = scan_settings_load.get_conf_content('hosts', 'ssh_private_key')
-            # 将登陆执行结果数据复制给defaults
+            # 将登陆执行结果数据复制给 defaults
             kwargs['auth_type'] = auth_type
             kwargs['os_type'] = 'Linux'
             # 构建连接信息
-            auth_info = '{user}@{host}:{port}'.format(user=kwargs['username'], host=kwargs['hostname'],port=kwargs['port'])
+            auth_info = '{user}@{host}:{port}'.format(user=kwargs['username'], host=kwargs['hostname'],
+                                                      port=kwargs['port'])
             auth_key = {auth_type: kwargs['password']}
             connect = Shell(auth_info, connect_timeout=5, connect_kwargs=auth_key)
             commands = kwargs['commands']
