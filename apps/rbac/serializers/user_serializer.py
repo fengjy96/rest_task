@@ -1,14 +1,13 @@
-# @Time    : 2019/1/14 15:11
-# @Author  : xufqing
 from rest_framework import serializers
 from ..models import UserProfile
 import re
 
 
 class UserListSerializer(serializers.ModelSerializer):
-    '''
+    """
     用户列表的序列化
-    '''
+    """
+
     roles = serializers.SerializerMethodField()
 
     def get_roles(self, obj):
@@ -17,7 +16,7 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['id', 'username', 'name', 'mobile', 'email', 'image', 'department', 'position', 'superior',
-                  'is_active','roles']
+                  'is_active', 'roles']
         depth = 1
 
 
@@ -64,10 +63,12 @@ class UserCreateSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("手机号已经被注册")
         return mobile
 
+
 class UserInfoListSerializer(serializers.ModelSerializer):
     '''
     公共users
     '''
+
     class Meta:
         model = UserProfile
-        fields = ('id','name','mobile','email','position')
+        fields = ('id', 'name', 'mobile', 'email', 'position')

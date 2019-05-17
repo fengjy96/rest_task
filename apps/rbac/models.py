@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 from datetime import datetime
 
+
 class Menu(models.Model):
     """
     菜单
@@ -93,6 +94,7 @@ class UserProfile(AbstractUser):
     def __str__(self):
         return self.username
 
+
 class AuthCode(models.Model):
     """
     短信验证码表模型
@@ -107,6 +109,7 @@ class AuthCode(models.Model):
     class Meta:
         verbose_name = '验证码'
         verbose_name_plural = verbose_name
+
 
 class Company(models.Model):
     """
