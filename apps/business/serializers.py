@@ -118,6 +118,7 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = '__all__'
+        depth = 1
 
 class FilesSerializer(serializers.ModelSerializer):
     """

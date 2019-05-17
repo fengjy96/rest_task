@@ -1,16 +1,13 @@
 from django.urls import path, include
-
 from rest_framework import routers
-
-from business.views import project
 from business.views import task
-from business.views import step
-from business.views.message import MessageViewSet
 from business.views.project import ProjectViewSet, ProjectRejectReasonViewSet, ProjectFeeViewSet
 from business.views import project
 from business.views.task import TaskViewSet, TaskAllocateReasonViewSet
 from business.views.step import StepViewSet
 from business.views import files
+from business.views import message
+#from business.views import step
 
 router = routers.DefaultRouter()
 router.register('project', ProjectViewSet, basename='project')
@@ -52,4 +49,6 @@ urlpatterns = [
     path(r'api/v1/imageDown', files.FileDownloadView.as_view(),name='file_download'),
     # 19 文件查询
     path(r'api/v1/files', files.FilesListViewSet.as_view(),name='files'),
+    # 20 消息查询
+    path(r'api/v1/messages', message.MessageViewSet.as_view(), name='messages'),
 ]
