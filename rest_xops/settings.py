@@ -16,13 +16,17 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 # mini 对外 ip
-HOST = '192.168.1.117'
+# HOST = '192.168.1.117'
+# 内网 centOS 服务器对外 IP
+HOST = '192.168.1.110'
+# 本地 ip
+# HOST = '127.0.0.1'
 # pro 对外 ip
 # HOST = '192.168.1.165'
 # 内网 centos 对外 ip
 # HOST = '192.168.1.110'
 
-# 在 Django 项目中需要安装的应用列表
+## 在 Django 项目中需要安装的应用列表
 INSTALLED_APPS = [
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -33,7 +37,7 @@ INSTALLED_APPS = [
     'channels',
     # 应用：解决跨域问题
     'corsheaders',
-    # 应用：
+    # 应用：包括一个 DjangoFilterBackend 类，它支持 REST 框架的高度可定制的字段过滤
     'django_filters',
     # 应用：基于角色的访问权限控制
     'rbac',
@@ -51,16 +55,20 @@ INSTALLED_APPS = [
 
 # 中间件
 MIDDLEWARE = [
-    # 跨域
+    # 跨域中间件
     'corsheaders.middleware.CorsMiddleware',
+    # 安全中间件
     'django.middleware.security.SecurityMiddleware',
+    # 会话中间件
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
+    # 认证中间件
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # 消息中间件
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    # 操作记录
+    # 操作记录中间件
     'simple_history.middleware.HistoryRequestMiddleware',
 ]
 
@@ -87,19 +95,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rest_xops.wsgi.application'
 
-# 数据库相关配置
+## 数据库相关配置
 DATABASES = {
+    # 指定默认的数据库
     'default': {
+        # 数据库引擎
         'ENGINE': 'django.db.backends.mysql',
+        # 数据库名
         'NAME': 'rest_xops',
-        # 'HOST': 'localhost',
-        # 'HOST': HOST,
-        # 内网 centos mysql IP
-        'HOST': '192.168.1.110',
+        'HOST': HOST,
         'USER': 'root',
-        # 'PASSWORD': 'mysql',
+        'PASSWORD': 'mysql',
         # 内网 centos mysql 密码
-        'PASSWORD': 'mikai',
+        # 'PASSWORD': 'mikai',
         'PORT': '3306',
         'OPTIONS': {'init_command': 'SET storage_engine=INNODB;'}
     }
@@ -124,35 +132,46 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
+    # 指定默认的认证类
     'DEFAULT_AUTHENTICATION_CLASSES': (
+        # jwt 认证
         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
+        # 基本认证
         'rest_framework.authentication.BasicAuthentication',
+        # 会话认证
         'rest_framework.authentication.SessionAuthentication',
     ),
     # 自定义异常处理
     'EXCEPTION_HANDLER': 'apps.common.custom.xops_exception_handler',
-    # 'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',# 过滤功能
-    # 'rest_framework.filters.SearchFilter',  # 搜索功能
-    # 'rest_framework.filters.OrderingFilter',  # 排序功能
-    # ),
+    # 定制字段过滤
+    'DEFAULT_FILTER_BACKENDS': (
+        # 过滤功能
+        # 'django_filters.rest_framework.DjangoFilterBackend',
+        # 搜索功能
+        # 'rest_framework.filters.SearchFilter',
+        # 排序功能：OrderingFilter 类支持简单的查询参数控制结果排序
+        # 'rest_framework.filters.OrderingFilter',
+    ),
 }
 
-# jwt setting
+## jwt 设置
 JWT_AUTH = {
+    # jwt token 有效期：指定为 3 天
     'JWT_EXPIRATION_DELTA': datetime.timedelta(days=3),
+    # jwt 认证头前缀
     'JWT_AUTH_HEADER_PREFIX': 'Bearer',
 }
 
 ## redis 数据库相关设置
-# REDIS_HOST = 'localhost'
+REDIS_HOST = HOST
 # REDIS_HOST = HOST
 # 内网 centOS
-REDIS_HOST = '192.168.1.110'
+# REDIS_HOST = '192.168.1.110'
 REDIS_PORT = 6379
 REDIS_DB = 0
 REDIS_PASSWORD = None
 
-# django-channels配置
+# django-channels 配置
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",

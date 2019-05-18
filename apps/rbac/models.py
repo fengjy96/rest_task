@@ -108,7 +108,7 @@ class AuthCode(models.Model):
 
     code = models.CharField(max_length=10, verbose_name='验证码')
     mobile = models.CharField(max_length=11, verbose_name='手机号')
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
     def __str__(self):
         return self.code

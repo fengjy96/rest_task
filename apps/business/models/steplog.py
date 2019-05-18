@@ -11,7 +11,7 @@ class StepLog(models.Model):
     progress = models.IntegerField(default=0, verbose_name='进度')
     memo = models.CharField(default='',max_length=300, verbose_name='备注')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
     def __str__(self):
         return self.title
@@ -28,7 +28,7 @@ class FeedBackLog(models.Model):
     title = models.CharField(default='',max_length=150, verbose_name='标题')
     memo = models.CharField(default='',max_length=300, verbose_name='备注')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
     def __str__(self):
         return self.title

@@ -10,12 +10,12 @@ from business.views import message
 #from business.views import step
 
 router = routers.DefaultRouter()
-router.register('project', ProjectViewSet, basename='project')
+router.register('art_projects', ProjectViewSet, basename='projects')
 router.register('project_reject_reason', ProjectRejectReasonViewSet, basename='project_reject_reason')
 router.register('project_fee', ProjectFeeViewSet, basename='project_fee')
-router.register('task', TaskViewSet, basename='task')
+router.register('tasks', TaskViewSet, basename='tasks')
 router.register('task_allocate_reason', TaskAllocateReasonViewSet, basename='task_allocate_reason')
-router.register('step', StepViewSet, basename='step')
+router.register('steps', StepViewSet, basename='steps')
 
 urlpatterns = [
     # API

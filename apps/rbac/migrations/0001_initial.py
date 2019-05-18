@@ -52,7 +52,7 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('code', models.CharField(max_length=10, verbose_name='验证码')),
                 ('mobile', models.CharField(max_length=11, verbose_name='手机号')),
-                ('add_time', models.DateTimeField(default=datetime.datetime.now, verbose_name='添加时间')),
+                ('add_time', models.DateTimeField(auto_now_add=True, verbose_name='添加时间')),
             ],
             options={
                 'verbose_name': '验证码',

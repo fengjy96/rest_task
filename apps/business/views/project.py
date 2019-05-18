@@ -1,5 +1,5 @@
 from rest_framework import status
-# from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from business.models.project import Project, ProjectFee, ProjectRejectReason, ProjectCost
@@ -20,11 +20,17 @@ class ProjectViewSet(ModelViewSet):
     """
     项目：增删改查
     """
+
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+    # 局部定制过滤器
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    # 对指定的字段进行搜索
     search_fields = ('name', 'style',)
+    # 对指定的字段进行过滤
     filter_fields = ('receiver_id',)
+    # 对指定的字段进行排序：使用 ordering_fields 属性明确指定可以对哪些字段执行排序，
+    # 这有助于防止意外的数据泄露
     ordering_fields = ('id',)
 
 
@@ -32,6 +38,7 @@ class ProjectListView(ListAPIView):
     """
     项目：查
     """
+
     queryset = Project.objects.all()
     serializer_class = ProjectListSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
@@ -63,7 +70,7 @@ class ProjectFeeViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_fields = ('project_id',)
     ordering_fields = ('id',)
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
 
 class ProjectRejectReasonViewSet(ModelViewSet):
@@ -72,7 +79,7 @@ class ProjectRejectReasonViewSet(ModelViewSet):
     """
     queryset = ProjectRejectReason.objects.all()
     serializer_class = ProjectRejectReasonSerializer
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
 
 class ProjectAuditSubmitView(APIView):

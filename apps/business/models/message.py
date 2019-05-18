@@ -14,7 +14,7 @@ class Message(models.Model):
     receiver = models.ForeignKey(to=UserProfile, verbose_name='接收者', on_delete=models.CASCADE, related_name='message_receiver')
     status = models.IntegerField(verbose_name='状态')
     menu = models.ForeignKey(Menu, null=True, blank=True, verbose_name='菜单标识', on_delete=models.CASCADE)
-    add_time = models.DateTimeField(default=datetime.now, verbose_name='添加时间')
+    add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
     def __str__(self):
         return self.title
