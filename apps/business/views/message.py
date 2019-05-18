@@ -14,7 +14,7 @@ class MessageViewSet(ListAPIView):
     """
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     # 指定筛选类

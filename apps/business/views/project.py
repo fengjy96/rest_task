@@ -116,8 +116,7 @@ class ProjectAuditSubmitView(APIView):
                 self.update_project(project_id, auditor_id)
                 self.update_task(project_id, auditor_id, sender_id)
 
-                BusinessPublic.create_message(sender_id, auditor_id,
-                                              '有新的项目需要你的审核，请尽快处理!')
+                BusinessPublic.create_message(sender_id, auditor_id, menu_id=2, messages='有新的项目需要你的审核，请尽快处理!')
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
@@ -249,7 +248,7 @@ class ProjectAuditRejectView(APIView):
                 project.audit_status = 3
                 project.save()
 
-                BusinessPublic.create_resson(project.id, project.sender_id, project.receiver_id,
+                BusinessPublic.create_reason(project.id, project.sender_id, project.receiver_id,
                                              'ProjectRejectReason', reason)
                 BusinessPublic.create_message(project.sender_id, project.receiver_id,
                                               '你的项目已被驳回，请尽快处理!')

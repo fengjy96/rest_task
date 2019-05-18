@@ -286,7 +286,7 @@ class TaskAllocateView(APIView):
                 task.receive_status = 2
                 task.save()
 
-                BusinessPublic.create_resson(task_id, task.sender_id, task.receiver_id,
+                BusinessPublic.create_reason(task_id, task.sender_id, task.receiver_id,
                                              'TaskAllocateReason', reason)
                 BusinessPublic.create_message(task.receiver_id, task.sender_id,
                                               '已安排新的任务,请查看!')

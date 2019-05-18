@@ -53,4 +53,4 @@ class FilesFilter(django_filters.rest_framework.FilterSet):
 class MessageFilter(django_filters.rest_framework.FilterSet):
     class Meta:
         model = Message
-        fields = ['receiver']
+        fields = ['receiver',]

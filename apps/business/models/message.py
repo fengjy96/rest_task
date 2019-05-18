@@ -1,5 +1,4 @@
 from django.db import models
-from datetime import datetime
 from rbac.models import UserProfile
 from rbac.models import Menu
 
