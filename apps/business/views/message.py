@@ -1,11 +1,12 @@
-#from rest_framework.permissions import IsAuthenticated
-#from rest_framework.viewsets import ModelViewSet
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.viewsets import ModelViewSet
 from business.models.message import Message
-from business.serializers import MessageSerializer
+from business.serializers.message_serializer import MessageSerializer
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from business.views.filters import MessageFilter
 from rest_framework.generics import ListAPIView
+
 
 class MessageViewSet(ListAPIView):
     """
@@ -13,7 +14,7 @@ class MessageViewSet(ListAPIView):
     """
     queryset = Message.objects.all()
     serializer_class = MessageSerializer
-    #permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
 
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     # 指定筛选类
@@ -21,7 +22,7 @@ class MessageViewSet(ListAPIView):
     ordering_fields = ('add_time',)
 
     def get_queryset(self):
-        #取状态数组
+        # 取状态数组
         status = self.request.data.get('status')
         status_list = status.split(',')
 

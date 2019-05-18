@@ -7,7 +7,7 @@ from business.views.task import TaskViewSet, TaskAllocateReasonViewSet
 from business.views.step import StepViewSet
 from business.views import files
 from business.views import message
-#from business.views import step
+# from business.views import step
 
 router = routers.DefaultRouter()
 router.register('art_projects', ProjectViewSet, basename='projects')
@@ -40,8 +40,6 @@ urlpatterns = [
     path(r'api/v1/task/receiver', task.TaskSelectReceiverView.as_view(), name='task_receiver'),
     # 10.任务转派
     path(r'api/v1/task/allocate', task.TaskAllocateView.as_view(), name='task_allocate'),
-    # 16.根据条件查询项目信息
-    path(r'api/v1/project/condition', project.ProjectListView.as_view(), name='project_condition'),
     # 17.文件上传
     #path(r'api/v1/imageUpload', files.FileUploadView.as_view(),name='file_upload'),
     path(r'api/v1/imageUpload', files.AddStepLogFiles.as_view(),name='file_upload'),

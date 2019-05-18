@@ -30,7 +30,6 @@ class Step(models.Model):
 
     begin_time = models.DateTimeField(null=True, blank=True, verbose_name='步骤开始时间')
     end_time = models.DateTimeField(null=True, blank=True, verbose_name='步骤结束时间')
-    duration = models.FloatField(default=0,verbose_name='步骤时长')
 
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='更新时间')

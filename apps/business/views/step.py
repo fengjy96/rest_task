@@ -1,8 +1,8 @@
 from rest_framework import status
-# from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 from business.models.step import Step
-from business.serializers import StepSerializer, StepListSerializer
+from business.serializers.step_serializer import StepSerializer, StepListSerializer
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from business.views.filters import StepFilter

@@ -9,15 +9,15 @@ class ProjectAdmin(admin.ModelAdmin):
     list_display = ['company', 'name', 'style', 'progress', 'points', 'is_active',
                     'is_finished', 'customer', 'sender', 'receiver', 'receive_status', 'auditor',
                     'audit_status',
-                    'begin_time', 'end_time', 'duration', 'add_time', 'modify_time']
+                    'begin_time', 'end_time', 'add_time', 'modify_time']
     list_filter = ['company', 'name', 'style', 'progress', 'points', 'is_active',
                    'is_finished', 'customer', 'sender', 'receiver', 'receive_status', 'auditor',
                    'audit_status',
-                   'begin_time', 'end_time', 'duration', 'add_time', 'modify_time']
+                   'begin_time', 'end_time', 'add_time', 'modify_time']
     search_fields = ['company', 'name', 'style', 'progress', 'points', 'is_active',
                      'is_finished', 'customer', 'sender', 'receiver', 'receive_status', 'auditor',
                      'audit_status',
-                     'begin_time', 'end_time', 'duration', 'add_time', 'modify_time']
+                     'begin_time', 'end_time', 'add_time', 'modify_time']
 
 
 class ProjectFeeAdmin(admin.ModelAdmin):
@@ -35,19 +35,19 @@ class ProjectRejectReasonAdmin(admin.ModelAdmin):
 class TaskAdmin(admin.ModelAdmin):
     list_display = ['company', 'name', 'task_type', 'content', 'progress', 'task_priority',
                     'task_quality',
-                    'begin_time', 'end_time', 'duration', 'assessment', 'comments', 'points', 'memo',
+                    'begin_time', 'end_time', 'task_assessment', 'comments', 'points', 'memo',
                     'project', 'sender', 'send_status', 'receive_status', 'auditor', 'audit_status',
                     'is_active',
                     'is_finished', 'add_time', 'modify_time']
     list_filter = ['company', 'name', 'task_type', 'content', 'progress', 'task_priority',
                    'task_quality',
-                   'begin_time', 'end_time', 'duration', 'assessment', 'comments', 'points', 'memo',
+                   'begin_time', 'end_time', 'task_assessment', 'comments', 'points', 'memo',
                    'project', 'sender', 'send_status', 'receive_status', 'auditor', 'audit_status',
                    'is_active',
                    'is_finished', 'add_time', 'modify_time']
     search_fields = ['company', 'name', 'task_type', 'content', 'progress', 'task_priority',
                      'task_quality',
-                     'begin_time', 'end_time', 'duration', 'assessment', 'comments', 'points', 'memo',
+                     'begin_time', 'end_time', 'task_assessment', 'comments', 'points', 'memo',
                      'project', 'sender', 'send_status', 'receive_status', 'auditor', 'audit_status',
                      'is_active',
                      'is_finished', 'add_time', 'modify_time']
@@ -63,15 +63,15 @@ class StepAdmin(admin.ModelAdmin):
     list_display = ['company', 'task', 'name', 'index', 'task_design_type', 'is_active', 'is_finished',
                     'sender', 'send_status', 'receiver', 'receive_status', 'auditor', 'audit_status',
                     'begin_time',
-                    'end_time', 'duration', 'add_time', 'modify_time']
+                    'end_time', 'add_time', 'modify_time']
     list_filter = ['company', 'task', 'name', 'index', 'task_design_type', 'is_active', 'is_finished',
                    'sender', 'send_status', 'receiver', 'receive_status', 'auditor', 'audit_status',
                    'begin_time',
-                   'end_time', 'duration', 'add_time', 'modify_time']
+                   'end_time', 'add_time', 'modify_time']
     search_fields = ['company', 'task', 'name', 'index', 'task_design_type', 'is_active', 'is_finished',
                      'sender', 'send_status', 'receiver', 'receive_status', 'auditor', 'audit_status',
                      'begin_time',
-                     'end_time', 'duration', 'add_time', 'modify_time']
+                     'end_time', 'add_time', 'modify_time']
 
 
 class StepRejectReasonAdmin(admin.ModelAdmin):

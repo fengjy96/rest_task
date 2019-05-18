@@ -21,9 +21,8 @@ class Task(models.Model):
 
     begin_time = models.DateField(null=True, blank=True, verbose_name='开始时间')
     end_time = models.DateField(null=True, blank=True, verbose_name='结束时间')
-    duration = models.FloatField(default=0, verbose_name='任务时长')
 
-    assessment = models.ForeignKey(TaskAssessment, null=True, blank=True, on_delete=models.CASCADE, verbose_name='任务评级')
+    task_assessment = models.ForeignKey(TaskAssessment, null=True, blank=True, on_delete=models.CASCADE, verbose_name='任务评级')
     comments = models.CharField(default='', max_length=80, null=True, blank=True, verbose_name='任务评语')
     points = models.IntegerField(default=0, verbose_name='任务积分')
 

@@ -4,7 +4,7 @@ from rest_framework import status
 from django.http import FileResponse
 from business.models.files import Files,ProgressTexts,FeedBacks,FeedBackTexts
 from rest_framework.viewsets import ModelViewSet
-from business.serializers import FilesSerializer,FilesListSerializer
+from business.serializers.file_serializer import FilesSerializer, FilesListSerializer
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from business.views.filters import FilesFilter

@@ -1,19 +1,23 @@
 from rest_framework import status
+from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-from business.models.project import Project, ProjectFee, ProjectRejectReason, ProjectCost
-from business.serializers import ProjectSerializer, ProjectFeeSerializer, ProjectRejectReasonSerializer, \
-    ProjectListSerializer
-from rbac.models import UserProfile
-from business.serializers import ProjectReceiverListSerializer
-from configuration.models import Salary
-from utils.basic import MykeyResponse
-from business.views.base import BusinessPublic
 from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+
+from common.custom import CommonPagination
+from utils.basic import MykeyResponse
+from business.models.project import Project, ProjectFee, ProjectRejectReason, ProjectCost
+from business.serializers.project_serializer import (
+    ProjectSerializer, ProjectRejectReasonSerializer, ProjectFeeSerializer, ProjectReceiverListSerializer, ProjectCreateSerializer
+)
+from business.views.base import BusinessPublic
 from business.views.filters import ProjectFilter
-from rest_framework.generics import ListAPIView
+from rbac.models import UserProfile
+from configuration.models import Salary
 
 
 class ProjectViewSet(ModelViewSet):
@@ -23,34 +27,37 @@ class ProjectViewSet(ModelViewSet):
 
     queryset = Project.objects.all()
     serializer_class = ProjectSerializer
+    pagination_class = CommonPagination
     # 局部定制过滤器
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     # 对指定的字段进行搜索
-    search_fields = ('name', 'style',)
+    search_fields = ('name', 'style')
     # 对指定的字段进行过滤
-    filter_fields = ('receiver_id',)
+    filter_fields = ('receiver_id', 'is_active')
     # 对指定的字段进行排序：使用 ordering_fields 属性明确指定可以对哪些字段执行排序，
     # 这有助于防止意外的数据泄露
     ordering_fields = ('id',)
+    authentication_classes = (JSONWebTokenAuthentication,)
 
+    def get_serializer_class(self):
+        """
+        根据请求类型动态变更 serializer
+        :return:
+        """
+        if self.action == 'create':
+            return ProjectCreateSerializer
+        elif self.action == 'list':
+            return ProjectSerializer
+        return ProjectSerializer
 
-class ProjectListView(ListAPIView):
-    """
-    项目：查
-    """
-
-    queryset = Project.objects.all()
-    serializer_class = ProjectListSerializer
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    # 指定筛选类
-    filter_class = ProjectFilter
-    ordering_fields = ('id',)
-
-    def get_queryset(self):
-        # 项目状态为激活
-        is_active = 1
-
-        return Project.objects.filter(is_active=is_active)
+    def create(self, request, *args, **kwargs):
+        # 项目创建人
+        request.data['sender'] = request.user.id
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class ProjectReceiverListView(ListAPIView):
@@ -323,7 +330,8 @@ class ProjectCostAnalysisView(APIView):
         if project_id is not None:
             project = Project.objects.get(id=project_id)
             if project is not None:
-                duration = project.duration
+                # duration = project.duration
+                duration = 12
                 receiver_id = project.receiver_id
 
                 user_salary = Salary.objects.get(user_id=receiver_id)
@@ -335,7 +343,9 @@ class ProjectCostAnalysisView(APIView):
                 total_fee = duration * aveage_fee
                 total_fee = round(total_fee, 2)
 
-                self.create_cost(project.id, '', project.receiver_id, 1, project.duration,
+                # self.create_cost(project.id, '', project.receiver_id, 1, project.duration,
+                #                  '平均工资', aveage_fee, total_fee)
+                self.create_cost(project.id, '', project.receiver_id, 1, 12,
                                  '平均工资', aveage_fee, total_fee)
 
     # 计算所有任务负责人平均工资
@@ -345,7 +355,8 @@ class ProjectCostAnalysisView(APIView):
 
             project = Project.objects.get(id=project_id)
             if project is not None:
-                duration = project.duration
+                duration = 12
+                # duration = project.duration
 
             from business.models.task import Task
             tasks = Task.objects.filter(project_id=project_id)
@@ -371,7 +382,8 @@ class ProjectCostAnalysisView(APIView):
 
             project = Project.objects.get(id=project_id)
             if project is not None:
-                duration = project.duration
+                duration = 12
+                # duration = project.duration
 
                 from business.models.task import Task
                 tasks = Task.objects.filter(project_id=project_id)

@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rbac.models import UserProfile
 from business.models.task import Task, TaskAllocateReason
-from business.serializers import TaskSerializer, TaskListSerializer, TaskAllocateReasonSerializer
+from business.serializers.task_serializer import TaskSerializer, TaskListSerializer, TaskAllocateReasonSerializer
 from utils.basic import MykeyResponse
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -37,7 +37,8 @@ class TaskSelectReceiverView(APIView):
                         dict_obj1["task_type"] = task.task_type.name
                         dict_obj1["task_progress"] = task.progress
                         dict_obj1["end_time"] = task.end_time
-                        dict_obj1["leftdays"] = task.duration
+                        dict_obj1["leftdays"] = 12
+                        # dict_obj1["leftdays"] = task.duration
                         dict_obj1["receive_status"] = task.receive_status
                         list_objects.append(dict_obj1)
             else:

@@ -8,7 +8,9 @@ class Project(models.Model):
     """
     项目表模型
     """
-    company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
+
+    company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE,
+                                related_name='company')
     name = models.CharField(default='', max_length=80, verbose_name='项目名')
     style = models.CharField(default='', max_length=80, verbose_name='项目风格')
     progress = models.IntegerField(default=0, verbose_name='项目进度')
@@ -44,6 +46,7 @@ class ProjectRejectReason(models.Model):
     """
     项目驳回原因表模型
     """
+
     project = models.ForeignKey(Project, verbose_name='项目标识', on_delete=models.CASCADE,
                                 related_name='project_reject_reason_project_id')
     reason = models.CharField(default='', max_length=80, verbose_name='项目驳回原因')
@@ -65,8 +68,9 @@ class ProjectRejectReason(models.Model):
 
 class ProjectFee(models.Model):
     """
-    用于计算员工成本
+    项目费用表模型：用于计算员工成本
     """
+
     company = models.ForeignKey(Company, verbose_name='公司标识', on_delete=models.CASCADE)
     project = models.ForeignKey(Project, verbose_name='项目标识', on_delete=models.CASCADE)
     name = models.CharField(max_length=80, verbose_name='费用名称')
@@ -91,7 +95,6 @@ class ProjectCost(models.Model):
     user = models.ForeignKey(UserProfile, verbose_name='用户标识', on_delete=models.CASCADE,
                              related_name='project_cost_user_id')
     person_nums = models.IntegerField(verbose_name='人数')
-    duration = models.IntegerField(verbose_name=' 时限')
     name = models.CharField(max_length=80, verbose_name='费用名称')
     fee = models.FloatField(verbose_name='费用')
     total_fee = models.FloatField(verbose_name='总费用')
