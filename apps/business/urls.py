@@ -20,33 +20,33 @@ router.register('steps', StepViewSet, basename='steps')
 urlpatterns = [
     # API
     path(r'api/v1/', include(router.urls)),
-    # 1.选择项目负责人
+    # 选择项目负责人
     path(r'api/v1/project/receiver', project.ProjectReceiverListView.as_view(), name='project_receiver'),
-    # 2.判断是否存在文件为空的任务
+    # 判断是否存在文件为空的任务
     #path(r'api/v1/project/file/check', '', name='project_file_check'),
-    # 3.项目审核提交
+    # 项目审核提交
     path(r'api/v1/project/audit/submit', project.ProjectAuditSubmitView.as_view(), name='project_audit_submit'),
-    # 4.项目审核通过
+    # 项目审核通过
     path(r'api/v1/project/audit/pass', project.ProjectAuditPassView.as_view(), name='project_audit_pass'),
-    # 5.项目审核驳回
+    # 项目审核驳回
     path(r'api/v1/project/audit/reject', project.ProjectAuditRejectView.as_view(), name='project_audit_reject'),
-    # 6.项目成本分析
+    # 项目成本分析
     path(r'api/v1/project/cost/analysis', project.ProjectCostAnalysisView.as_view(), name='project_cost_analysis'),
-    # 7.接手项目
+    # 接手项目
     path(r'api/v1/project/accept', project.ProjectAcceptView.as_view(), name='project_accept'),
-    # 8.接手任务
+    # 接手任务
     path(r'api/v1/task/accept', task.TaskAcceptView.as_view(), name='task_accept'),
-    # 9.选择任务负责人
+    # 选择任务负责人
     path(r'api/v1/task/receiver', task.TaskSelectReceiverView.as_view(), name='task_receiver'),
-    # 10.任务转派
+    # 任务转派
     path(r'api/v1/task/allocate', task.TaskAllocateView.as_view(), name='task_allocate'),
-    # 17.文件上传
+    # 文件上传
     #path(r'api/v1/imageUpload', files.FileUploadView.as_view(),name='file_upload'),
     path(r'api/v1/imageUpload', files.AddStepLogFiles.as_view(),name='file_upload'),
-    # 18 下载文件
+    # 下载文件
     path(r'api/v1/imageDown', files.FileDownloadView.as_view(),name='file_download'),
-    # 19 文件查询
+    # 文件查询
     path(r'api/v1/files', files.FilesListViewSet.as_view(),name='files'),
-    # 20 消息查询
+    # 消息查询
     path(r'api/v1/messages', message.MessageViewSet.as_view(), name='messages'),
 ]

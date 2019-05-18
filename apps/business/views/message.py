@@ -4,7 +4,7 @@ from business.models.message import Message
 from business.serializers.message_serializer import MessageSerializer
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from business.views.filters import MessageFilter
+from business.filters import MessageFilter
 from rest_framework.generics import ListAPIView
 
 

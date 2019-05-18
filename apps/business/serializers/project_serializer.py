@@ -9,6 +9,39 @@ class ProjectSerializer(serializers.ModelSerializer):
     项目：增删改查
     """
 
+    sender = serializers.SerializerMethodField()
+    receiver = serializers.SerializerMethodField()
+    auditor = serializers.SerializerMethodField()
+    company = serializers.SerializerMethodField()
+
+    def get_sender(self, obj):
+        if obj.sender:
+            return {
+                'id': obj.sender.id,
+                'name': obj.sender.name,
+            }
+
+    def get_receiver(self, obj):
+        if obj.receiver:
+            return {
+                'id': obj.receiver.id,
+                'name': obj.receiver.name,
+            }
+
+    def get_auditor(self, obj):
+        if obj.auditor:
+            return {
+                'id': obj.auditor.id,
+                'name': obj.auditor.name,
+            }
+
+    def get_company(self, obj):
+        if obj.company:
+            return {
+                'id': obj.company.id,
+                'name': obj.company.name,
+            }
+
     class Meta:
         model = Project
         fields = '__all__'

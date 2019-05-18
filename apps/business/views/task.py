@@ -8,7 +8,7 @@ from business.serializers.task_serializer import TaskSerializer, TaskListSeriali
 from utils.basic import MykeyResponse
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from business.views.filters import TaskFilter
+from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
 from business.models.files import Files

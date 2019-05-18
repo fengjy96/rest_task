@@ -15,7 +15,7 @@ from business.serializers.project_serializer import (
     ProjectSerializer, ProjectRejectReasonSerializer, ProjectFeeSerializer, ProjectReceiverListSerializer, ProjectCreateSerializer
 )
 from business.views.base import BusinessPublic
-from business.views.filters import ProjectFilter
+from business.filters import ProjectFilter
 from rbac.models import UserProfile
 from configuration.models import Salary
 
@@ -31,12 +31,14 @@ class ProjectViewSet(ModelViewSet):
     # 局部定制过滤器
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     # 对指定的字段进行搜索
-    search_fields = ('name', 'style')
+    search_fields = ('name',)
     # 对指定的字段进行过滤
-    filter_fields = ('receiver_id', 'is_active')
+    filter_fields = ('receiver_id', 'is_active', 'customer', 'style')
     # 对指定的字段进行排序：使用 ordering_fields 属性明确指定可以对哪些字段执行排序，
     # 这有助于防止意外的数据泄露
     ordering_fields = ('id',)
+    # 指定筛选类
+    filter_class = ProjectFilter
     authentication_classes = (JSONWebTokenAuthentication,)
 
     def get_serializer_class(self):
@@ -59,11 +61,18 @@ class ProjectViewSet(ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    def get_queryset(self):
+        # 项目状态为激活
+        is_active = 1
+
+        return Project.objects.filter(is_active=is_active)
+
 
 class ProjectReceiverListView(ListAPIView):
     """
     选择项目负责人
     """
+
     queryset = UserProfile.objects.filter(roles__id=7)
     serializer_class = ProjectReceiverListSerializer
 

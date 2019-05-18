@@ -7,7 +7,7 @@ from rest_framework.viewsets import ModelViewSet
 from business.serializers.file_serializer import FilesSerializer, FilesListSerializer
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from business.views.filters import FilesFilter
+from business.filters import FilesFilter
 #from business.views.forms import UploadFileForm
 from rest_framework.generics import ListAPIView
 from django.conf import settings

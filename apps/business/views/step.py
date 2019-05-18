@@ -5,7 +5,7 @@ from business.models.step import Step
 from business.serializers.step_serializer import StepSerializer, StepListSerializer
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from business.views.filters import StepFilter
+from business.filters import StepFilter
 from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 from business.models.files import Files, FeedBacks, ProgressTexts, FeedBackTexts
