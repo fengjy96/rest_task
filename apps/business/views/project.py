@@ -241,7 +241,6 @@ class ProjectAuditRejectView(APIView):
 
     def update_project(self, project_id, reason):
         if project_id is not None:
-            # from business.models.project import Project
             project = Project.objects.get(id=project_id)
             if project is not None:
                 # 驳回
@@ -250,8 +249,8 @@ class ProjectAuditRejectView(APIView):
 
                 BusinessPublic.create_reason(project.id, project.sender_id, project.receiver_id,
                                              'ProjectRejectReason', reason)
-                BusinessPublic.create_message(project.sender_id, project.receiver_id,
-                                              '你的项目已被驳回，请尽快处理!')
+                BusinessPublic.create_message(project.sender_id, project.receiver_id, menu_id=2,
+                                              messages='你的项目已被驳回，请尽快处理!')
 
     def update_task(self, project_id):
         if project_id is not None:

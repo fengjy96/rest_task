@@ -46,6 +46,9 @@ class BusinessPublic:
         :param reason:
         :return:
         """
+
+        sender = UserProfile.objects.get(id=sender_id)
+        receiver = UserProfile.objects.get(id=receiver_id)
         if type == 'StepRejectReason':
             reasons = StepRejectReason.objects.filter(step_id=id)
             transfer_nums = reasons.count() + 1
@@ -53,8 +56,8 @@ class BusinessPublic:
                 step=id,
                 reason=reason,
                 transfer_nums=transfer_nums,
-                sender=sender_id,
-                receiver=receiver_id
+                sender=sender,
+                receiver=receiver
             )
             step_reject_reason.save()
         elif type == 'TaskAllocateReason':
@@ -65,8 +68,8 @@ class BusinessPublic:
                 task=id,
                 reason=reason,
                 transfer_nums=transfer_nums,
-                sender=sender_id,
-                receiver=receiver_id,
+                sender=receiver,
+                receiver=receiver,
             )
 
             task_allocate_reason.save()
@@ -74,12 +77,14 @@ class BusinessPublic:
             reasons = ProjectRejectReason.objects.filter(project_id=id)
             transfer_nums = reasons.count() + 1
 
+            project = Project.objects.get(id=id)
+
             project_reject_reason = ProjectRejectReason(
-                project=id,
+                project=project,
                 reason=reason,
                 transfer_nums=transfer_nums,
-                sender=sender_id,
-                receiver=receiver_id
+                sender=receiver,
+                receiver=receiver
             )
 
             project_reject_reason.save()
