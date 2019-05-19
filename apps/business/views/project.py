@@ -8,7 +8,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
-from common.custom import CommonPagination
+from common.custom import CommonPagination, RbacPermission
 from utils.basic import MykeyResponse
 from business.models.project import Project, ProjectFee, ProjectRejectReason, ProjectCost
 from business.serializers.project_serializer import (
@@ -25,20 +25,24 @@ class ProjectViewSet(ModelViewSet):
     项目：增删改查
     """
 
+    # 获取查询集
     queryset = Project.objects.all()
+    # 指定序列化类
     serializer_class = ProjectSerializer
+    # 指定分页类
     pagination_class = CommonPagination
-    # 局部定制过滤器
+    # 指定过滤 backends
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    # 对指定的字段进行搜索
+    # 指定搜索字段
     search_fields = ('name',)
-    # 对指定的字段进行过滤
-    filter_fields = ('receiver_id', 'is_active', 'customer', 'style')
+    # 指定过滤字段
+    filter_fields = ('receiver_id', 'is_active', 'customer', 'style', 'audit_status')
     # 对指定的字段进行排序：使用 ordering_fields 属性明确指定可以对哪些字段执行排序，
     # 这有助于防止意外的数据泄露
     ordering_fields = ('id',)
     # 指定筛选类
     filter_class = ProjectFilter
+    # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
     def get_serializer_class(self):
@@ -230,7 +234,7 @@ class ProjectAuditRejectView(APIView):
             # 项目标识
             project_id = request.data.get('project_id')
             # 驳回原因
-            reason = request.data.get('reason')
+            reason = request.data.get('reason') or ''
 
             self.update_project(project_id, reason)
             self.update_task(project_id)

@@ -27,7 +27,7 @@ class ProjectFilter(django_filters.rest_framework.FilterSet):
         如果未指定筛选条件，则按照精确查询来执行
         """
         model = Project
-        fields = ['name', 'style', 'customer', 'is_finished', 'receiver', 'sender', 'auditor']
+        fields = ['name', 'style', 'customer', 'is_finished', 'receiver', 'sender', 'auditor', 'audit_status']
 
 
 class TaskFilter(django_filters.rest_framework.FilterSet):
