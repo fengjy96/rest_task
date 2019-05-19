@@ -12,8 +12,9 @@ from common.custom import CommonPagination, RbacPermission
 from utils.basic import MykeyResponse
 from business.models.project import Project, ProjectFee, ProjectRejectReason, ProjectCost
 from business.serializers.project_serializer import (
-    ProjectSerializer, ProjectRejectReasonSerializer, ProjectFeeSerializer, ProjectReceiverListSerializer, ProjectCreateSerializer
-)
+    ProjectSerializer, ProjectRejectReasonSerializer, ProjectFeeSerializer, ProjectReceiverListSerializer,
+    ProjectCreateSerializer,
+    ProjectAuditorListSerializer)
 from business.views.base import BusinessPublic
 from business.filters import ProjectFilter
 from rbac.models import UserProfile
@@ -35,8 +36,6 @@ class ProjectViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     # 指定搜索字段
     search_fields = ('name',)
-    # 指定过滤字段
-    filter_fields = ('receiver_id', 'is_active', 'customer', 'style', 'audit_status')
     # 对指定的字段进行排序：使用 ordering_fields 属性明确指定可以对哪些字段执行排序，
     # 这有助于防止意外的数据泄露
     ordering_fields = ('id',)
@@ -79,6 +78,21 @@ class ProjectReceiverListView(ListAPIView):
 
     queryset = UserProfile.objects.filter(roles__id=7)
     serializer_class = ProjectReceiverListSerializer
+
+    # 指定认证类
+    authentication_classes = (JSONWebTokenAuthentication,)
+
+
+class ProjectAuditorListView(ListAPIView):
+    """
+    获取所有项目审核员
+    """
+
+    queryset = UserProfile.objects.filter(roles__id=5)
+    serializer_class = ProjectAuditorListSerializer
+
+    # 指定认证类
+    authentication_classes = (JSONWebTokenAuthentication,)
 
 
 class ProjectFeeViewSet(ModelViewSet):

@@ -90,7 +90,17 @@ class ProjectCostSerializer(serializers.ModelSerializer):
 
 class ProjectReceiverListSerializer(serializers.ModelSerializer):
     """
-    项目：查
+    项目接收者：查
+    """
+
+    class Meta:
+        model = UserProfile
+        fields = ['id', 'name']
+
+
+class ProjectAuditorListSerializer(serializers.ModelSerializer):
+    """
+    项目审核员：查
     """
 
     class Meta:

@@ -21,7 +21,9 @@ urlpatterns = [
     # API
     path(r'api/v1/', include(router.urls)),
     # 选择项目负责人
-    path(r'api/v1/project/receiver', project.ProjectReceiverListView.as_view(), name='project_receiver'),
+    path(r'api/v1/project/receivers', project.ProjectReceiverListView.as_view(), name='project_receivers'),
+    # 获取所有项目审核员
+    path(r'api/v1/project/auditors', project.ProjectAuditorListView.as_view(), name='project_auditors'),
     # 判断是否存在文件为空的任务
     #path(r'api/v1/project/file/check', '', name='project_file_check'),
     # 项目审核提交
