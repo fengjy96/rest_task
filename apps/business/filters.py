@@ -28,7 +28,7 @@ class ProjectFilter(django_filters.rest_framework.FilterSet):
         """
         model = Project
         fields = ['name', 'style', 'customer', 'is_finished', 'audit_status', 'receiver', 'sender', 'auditor',
-                  'audit_status', 'is_active', ]
+                  'audit_status', 'is_active', 'receive_status']
 
 
 class TaskFilter(django_filters.rest_framework.FilterSet):

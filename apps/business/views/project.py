@@ -8,7 +8,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
-from common.custom import CommonPagination, RbacPermission
+from common.custom import CommonPagination
 from utils.basic import MykeyResponse
 from business.models.project import Project, ProjectFee, ProjectRejectReason, ProjectCost
 from business.serializers.project_serializer import (
@@ -44,6 +44,10 @@ class ProjectViewSet(ModelViewSet):
     # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
+    def __init__(self, *args, **kwargs):
+        self.extra_query_obj = {}
+        super().__init__(*args, **kwargs)
+
     def get_serializer_class(self):
         """
         根据请求类型动态变更 serializer
@@ -64,11 +68,63 @@ class ProjectViewSet(ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    def list(self, request, *args, **kwargs):
+        user_id = request.user.id
+        user_role_ids = self.get_user_roles(user_id)
+
+        if 1 in user_role_ids:
+            # print('admin')
+            self.extra_query_obj['admin'] = user_id
+        else:
+            if 5 in user_role_ids:
+                # print('审核员')
+                self.extra_query_obj['auditor'] = user_id
+            if 7 in user_role_ids:
+                # print('项目负责人')
+                self.extra_query_obj['receiver'] = user_id
+            if 8 in user_role_ids:
+                # print('商务人员')
+                self.extra_query_obj['sender'] = user_id
+
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     def get_queryset(self):
+        emptyQuerySet = self.queryset.filter(is_active=999)
+        queryset1 = emptyQuerySet
+        queryset2 = emptyQuerySet
+        queryset3 = emptyQuerySet
+
+        if self.extra_query_obj.get('admin', None):
+            pass
+        else:
+            if self.extra_query_obj.get('auditor', None):
+                queryset1 = self.queryset.filter(auditor=self.extra_query_obj['auditor'])
+            if self.extra_query_obj.get('receiver', None):
+                queryset2 = self.queryset.filter(receiver=self.extra_query_obj['receiver'])
+            if self.extra_query_obj.get('sender', None):
+                queryset3 = self.queryset.filter(sender=self.extra_query_obj['sender'])
+
+            self.queryset = queryset1 | queryset2 | queryset3
+
         # 项目状态为激活
         is_active = 1
 
-        return Project.objects.filter(is_active=is_active)
+        return self.queryset.filter(is_active=is_active)
+
+    def get_user_roles(self, user_id):
+        if user_id is not None:
+            user = UserProfile.objects.get(id=user_id)
+            user_roles = user.roles.all()
+            user_role_ids = set(map(lambda user_role: user_role.id, user_roles))
+            return user_role_ids
 
 
 class ProjectReceiverListView(ListAPIView):
