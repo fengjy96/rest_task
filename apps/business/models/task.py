@@ -14,7 +14,7 @@ class Task(models.Model):
     company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     name = models.CharField(default='', max_length=80, verbose_name='任务名称')
     task_type = models.ForeignKey(TaskType, verbose_name='任务类型标识', on_delete=models.CASCADE)
-    content = models.TextField(default='', verbose_name='任务内容')
+    content = models.TextField(null=True, blank=True, verbose_name='任务内容')
     progress = models.IntegerField(default=0, verbose_name='任务进度')
     task_priority = models.ForeignKey(TaskPriority, verbose_name='任务优先级', on_delete=models.CASCADE)
     task_quality = models.ForeignKey(TaskQuality, verbose_name='任务质量', on_delete=models.CASCADE)
@@ -26,7 +26,7 @@ class Task(models.Model):
     comments = models.CharField(default='', max_length=80, null=True, blank=True, verbose_name='任务评语')
     points = models.IntegerField(default=0, verbose_name='任务积分')
 
-    memo = models.CharField(default='', max_length=800, verbose_name='任务备注')
+    memo = models.CharField(null=True, blank=True, max_length=800, verbose_name='任务备注')
 
     project = models.ForeignKey(Project, verbose_name='项目标识', on_delete=models.CASCADE)
     sender = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='发送者', on_delete=models.CASCADE, related_name='task_sender')
@@ -69,6 +69,7 @@ class TaskAllocateReason(models.Model):
     class Meta:
         verbose_name = '任务转派原因'
         verbose_name_plural = verbose_name
+
 
 # class TaskSelectReceiver(models.Model):
 #     """

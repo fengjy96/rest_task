@@ -11,7 +11,27 @@ class TaskSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
+
+
+class TaskListSerializer(serializers.ModelSerializer):
+    """
+    任务：增删改查
+    """
+
+    class Meta:
+        model = Task
+        fields = '__all__'
         depth = 1
+
+
+class TaskCreateSerializer(serializers.ModelSerializer):
+    """
+    任务创建
+    """
+
+    class Meta:
+        model = Task
+        fields = '__all__'
 
 
 class TaskAllocateReasonSerializer(serializers.ModelSerializer):
