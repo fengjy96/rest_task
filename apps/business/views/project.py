@@ -257,10 +257,10 @@ class ProjectAuditPassView(APIView):
                 project.points = points
                 project.save()
 
-                BusinessPublic.create_message(project.auditor_id, project.sender_id,
-                                              '你有新的项目等待接手!')
-                BusinessPublic.create_message(project.auditor_id, project.receiver_id,
-                                              '项目已通过审核!')
+                BusinessPublic.create_message(project.auditor_id, project.sender_id,  menu_id=2,
+                                              messages='你有新的项目等待接手!')
+                BusinessPublic.create_message(project.auditor_id, project.receiver_id, menu_id=2,
+                                              messages='项目已通过审核!')
 
     def update_task(self, project_id, ):
         """
