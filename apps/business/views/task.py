@@ -3,6 +3,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from common.custom import CommonPagination
 from rbac.models import UserProfile
@@ -10,7 +11,7 @@ from business.models.task import Task, TaskAllocateReason
 from business.serializers.task_serializer import TaskSerializer, TaskListSerializer, TaskAllocateReasonSerializer, \
     TaskCreateSerializer
 from utils.basic import MykeyResponse
-from rest_framework.filters import OrderingFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from business.filters import TaskFilter
 from business.views.base import BusinessPublic
@@ -68,12 +69,16 @@ class TaskViewSet(ModelViewSet):
 
     queryset = Task.objects.all()
     serializer_class = TaskSerializer
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('project_id',)
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     ordering_fields = ('id',)
+    # 指定筛选类
+    filter_class = TaskFilter
     # 指定分页类
     pagination_class = CommonPagination
+    # 指定授权类
     permission_classes = (IsAuthenticated,)
+    # 指定认证类
+    authentication_classes = (JSONWebTokenAuthentication,)
 
     def get_serializer_class(self):
         """
