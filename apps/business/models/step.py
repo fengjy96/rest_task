@@ -28,8 +28,8 @@ class Step(models.Model):
     auditor = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='审核员', on_delete=models.CASCADE, related_name='step_auditor')
     audit_status = models.IntegerField(default=0, verbose_name='审核状态')
 
-    begin_time = models.DateTimeField(null=True, blank=True, verbose_name='步骤开始时间')
-    end_time = models.DateTimeField(null=True, blank=True, verbose_name='步骤结束时间')
+    begin_time = models.DateField(null=True, blank=True, verbose_name='步骤开始时间')
+    end_time = models.DateField(null=True, blank=True, verbose_name='步骤结束时间')
 
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='更新时间')

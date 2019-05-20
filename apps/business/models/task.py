@@ -1,8 +1,6 @@
-from datetime import datetime
-
 from django.db import models
 
-from configuration.models import TaskType, TaskPriority, TaskQuality, TaskAssessment
+from configuration.models import TaskType, TaskPriority, TaskQuality, TaskAssessment, TaskDesignType
 from business.models.project import Project
 from rbac.models import Company, UserProfile
 
@@ -14,6 +12,7 @@ class Task(models.Model):
     company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     name = models.CharField(default='', max_length=80, verbose_name='任务名称')
     task_type = models.ForeignKey(TaskType, verbose_name='任务类型标识', on_delete=models.CASCADE)
+    # task_design_type = models.ForeignKey(TaskDesignType, verbose_name='设计方式', on_delete=models.CASCADE)
     content = models.TextField(null=True, blank=True, verbose_name='任务内容')
     progress = models.IntegerField(default=0, verbose_name='任务进度')
     task_priority = models.ForeignKey(TaskPriority, verbose_name='任务优先级', on_delete=models.CASCADE)
