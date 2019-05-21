@@ -110,7 +110,10 @@ class ProjectViewSet(ModelViewSet):
             if self.extra_query_obj.get('auditor', None):
                 queryset1 = self.queryset.filter(auditor=self.extra_query_obj['auditor'])
             if self.extra_query_obj.get('receiver', None):
-                queryset2 = self.queryset.filter(receiver=self.extra_query_obj['receiver'])
+                queryset2 = self.queryset.filter(
+                    receiver=self.extra_query_obj['receiver'],
+                    audit_status=2,
+                )
             if self.extra_query_obj.get('sender', None):
                 queryset3 = self.queryset.filter(sender=self.extra_query_obj['sender'])
 
@@ -259,7 +262,7 @@ class ProjectAuditPassView(APIView):
                 project.points = points
                 project.save()
 
-                BusinessPublic.create_message(project.auditor_id, project.sender_id,  menu_id=2,
+                BusinessPublic.create_message(project.auditor_id, project.sender_id, menu_id=2,
                                               messages='你有新的项目等待接手!')
                 BusinessPublic.create_message(project.auditor_id, project.receiver_id, menu_id=2,
                                               messages='项目已通过审核!')
@@ -309,7 +312,6 @@ class ProjectAuditRejectView(APIView):
             reason = request.data.get('reason') or ''
 
             self.update_project(project_id, reason)
-            self.update_task(project_id)
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
@@ -327,16 +329,6 @@ class ProjectAuditRejectView(APIView):
                                              'ProjectRejectReason', reason)
                 BusinessPublic.create_message(project.sender_id, project.receiver_id, menu_id=2,
                                               messages='你的项目已被驳回，请尽快处理!')
-
-    def update_task(self, project_id):
-        if project_id is not None:
-            from business.models.task import Task
-            tasks = Task.objects.filter(project_id=project_id)
-            for task in tasks:
-                if task is not None:
-                    # 驳回
-                    task.audit_status = 3
-                    task.save()
 
 
 class ProjectAcceptView(APIView):
@@ -360,8 +352,8 @@ class ProjectAcceptView(APIView):
                 # 项目负责人已接手,项目正式开始
                 project.receive_status = 3
                 project.save()
-                BusinessPublic.create_message(project.receiver_id, project.auditor_id,
-                                              '项目负责人已接手，项目正式开始!')
+                BusinessPublic.create_message(project.receiver_id, project.auditor_id, menu_id=2,
+                                              messages='项目负责人已接手，项目正式开始!')
                 self.update_task(project_id)
 
     def update_task(self, project_id):
@@ -370,23 +362,13 @@ class ProjectAcceptView(APIView):
             tasks = Task.objects.filter(project_id=project_id)
             for task in tasks:
                 if task is not None:
-                    # 项目负责人已接手,项目正式开始
-                    task.send_status = 3
+                    # 项目负责人已接手，项目正式开始
+                    task.receive_status = 2
                     if task.receiver_id is not None:
                         task.save()
 
-                        BusinessPublic.create_message(task.sender_id, task.receiver_id,
-                                                      '你有新的任务等待接手!')
-                        self.update_step(task.id)
-
-    def update_step(self, task_id):
-        if task_id is not None:
-            from business.models.step import Step
-            steps = Step.objects.filter(task_id=task_id)
-            for step in steps:
-                # 项目负责人已接手, 项目正式开始
-                step.send_status = 3
-                step.save()
+                        BusinessPublic.create_message(task.sender_id, task.receiver_id, menu_id=2,
+                                                      messages='你有新的任务等待接手!')
 
 
 class ProjectCostAnalysisView(APIView):

@@ -38,6 +38,8 @@ urlpatterns = [
     path(r'api/v1/project/accept', project.ProjectAcceptView.as_view(), name='project_accept'),
     # 接手任务
     path(r'api/v1/task/accept', task.TaskAcceptView.as_view(), name='task_accept'),
+    # 任务拒接
+    path(r'api/v1/task/reject', task.TaskRejectView.as_view(), name='task_reject'),
     # 获取任务负责人
     path(r'api/v1/task/receivers', task.TaskReceiverView.as_view(), name='task_receivers'),
     # 任务转派

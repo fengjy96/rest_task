@@ -12,7 +12,7 @@ class Task(models.Model):
     company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     name = models.CharField(default='', max_length=80, verbose_name='任务名称')
     task_type = models.ForeignKey(TaskType, verbose_name='任务类型标识', on_delete=models.CASCADE)
-    # task_design_type = models.ForeignKey(TaskDesignType, verbose_name='设计方式', on_delete=models.CASCADE)
+    task_design_type = models.ForeignKey(TaskDesignType, null=True, blank=True, verbose_name='设计方式', on_delete=models.CASCADE)
     content = models.TextField(null=True, blank=True, verbose_name='任务内容')
     progress = models.IntegerField(default=0, verbose_name='任务进度')
     task_priority = models.ForeignKey(TaskPriority, verbose_name='任务优先级', on_delete=models.CASCADE)
@@ -29,7 +29,6 @@ class Task(models.Model):
 
     project = models.ForeignKey(Project, verbose_name='项目标识', on_delete=models.CASCADE)
     sender = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='发送者', on_delete=models.CASCADE, related_name='task_sender')
-    send_status = models.IntegerField(default=0, verbose_name='发送状态')
     receiver = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='接收者', on_delete=models.CASCADE, related_name='task_receiver')
     receive_status = models.IntegerField(default=0, verbose_name='接收状态')
     auditor = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='审核员', on_delete=models.CASCADE, related_name='task_auditor')

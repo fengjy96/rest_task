@@ -18,11 +18,10 @@ class Step(models.Model):
     progress = models.IntegerField(verbose_name='步骤进度', default=0)
     task_design_type = models.ForeignKey(TaskDesignType, verbose_name='设计方式', on_delete=models.CASCADE)
 
-    is_active = models.IntegerField(default=0, verbose_name='是否激活')
+    is_active = models.IntegerField(default=1, verbose_name='是否激活')
     is_finished = models.IntegerField(default=0, verbose_name='是否完成')
 
     sender = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='发送者', on_delete=models.CASCADE, related_name='step_sender')
-    send_status = models.IntegerField(default=0, verbose_name='发送状态')
     receiver = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='接收者', on_delete=models.CASCADE, related_name='step_receiver')
     receive_status = models.IntegerField(default=0, verbose_name='接收状态')
     auditor = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='审核员', on_delete=models.CASCADE, related_name='step_auditor')

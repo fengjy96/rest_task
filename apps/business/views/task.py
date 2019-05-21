@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -33,7 +34,8 @@ class TaskReceiverView(APIView):
         list_objects = []
 
         for user in users:
-            tasks = Task.objects.filter(receiver_id=user.id)
+            # tasks = Task.objects.filter(receiver_id=user.id, is_active=1, receive_status__lte=4)
+            tasks = Task.objects.filter(~Q(receive_status=4), receiver_id=user.id, is_active=1)
 
             if len(tasks) > 0:
                 for task in tasks:
@@ -43,6 +45,7 @@ class TaskReceiverView(APIView):
                         dict_obj1["name"] = user.name
                         dict_obj1["task_type"] = task.task_type.name
                         dict_obj1["task_progress"] = task.progress
+                        dict_obj1["task_name"] = task.name
                         dict_obj1["end_time"] = task.end_time
                         dict_obj1["leftdays"] = 12
                         # dict_obj1["leftdays"] = task.duration
@@ -52,11 +55,12 @@ class TaskReceiverView(APIView):
                 dict_obj2 = {}
                 dict_obj2["user_id"] = user.id
                 dict_obj2["name"] = user.name
-                dict_obj2["task_type"] = ""
-                dict_obj2["task_progress"] = ""
-                dict_obj2["end_time"] = ""
-                dict_obj2["leftdays"] = 0
-                dict_obj2["receive_status"] = 0
+                dict_obj2["task_type"] = ''
+                dict_obj2["task_progress"] = ''
+                dict_obj2["task_name"] = ''
+                dict_obj2["end_time"] = ''
+                dict_obj2["leftdays"] = ''
+                dict_obj2["receive_status"] = ''
                 list_objects.append(dict_obj2)
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=list_objects)
@@ -94,7 +98,7 @@ class TaskViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         # 项目创建人
         request.data['sender'] = request.user.id
-        if request.data['receiver']:
+        if request.data.get('receiver', None):
             request.data['receive_status'] = 1
         else:
             request.data['receive_status'] = 0
@@ -105,7 +109,7 @@ class TaskViewSet(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
-        if request.data['receiver']:
+        if request.data.get('receiver', None):
             request.data['receive_status'] = 1
         else:
             request.data['receive_status'] = 0
@@ -233,8 +237,55 @@ class TaskAcceptView(APIView):
             # 任务设计类型标识
             task_design_type_id = request.data.get('task_design_type_id')
 
+            self.update_task(task_id, task_design_type_id)
+        except Exception as e:
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+
+    def update_task(self, task_id, task_design_type_id):
+        if task_id is not None:
+            from business.models.task import Task
+            task = Task.objects.get(id=task_id)
+            if task is not None:
+                # 任务负责人已接手,任务执行中
+                task.receive_status = 3
+                task.save()
+                self.create_step(task_id, task_design_type_id)
+                BusinessPublic.create_message(task.receiver_id, task.sender_id, menu_id=2,
+                                              messages='任务负责人已接手,任务执行中!')
+
+    def create_step(self, task_id, task_design_type_id):
+        if task_id is not None:
+            from business.models.step import Step
+            from configuration.models import TaskStep, TaskDesignType
+
+            task = Task.objects.get(id=task_id)
+            task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
+
+            tasksteps = TaskStep.objects.filter(task_design_type_id=task_design_type_id)
+            for taskstep in tasksteps:
+                if taskstep:
+                    step = Step(
+                        name=taskstep.name,
+                        index=taskstep.index,
+                        receive_status=3,
+                        task=task,
+                        task_design_type=task_design_type,
+                    )
+
+                    step.save()
+
+
+class TaskRejectView(APIView):
+    """
+    拒接任务
+    """
+    def post(self, request, format=None):
+        try:
+            # 任务标识
+            task_id = request.data.get('task_id')
+
             self.update_task(task_id)
-            self.update_step(task_id, task_design_type_id)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
@@ -244,20 +295,11 @@ class TaskAcceptView(APIView):
             from business.models.task import Task
             task = Task.objects.get(id=task_id)
             if task is not None:
-                # 任务负责人已接手,任务执行中
-                task.receive_status = 3
+                # 任务负责人已拒接手
+                task.receive_status = 5
                 task.save()
-                BusinessPublic.create_message(task.receiver_id, task.sender_id,
-                                              '任务负责人已接手,任务执行中!')
-
-    def update_step(self, task_id, task_design_type_id):
-        if task_id is not None:
-            from business.models.step import Step
-            steps = Step.objects.filter(task_id=task_id, task_design_type_id=task_design_type_id)
-            for step in steps:
-                step.receive_status = 3
-                status.is_active = 1
-                step.save()
+                BusinessPublic.create_message(task.receiver_id, task.sender_id, menu_id=2,
+                                              messages='任务负责人已拒接!')
 
 
 class TaskAuditSubmitView(APIView):
