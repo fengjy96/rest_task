@@ -34,8 +34,8 @@ class TaskReceiverView(APIView):
         list_objects = []
 
         for user in users:
-            # tasks = Task.objects.filter(receiver_id=user.id, is_active=1, receive_status__lte=4)
-            tasks = Task.objects.filter(~Q(receive_status=4), receiver_id=user.id, is_active=1)
+            # tasks = Task.objects.filter(receiver_id=user.id, is_active=1, receive_status__lte=3)
+            tasks = Task.objects.filter(~Q(receive_status=3), receiver_id=user.id, is_active=1)
 
             if len(tasks) > 0:
                 for task in tasks:
@@ -98,6 +98,7 @@ class TaskViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         # 项目创建人
         request.data['sender'] = request.user.id
+        request.data['auditor'] = request.user.id
         if request.data.get('receiver', None):
             request.data['receive_status'] = 1
         else:
@@ -125,66 +126,6 @@ class TaskViewSet(ModelViewSet):
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
-
-
-class TaskListView(APIView):
-    """
-    任务：增删改查
-    """
-    queryset = Task.objects.all()
-    serializer_class = TaskListSerializer
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    # 指定筛选类
-    filter_class = TaskFilter
-    ordering_fields = ('id',)
-
-    def get_queryset(self, request):
-        is_active = 0
-        audit_status = 0
-        receive_status = 0
-        is_finished = 0
-        send_status = 0
-
-        # 前端逻辑判断
-        accept_status = request.data.get('accept_status')
-
-        if accept_status is not None:
-            # 任务为激活状态
-            is_active = 1
-            # 项目负责人已接手,项目正式开始
-            send_status = 3
-
-            # 任务未开始
-            if accept_status == 0:
-                # 等待任务负责人接手任务
-                audit_status = 0
-                receive_status = 2
-                is_finished = 0
-            # 任务进行中
-            elif accept_status == 1:
-                # 任务负责人已接手,任务执行中
-                audit_status = 0
-                receive_status = 3
-                is_finished = 0
-            # 任务已完成
-            elif accept_status == 2:
-                # 任务负责人已接手,任务执行中
-                audit_status = 0
-                receive_status = 3
-                is_finished = 1
-            # 任务未审核
-            elif accept_status == 3:
-                audit_status = 1
-                receive_status = 3
-                is_finished = 0
-            # 任务已审核
-            elif accept_status == 4:
-                audit_status = 2
-                receive_status = 3
-                is_finished = 1
-
-        return Task.objects.filter(is_active=is_active, send_status=send_status, receive_status=receive_status,
-                                   audit_status=audit_status, is_finished=is_finished)
 
 
 class TaskFileisEmptyViewSet(ModelViewSet):
@@ -248,7 +189,7 @@ class TaskAcceptView(APIView):
             task = Task.objects.get(id=task_id)
             if task is not None:
                 # 任务负责人已接手,任务执行中
-                task.receive_status = 3
+                task.receive_status = 2
                 task.save()
                 self.create_step(task_id, task_design_type_id)
                 BusinessPublic.create_message(task.receiver_id, task.sender_id, menu_id=2,
@@ -268,7 +209,7 @@ class TaskAcceptView(APIView):
                     step = Step(
                         name=taskstep.name,
                         index=taskstep.index,
-                        receive_status=3,
+                        receive_status=2,
                         task=task,
                         task_design_type=task_design_type,
                     )
@@ -296,7 +237,7 @@ class TaskRejectView(APIView):
             task = Task.objects.get(id=task_id)
             if task is not None:
                 # 任务负责人已拒接手
-                task.receive_status = 5
+                task.receive_status = 4
                 task.save()
                 BusinessPublic.create_message(task.receiver_id, task.sender_id, menu_id=2,
                                               messages='任务负责人已拒接!')
