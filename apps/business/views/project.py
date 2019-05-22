@@ -229,14 +229,15 @@ class ProjectAuditPassView(APIView):
             # 项目积分
             points = request.data.get('points')
 
-            self.update_project(project_id, points, request=request)
-            self.update_task(project_id)
+            # 更新项目
+            self.update_project(project_id, points)
 
         except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def update_project(self, project_id, points, request):
+    def update_project(self, project_id, points):
         """
         更新项目表信息
         """
@@ -244,6 +245,8 @@ class ProjectAuditPassView(APIView):
             from business.models.project import Project
             project = Project.objects.get(id=project_id)
             if project is not None:
+                if project.receiver is None:
+                    raise Exception('未填写项目负责人!')
                 # 已审核
                 project.audit_status = 2
                 # 等待项目负责人接手项目
@@ -257,13 +260,16 @@ class ProjectAuditPassView(APIView):
                 BusinessPublic.create_message(project.auditor_id, project.receiver_id, menu_id=2,
                                               messages='项目已通过审核!')
 
-    def update_task(self, project_id, ):
+                # 更新任务
+                self.update_task(project_id)
+
+    def update_task(self, project_id):
         """
         更新任务表信息
         """
         if project_id is not None:
             # 获取项目负责人 id
-            project_receiver_id = Project.objects.get(id=project_id)
+            project = Project.objects.get(id=project_id)
 
             # 根据项目 id 过滤所有任务
             from business.models.task import Task
@@ -273,8 +279,8 @@ class ProjectAuditPassView(APIView):
                 if task is not None:
                     # 如果任务不存在任务审核员，则将项目负责人作为任务审核员
                     if task.auditor_id is not None:
-                        task.auditor_id = project_receiver_id
-                    if task.receiver_id:
+                        task.auditor_id = project.receiver_id
+                    if task.receiver_id is not None:
                         # 等待任务负责人接手任务
                         task.receive_status = 2
                         task.save()
