@@ -12,8 +12,8 @@ from common.custom import CommonPagination
 from utils.basic import MykeyResponse
 from business.models.project import Project, ProjectFee, ProjectRejectReason, ProjectCost
 from business.serializers.project_serializer import (
-    ProjectSerializer, ProjectRejectReasonSerializer, ProjectFeeSerializer, ProjectReceiverListSerializer,
-    ProjectCreateSerializer,
+    ProjectListSerializer, ProjectRejectReasonSerializer, ProjectFeeSerializer, ProjectReceiverListSerializer,
+    ProjectSerializer,
     ProjectAuditorListSerializer)
 from business.views.base import BusinessPublic
 from business.filters import ProjectFilter
@@ -28,8 +28,6 @@ class ProjectViewSet(ModelViewSet):
 
     # 获取查询集
     queryset = Project.objects.all()
-    # 指定序列化类
-    serializer_class = ProjectSerializer
     # 指定分页类
     pagination_class = CommonPagination
     # 指定过滤 backends
@@ -46,19 +44,13 @@ class ProjectViewSet(ModelViewSet):
     # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
-    def __init__(self, *args, **kwargs):
-        self.extra_query_obj = {}
-        super().__init__(*args, **kwargs)
-
     def get_serializer_class(self):
         """
         根据请求类型动态变更 serializer
         :return:
         """
-        if self.action == 'create':
-            return ProjectCreateSerializer
-        elif self.action == 'list':
-            return ProjectSerializer
+        if self.action == 'list':
+            return ProjectListSerializer
         return ProjectSerializer
 
     def create(self, request, *args, **kwargs):
@@ -71,24 +63,9 @@ class ProjectViewSet(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def list(self, request, *args, **kwargs):
-        user_id = request.user.id
-        user_role_ids = self.get_user_roles(user_id)
-
-        if 1 in user_role_ids:
-            # print('admin')
-            self.extra_query_obj['admin'] = user_id
-        else:
-            if 5 in user_role_ids:
-                # print('审核员')
-                self.extra_query_obj['auditor'] = user_id
-            if 7 in user_role_ids:
-                # print('项目负责人')
-                self.extra_query_obj['receiver'] = user_id
-            if 8 in user_role_ids:
-                # print('商务人员')
-                self.extra_query_obj['sender'] = user_id
-
         queryset = self.filter_queryset(self.get_queryset())
+
+        queryset = self.filter_list_queryset(request, queryset)
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -98,31 +75,44 @@ class ProjectViewSet(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    def get_queryset(self):
-        emptyQuerySet = self.queryset.filter(is_active=999)
-        queryset1 = emptyQuerySet
-        queryset2 = emptyQuerySet
-        queryset3 = emptyQuerySet
+    def filter_list_queryset(self, request, queryset):
+        """
+        根据用户所属角色过滤查询集
+        :param request:
+        :param queryset:
+        :return:
+        """
+        # 过滤已激活的项目数据
+        queryset = queryset.filter(is_active=1)
 
-        if self.extra_query_obj.get('admin', None):
+        # 定义空的数据集
+        emptyQuerySet = self.queryset.filter(is_active=999)
+        queryset_project_auditor = emptyQuerySet
+        queryset_project_manager = emptyQuerySet
+        queryset_business_manager = emptyQuerySet
+
+        # 获取当前用户 id
+        user_id = request.user.id
+        # 获取当前用户所属角色 id 列表
+        user_role_ids = self.get_user_roles(user_id)
+
+        # 如果当前用户拥有管理员权限，则不做特殊处理
+        if 1 in user_role_ids:
             pass
         else:
-            if self.extra_query_obj.get('auditor', None):
-                queryset1 = self.queryset.filter(auditor=self.extra_query_obj['auditor'])
-            if self.extra_query_obj.get('receiver', None):
-                queryset2 = self.queryset.filter(
-                    receiver=self.extra_query_obj['receiver'],
-                    audit_status=2,
-                )
-            if self.extra_query_obj.get('sender', None):
-                queryset3 = self.queryset.filter(sender=self.extra_query_obj['sender'])
+            # 如果当前用户拥有项目审核员权限，则返回与该审核员关联的项目数据
+            if 5 in user_role_ids:
+                queryset_project_auditor = queryset.filter(auditor_id=user_id)
+            # 如果当前用户拥有项目负责人权限，则返回与该项目负责人关联的项目数据
+            if 7 in user_role_ids:
+                queryset_project_manager = queryset.filter(receiver_id=user_id, audit_status=2)
+            # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
+            if 8 in user_role_ids:
+                queryset_business_manager = queryset.filter(sender_id=user_id)
 
-            self.queryset = queryset1 | queryset2 | queryset3
+            queryset = queryset_project_auditor | queryset_project_manager | queryset_business_manager
 
-        # 项目状态为激活
-        is_active = 1
-
-        return self.queryset.filter(is_active=is_active)
+        return queryset
 
     def get_user_roles(self, user_id):
         if user_id is not None:
@@ -272,12 +262,18 @@ class ProjectAuditPassView(APIView):
         更新任务表信息
         """
         if project_id is not None:
+            # 获取项目负责人 id
+            project_receiver_id = Project.objects.get(id=project_id)
+
+            # 根据项目 id 过滤所有任务
             from business.models.task import Task
             tasks = Task.objects.filter(project_id=project_id)
+
             for task in tasks:
                 if task is not None:
-                    # 等待项目负责人接手项目
-                    task.send_status = 2
+                    # 如果任务不存在任务审核员，则将项目负责人作为任务审核员
+                    if task.auditor_id is not None:
+                        task.auditor_id = project_receiver_id
                     if task.receiver_id:
                         # 等待任务负责人接手任务
                         task.receive_status = 2
@@ -293,7 +289,6 @@ class ProjectAuditPassView(APIView):
             from business.models.step import Step
             steps = Step.objects.filter(task_id=task_id)
             for step in steps:
-                step.send_status = 2
                 if step.receiver_id is not None:
                     step.receive_status = 2
                     step.save()

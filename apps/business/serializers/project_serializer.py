@@ -4,9 +4,9 @@ from business.models.project import Project, ProjectFee, ProjectRejectReason, Pr
 from rbac.models import UserProfile
 
 
-class ProjectSerializer(serializers.ModelSerializer):
+class ProjectListSerializer(serializers.ModelSerializer):
     """
-    项目：增删改查
+    项目：列表
     """
 
     sender = serializers.SerializerMethodField()
@@ -48,9 +48,9 @@ class ProjectSerializer(serializers.ModelSerializer):
         depth = 1
 
 
-class ProjectCreateSerializer(serializers.ModelSerializer):
+class ProjectSerializer(serializers.ModelSerializer):
     """
-    项目创建
+    项目：增删改查
     """
 
     class Meta:

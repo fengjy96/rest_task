@@ -192,7 +192,6 @@ def step_objects(self, task_id=0):
         dict_obj1["is_active"] = step.is_active
         dict_obj1["is_finished"] = step.is_finished
         dict_obj1["sender"] = dict_obj5
-        dict_obj1["send_status"] = step.send_status
         dict_obj1["receiver"] = dict_obj6
         dict_obj1["receive_status"] = step.receive_status
         dict_obj1["auditor"] = dict_obj7

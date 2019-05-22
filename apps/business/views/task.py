@@ -20,6 +20,80 @@ from business.models.project import Project
 from business.models.files import Files
 
 
+class TaskViewSet(ModelViewSet):
+    """
+    任务：增删改查
+    """
+
+    queryset = Task.objects.all()
+    serializer_class = TaskSerializer
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    ordering_fields = ('id',)
+    # 指定筛选类
+    filter_class = TaskFilter
+    # 指定分页类
+    pagination_class = CommonPagination
+    # 指定授权类
+    permission_classes = (IsAuthenticated,)
+    # 指定认证类
+    authentication_classes = (JSONWebTokenAuthentication,)
+
+    def get_serializer_class(self):
+        """
+        根据请求类型动态变更 serializer
+        :return:
+        """
+        if self.action == 'create':
+            return TaskCreateSerializer
+        elif self.action == 'list':
+            return TaskListSerializer
+        return TaskSerializer
+
+    def create(self, request, *args, **kwargs):
+        # 任务创建人
+        request.data['sender'] = request.user.id
+        # 获取该任务所属的项目 id
+        project_id = request.data.get('project', None)
+        if project_id is not None:
+            # 根据项目 id 查项目负责人
+            project = Project.objects.get(id=project_id)
+            project_receiver_id = project.receiver_id
+
+            # 如果存在项目负责人则将该项目负责人作为任务审核员
+            if project_receiver_id is not None:
+                request.data['auditor'] = project_receiver_id
+
+        # 如果创建任务时指定了任务负责人，则任务接收状态为 1 - 已安排任务负责人
+        if request.data.get('receiver', None):
+            request.data['receive_status'] = 1
+        # 如果创建任务时未指定任务负责人，则任务接收状态为 0 - 未安排任务负责人
+        else:
+            request.data['receive_status'] = 0
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def update(self, request, *args, **kwargs):
+        if request.data.get('receiver', None):
+            request.data['receive_status'] = 1
+        else:
+            request.data['receive_status'] = 0
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
+
+
 class TaskReceiverView(APIView):
     """
     获取任务负责人
@@ -64,106 +138,6 @@ class TaskReceiverView(APIView):
                 list_objects.append(dict_obj2)
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=list_objects)
-
-
-class TaskViewSet(ModelViewSet):
-    """
-    任务：增删改查
-    """
-
-    queryset = Task.objects.all()
-    serializer_class = TaskSerializer
-    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    ordering_fields = ('id',)
-    # 指定筛选类
-    filter_class = TaskFilter
-    # 指定分页类
-    pagination_class = CommonPagination
-    # 指定授权类
-    permission_classes = (IsAuthenticated,)
-    # 指定认证类
-    authentication_classes = (JSONWebTokenAuthentication,)
-
-    def get_serializer_class(self):
-        """
-        根据请求类型动态变更 serializer
-        :return:
-        """
-        if self.action == 'create':
-            return TaskCreateSerializer
-        elif self.action == 'list':
-            return TaskListSerializer
-        return TaskSerializer
-
-    def create(self, request, *args, **kwargs):
-        # 项目创建人
-        request.data['sender'] = request.user.id
-        request.data['auditor'] = request.user.id
-        if request.data.get('receiver', None):
-            request.data['receive_status'] = 1
-        else:
-            request.data['receive_status'] = 0
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    def update(self, request, *args, **kwargs):
-        if request.data.get('receiver', None):
-            request.data['receive_status'] = 1
-        else:
-            request.data['receive_status'] = 0
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        if getattr(instance, '_prefetched_objects_cache', None):
-            # If 'prefetch_related' has been applied to a queryset, we need to
-            # forcibly invalidate the prefetch cache on the instance.
-            instance._prefetched_objects_cache = {}
-
-        return Response(serializer.data)
-
-
-class TaskFileisEmptyViewSet(ModelViewSet):
-    """
-    判断参考文件是否存在为空
-    """
-
-    def get(self, request, format=None):
-        try:
-            # 项目标识
-            project_id = request.data.get('project_id')
-            if project_id is not None:
-                project = Project.objects.get(id=project_id)
-                if project is not None:
-                    tasks = Task.objects.filter(project_id=project_id)
-                    if tasks is not None:
-                        for task in tasks:
-                            if task is not None:
-                                files = Files.objects.filter(task_id=task.id)
-                                if files is not None:
-                                    if files.count() == 0:
-                                        return MykeyResponse(status=status.HTTP_400_BAD_REQUEST,
-                                                             msg=task.name + '的参考文件为空')
-        except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
-
-
-class TaskAllocateReasonViewSet(ModelViewSet):
-    """
-    任务分派原因：增删改查
-    """
-    queryset = TaskAllocateReason.objects.all()
-    serializer_class = TaskAllocateReasonSerializer
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('task_id', 'receiver_id')
-    ordering_fields = ('id',)
-    # permission_classes = [IsAuthenticated]
 
 
 class TaskAcceptView(APIView):
@@ -221,6 +195,7 @@ class TaskRejectView(APIView):
     """
     拒接任务
     """
+
     def post(self, request, format=None):
         try:
             # 任务标识
@@ -344,3 +319,41 @@ class TaskAllocateView(APIView):
                 step.receiver = receiver_id
                 step.receive_status = 2
                 step.save()
+
+
+class TaskFileisEmptyViewSet(ModelViewSet):
+    """
+    判断参考文件是否存在为空
+    """
+
+    def get(self, request, format=None):
+        try:
+            # 项目标识
+            project_id = request.data.get('project_id')
+            if project_id is not None:
+                project = Project.objects.get(id=project_id)
+                if project is not None:
+                    tasks = Task.objects.filter(project_id=project_id)
+                    if tasks is not None:
+                        for task in tasks:
+                            if task is not None:
+                                files = Files.objects.filter(task_id=task.id)
+                                if files is not None:
+                                    if files.count() == 0:
+                                        return MykeyResponse(status=status.HTTP_400_BAD_REQUEST,
+                                                             msg=task.name + '的参考文件为空')
+        except Exception as e:
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+
+
+class TaskAllocateReasonViewSet(ModelViewSet):
+    """
+    任务分派原因：增删改查
+    """
+    queryset = TaskAllocateReason.objects.all()
+    serializer_class = TaskAllocateReasonSerializer
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filter_fields = ('task_id', 'receiver_id')
+    ordering_fields = ('id',)
+    # permission_classes = [IsAuthenticated]
