@@ -18,8 +18,8 @@ from business.serializers.project_serializer import (
 from business.views.base import BusinessPublic
 from business.filters import ProjectFilter
 from rbac.models import UserProfile
-from configuration.models import Salary
-
+from business.models.task import Task
+from points.models.projectpoints import ProjectPoints
 
 class ProjectViewSet(ModelViewSet):
     """
@@ -372,125 +372,320 @@ class ProjectAcceptView(APIView):
                                                       messages='你有新的任务等待接手!')
 
 
+list_project_person_objects = []
 class ProjectCostAnalysisView(APIView):
     """
-    6.分析项目成本
+    分析项目人员成本
     """
-
-    def post(self, request, format=None):
+    def get(self, request, format=None):
         try:
+            list_project_person_objects.clear()
+
             project_id = request.data.get('project_id')
 
-            self.update_projectcost(project_id)
-            self.update_taskcost(project_id)
-            self.update_projectfee_cost(project_id)
-
-            queryset = ProjectCost.objects.filter(project_id=project_id)
+            self.get_project_manager_cost(project_id)
+            self.get_market_manager_cost(project_id)
+            self.get_task_manager_cost(project_id)
 
         except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败',data=list_project_person_objects)
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功',data=list_project_person_objects)
 
-    # 计算项目负责人平均工资
-    def update_projectcost(self, project_id):
+    def get_project_manager_cost(self, project_id):
+        """
+        计算项目负责人平均工资
+        """
         if project_id is not None:
             project = Project.objects.get(id=project_id)
             if project is not None:
-                # duration = project.duration
-                duration = 12
-                receiver_id = project.receiver_id
+                #计算天数
+                duration = Caltime(project.end_time,project.begin_time)
+                if project.receiver:
+                    receiver_id = project.receiver.id
 
-                user_salary = Salary.objects.get(user_id=receiver_id)
-                salary = user_salary.salary
+                    user = UserProfile.objects.get(id=receiver_id)
+                    if user:
+                        salary = user.base_salary
 
-                aveage_fee = salary / 21.75
-                aveage_fee = round(aveage_fee, 2)
+                        aveage_fee = salary / 21.75
+                        aveage_fee = round(aveage_fee, 2)
 
-                total_fee = duration * aveage_fee
-                total_fee = round(total_fee, 2)
+                        total_fee = duration * aveage_fee
+                        total_fee = round(total_fee, 2)
 
-                # self.create_cost(project.id, '', project.receiver_id, 1, project.duration,
-                #                  '平均工资', aveage_fee, total_fee)
-                self.create_cost(project.id, '', project.receiver_id, 1, 12,
-                                 '平均工资', aveage_fee, total_fee)
+                        salary_obj = {}
+                        salary_obj["project"] = self.get_project_objects(project.id)
+                        salary_obj["type"] = 0
+                        salary_obj["role"] = "项目负责人"
+                        salary_obj["person_nums"] = 1
+                        salary_obj["user"] = user.name
+                        salary_obj["duration"] = duration
+                        salary_obj["name"] = '平均工资'
+                        salary_obj["fee"] = aveage_fee
+                        salary_obj["total_fee"] = total_fee
 
-    # 计算所有任务负责人平均工资
-    def update_taskcost(self, project_id):
+                        list_project_person_objects.append(salary_obj)
+
+    def get_market_manager_cost(self, project_id):
+        """
+        计算商务人员平均工资
+        """
+        list_objects = []
+        if project_id is not None:
+            project = Project.objects.get(id=project_id)
+            if project is not None:
+                if project.sender:
+
+                    duration = Caltime(project.end_time,project.begin_time)
+                    sender_id = project.sender.id
+
+                    user = UserProfile.objects.get(id=sender_id)
+                    if user:
+                        salary = user.base_salary
+
+                        aveage_fee = salary / 21.75
+                        aveage_fee = round(aveage_fee, 2)
+
+                        total_fee = duration * aveage_fee
+                        total_fee = round(total_fee, 2)
+
+                        salary_obj = {}
+                        salary_obj["project"] = self.get_project_objects(project.id)
+                        salary_obj["type"] = 0
+                        salary_obj["role"] = "商务人员"
+                        salary_obj["person_nums"] = 1
+                        salary_obj["user"] = user.name
+                        salary_obj["duration"] = duration
+                        salary_obj["name"] = '平均工资'
+                        salary_obj["fee"] = aveage_fee
+                        salary_obj["total_fee"] = total_fee
+
+                        list_project_person_objects.append(salary_obj)
+
+    def get_task_manager_cost(self, project_id):
+        """
+        计算所有任务负责人平均工资
+        """
         if project_id is not None:
             duration = 0
 
             project = Project.objects.get(id=project_id)
             if project is not None:
-                duration = 12
-                # duration = project.duration
+                duration = Caltime(project.end_time,project.begin_time)
 
             from business.models.task import Task
-            tasks = Task.objects.filter(project_id=project_id)
+            tasks = Task.objects.filter(project_id=project_id,is_active=1)
             for task in tasks:
-                if task is not None:
-                    receiver_id = tasks.receiver_id
+                if task:
+                    if task.receiver:
+                        receiver_id = task.receiver.id
 
-                    user_salary = Salary.objects.get(user_id=receiver_id)
-                    salary = user_salary.salary
+                        user = UserProfile.objects.get(id=receiver_id)
+                        if user:
+                            salary = user.base_salary
 
-                    aveage_fee = salary / 21.75
-                    aveage_fee = round(aveage_fee, 2)
+                            aveage_fee = salary / 21.75
+                            aveage_fee = round(aveage_fee, 2)
 
-                    total_fee = duration * aveage_fee
-                    total_fee = round(total_fee, 2)
+                            total_fee = duration * aveage_fee
+                            total_fee = round(total_fee, 2)
 
-                    self.create_cost(task.id, '', task.receiver_id, 1, duration,
-                                     '平均工资', aveage_fee, total_fee)
+                            salary_obj = {}
+                            salary_obj["task"] = self.get_task_objects(task.id)
+                            salary_obj["type"] = 1
+                            salary_obj["role"] = "任务负责人"
+                            salary_obj["person_nums"] = 1
+                            salary_obj["user"] = project.receiver.name
+                            salary_obj["duration"] = project.duration
+                            salary_obj["name"] = '平均工资'
+                            salary_obj["fee"] = aveage_fee
+                            salary_obj["total_fee"] = total_fee
 
-    # 计算费用表中的费用分摊
-    def update_projectfee_cost(self, project_id):
+                            list_project_person_objects.append(salary_obj)
+
+    def get_project_objects(self,id):
+        """
+        项目信息
+        """
+        project_objects_data = []
+
+        project = Project.objects.get(id=id)
+        if project:
+            dict_obj = {}
+            dict_obj["id"] = project.id
+            dict_obj["name"] = project.name
+            dict_obj["style"] = project.style
+            dict_obj["customer"] = project.customer
+
+            if project.sender:
+                dict_obj["sender"] = project.sender.name
+            else:
+                dict_obj["sender"] = ''
+            if project.receiver:
+                dict_obj["receiver"] = project.receiver.name
+            else:
+                dict_obj["receiver"] = ''
+            if project.auditor:
+                dict_obj["auditor"] = project.auditor.name
+            else:
+                dict_obj["auditor"] = ''
+
+            dict_obj["audit_status"] = project.audit_status
+            dict_obj["receive_status"] = project.receive_status
+            dict_obj["duration"] = Caltime(project.end_time, project.begin_time)
+            dict_obj["begin_time"] = project.begin_time
+            dict_obj["end_time"] = project.end_time
+            dict_obj["add_time"] = project.add_time
+            dict_obj["points"] = project.points
+            dict_obj["progress"] = project.progress
+
+            project_objects_data.append(dict_obj)
+
+        return project_objects_data
+
+    def get_task_objects(self,id):
+        """
+        项目信息
+        """
+        task_objects_data = []
+
+        task = Task.objects.get(id=id)
+        if task:
+            dict_obj = {}
+            dict_obj["id"] = task.id
+            dict_obj["name"] = task.name
+            dict_obj["task_type"] = task.task_type.name
+            dict_obj["content"] = task.content
+            dict_obj["task_priority"] = task.task_priority.name
+            dict_obj["task_quality"] = task.task_quality.name
+            dict_obj["begin_time"] = task.begin_time
+            dict_obj["end_time"] = task.end_time
+            dict_obj["duration"] = Caltime(task.end_time, task.begin_time)
+            dict_obj["points"] = task.points
+            dict_obj["memo"] = task.memo
+            dict_obj["project"] = task.project.name
+
+            if task.sender:
+                dict_obj["sender"] = task.sender.name
+            else:
+                dict_obj["sender"] = ''
+
+            if task.receiver:
+                dict_obj["receiver"] = task.receiver.name
+            else:
+                dict_obj["receiver"] = ''
+
+            if task.auditor:
+                dict_obj["auditor"] = task.auditor.name
+            else:
+                dict_obj["auditor"] = ''
+
+            dict_obj["send_status"] = task.send_status
+            dict_obj["receive_status"] = task.receive_status
+            dict_obj["audit_status"] = task.audit_status
+            dict_obj["is_active"] = task.is_active
+            dict_obj["is_finished"] = task.is_finished
+            dict_obj["add_time"] = task.add_time
+            dict_obj["progress"] = task.progress
+
+            task_objects_data.append(dict_obj)
+
+        return task_objects_data
+
+    def get_user_objects(self,id):
+        """
+        项目信息
+        """
+        user_objects_data = []
+
+        user = UserProfile.objects.get(id=id)
+        if user:
+            dict_obj = {}
+            dict_obj["id"] = user.id
+            dict_obj["name"] = user.name
+
+            user_objects_data.append(dict_obj)
+
+        return user_objects_data
+
+class ProjectFeeCostAnalysisView(APIView):
+    """
+    分析项目费用分摊
+    """
+    def get(self, request, format=None):
+        try:
+            project_id = request.data.get('project_id')
+
+            list_project_fee_objects = self.get_projectfee_cost(project_id)
+
+        except Exception as e:
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功',data=list_project_fee_objects)
+
+    def get_projectfee_cost(self, project_id):
+        list_project_fee_objects = []
+
         if project_id is not None:
-
             project = Project.objects.get(id=project_id)
-            if project is not None:
-                duration = 12
-                # duration = project.duration
+            if project:
+                duration = Caltime(project.end_time,project.begin_time)
 
-                from business.models.task import Task
                 tasks = Task.objects.filter(project_id=project_id)
+                if tasks is not None:
+                    # 项目总人数 = 任务总人数 + 项目负责人
+                    project_person_nums = tasks.count() + 1
 
-                # 项目总人数 = 任务总人数 + 项目负责人
-                project_person_nums = tasks.count() + 1
+                    # 公司总人数
+                    #users = UserProfile.objects.filter(company_id=project.company_id)
+                    users = UserProfile.objects.all()
+                    if users:
+                        company_person_nums = users.count()
 
-                # 公司总人数
-                users = UserProfile.objects.filter(company_id=project.company_id)
-                company_person_nums = users.count()
+                        fees = ProjectFee.objects.filter(project_id=project.id)
+                        for fee in fees:
+                             aveage_fee = fee.value / company_person_nums
+                             aveage_fee = aveage_fee / 30
+                             aveage_fee = round(aveage_fee, 2)
 
-                for task in tasks:
-                    if task is not None:
-                        receiver_id = tasks.receiver_id
+                             total_fee = aveage_fee * project_person_nums * duration
+                             total_fee = round(total_fee, 2)
 
-                        fees = ProjectFee.objects.get(project_id=project.id)
-                        fee = fees.value
+                             fee_obj = {}
+                             fee_obj["id"] = ""
+                             fee_obj["person_nums"] = project_person_nums
+                             #fee_obj["user"] = ""
+                             fee_obj["duration"] = duration
+                             fee_obj["name"] = fee.name
+                             fee_obj["fee"] = aveage_fee
+                             fee_obj["total_fee"] = total_fee
 
-                        aveage_fee = fee / company_person_nums
-                        aveage_fee = aveage_fee / 30
-                        aveage_fee = round(aveage_fee, 2)
+                             list_project_fee_objects.append(fee_obj)
 
-                        total_fee = aveage_fee * project_person_nums * duration
-                        total_fee = round(total_fee, 2)
+        return list_project_fee_objects
 
-                        self.create_cost('', '', '', project_person_nums, duration, fees.name, aveage_fee,
-                                         total_fee)
+class ProjectCostAnalysisFinishedView(APIView):
+    """
+    项目成本分析完成
+    """
+    def post(self, request, format=None):
+        try:
+            project_id = request.data.get('project_id')
+            self.update_task(project_id)
+        except Exception as e:
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def create_cost(self, task_id, task_type_id, user_id, person_nums, duration, name, fee, total_fee):
-        """
-        创建成本
-        """
-        project_cost = ProjectCost(
-            task_id=task_id,
-            task_type_id=task_type_id,
-            user_id=user_id,
-            person_nums=person_nums,
-            duration=duration,
-            name=name,
-            fee=fee,
-            total_fee=total_fee
-        )
+    def update_task(self, project_id):
+        if project_id is not None:
+            projectpoints = ProjectPoints.objects.filter(project_id=project_id)
+            if projectpoints:
+                for projectpoint in projectpoints:
+                    if projectpoint:
+                        if projectpoint.task:
+                            task = Task.objects.get(id=projectpoint.task.id)
+                            task.points = projectpoint.points
+                            task.save()
 
-        project_cost.save()
+
+def Caltime(date1,date2):
+    return(date1-date2).days
