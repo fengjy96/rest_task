@@ -18,7 +18,7 @@ from business.serializers.project_serializer import (
 from business.views.base import BusinessPublic
 from business.filters import ProjectFilter
 from rbac.models import UserProfile
-from configuration.models import Salary
+from configuration.models import Salary, ProjectStatus
 
 
 class ProjectViewSet(ModelViewSet):
@@ -54,8 +54,14 @@ class ProjectViewSet(ModelViewSet):
         return ProjectSerializer
 
     def create(self, request, *args, **kwargs):
-        # 项目创建人
+        # 将当前登录用户作为项目创建人
         request.data['sender'] = request.user.id
+        # 如果存在项目负责人，则将项目接收状态置为 '已指派项目负责人'
+        if request.data.get('receiver') is not None:
+            request.data['receive_status'] = ProjectStatus.objects.get(key='assigned').id
+        # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
+        else:
+            request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -250,7 +256,7 @@ class ProjectAuditPassView(APIView):
                 # 已审核
                 project.audit_status = 2
                 # 等待项目负责人接手项目
-                project.receive_status = 2
+                project.receive_status = ProjectStatus.objects.get(key='wait_accept').id
                 # 项目积分
                 project.points = points
                 project.save()
