@@ -1,15 +1,19 @@
 from rest_framework import status
-# from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+
 from business.models.step import Step
-from business.serializers import StepSerializer, StepListSerializer
-from rest_framework.filters import OrderingFilter
+from business.serializers.step_serializer import StepSerializer, StepListSerializer, StepCreateSerializer
+from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from business.views.filters import StepFilter
+from business.filters import StepFilter
 from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 from business.models.files import Files, FeedBacks, ProgressTexts, FeedBackTexts
 from business.models.steplog import StepLog, FeedBackLog
+from common.custom import CommonPagination
 from utils.basic import MykeyResponse
 
 step_objects_data = []
@@ -18,6 +22,8 @@ file_objects_data = []
 # progresstext_objects_data = []
 feedbacklog_objects_data = []
 feedback_objects_data = []
+
+
 # feedbacktext_objects_data = []
 
 class StepViewSet(ModelViewSet):
@@ -26,7 +32,57 @@ class StepViewSet(ModelViewSet):
     """
     queryset = Step.objects.all()
     serializer_class = StepSerializer
-    # permission_classes = (IsAuthenticated,)
+    ordering_fields = ('id',)
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    # 指定筛选类
+    filter_class = StepFilter
+    # 指定分页类
+    pagination_class = CommonPagination
+    # 指定授权类
+    permission_classes = (IsAuthenticated,)
+    # 指定认证类
+    authentication_classes = (JSONWebTokenAuthentication,)
+
+    def get_serializer_class(self):
+        """
+        根据请求类型动态变更 serializer
+        :return:
+        """
+        if self.action == 'create':
+            return StepCreateSerializer
+        elif self.action == 'list':
+            return StepListSerializer
+        return StepSerializer
+
+    def create(self, request, *args, **kwargs):
+        # request.data['sender'] = request.user.id
+        # if request.data['receiver']:
+        #     request.data['receive_status'] = 1
+        # else:
+        #     request.data['receive_status'] = 0
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def update(self, request, *args, **kwargs):
+        # if request.data['receiver']:
+        #     request.data['receive_status'] = 1
+        # else:
+        #     request.data['receive_status'] = 0
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
 
 class StepListView(ListAPIView):
@@ -46,15 +102,17 @@ class StepListView(ListAPIView):
 
         return Step.objects.filter(is_active=is_active)
 
+
 class StepLogFilePreviewView(APIView):
     """
     预览以及查看反馈
     """
+
     def get(self, request, format=None):
         # 文件标识
         file_id = request.data.get('file_id')
         # 类型
-        type= request.data.get('type')
+        type = request.data.get('type')
 
         if type == 0:
             file_objects(file_id)
@@ -63,10 +121,12 @@ class StepLogFilePreviewView(APIView):
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=step_objects_data)
 
+
 class StepsLogsView(APIView):
     """
     一条步骤
     """
+
     def get(self, request, format=None):
         # 步骤标识
         step_id = request.data.get('step_id')
@@ -80,6 +140,7 @@ class StepsViewSet(APIView):
     """
     步骤以及日志
     """
+
     def get(self, request, format=None):
         # 任务标识
         task_id = request.data.get('task_id')
@@ -87,6 +148,7 @@ class StepsViewSet(APIView):
         step_objects(task_id)
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=step_objects_data)
+
 
 def step_objects(self, task_id=0):
     """
@@ -130,7 +192,6 @@ def step_objects(self, task_id=0):
         dict_obj1["is_active"] = step.is_active
         dict_obj1["is_finished"] = step.is_finished
         dict_obj1["sender"] = dict_obj5
-        dict_obj1["send_status"] = step.send_status
         dict_obj1["receiver"] = dict_obj6
         dict_obj1["receive_status"] = step.receive_status
         dict_obj1["auditor"] = dict_obj7
@@ -140,6 +201,7 @@ def step_objects(self, task_id=0):
         dict_obj1["logs"] = steplogs_objects
 
         step_objects_data.append(dict_obj1)
+
 
 def steplogs_objects(self, id=0):
     """
@@ -162,6 +224,7 @@ def steplogs_objects(self, id=0):
 
                 steplog_objects_data.append(dict_obj)
 
+
 def steplog_objects(self, id=0):
     """
     单条时间轴日志
@@ -180,6 +243,7 @@ def steplog_objects(self, id=0):
         dict_obj["files"] = file_objects_data
 
         steplog_objects_data.append(dict_obj)
+
 
 def files_objects(self, id=0):
     """
@@ -202,6 +266,7 @@ def files_objects(self, id=0):
 
                 file_objects_data.append(dict_obj)
 
+
 def file_objects(self, id=0):
     """
     单条日志文件
@@ -221,6 +286,7 @@ def file_objects(self, id=0):
 
         file_objects_data.append(dict_obj)
 
+
 def progresstext_objects(self, id=0):
     """
     进度富文本
@@ -239,6 +305,7 @@ def progresstext_objects(self, id=0):
         dict_obj["feedbacks"] = feedbacklog_objects_data
 
         file_objects_data.append(dict_obj)
+
 
 def feedbacklog_objects(self, id=0):
     """
@@ -260,6 +327,7 @@ def feedbacklog_objects(self, id=0):
 
                 feedbacklog_objects_data.append(dict_obj)
 
+
 def feedback_objects(self, id=0):
     """
     反馈文件
@@ -277,6 +345,7 @@ def feedback_objects(self, id=0):
                 dict_obj["add_time"] = feedback.add_time
 
                 feedback_objects_data.append(dict_obj)
+
 
 def feedbacktext_objects(self, id=0):
     """

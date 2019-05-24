@@ -3,11 +3,47 @@ from django.db import models
 from rbac.models import Company, UserProfile
 
 
+class ProjectStatus(models.Model):
+    """
+    项目状态
+    """
+    index = models.IntegerField(verbose_name='排序')
+    value = models.IntegerField(verbose_name='状态真实序号')
+    key = models.CharField(max_length=30, verbose_name='状态英文表示')
+    text = models.CharField(max_length=30, verbose_name='状态中文表示')
+    desc = models.CharField(max_length=50, null=True, blank=True, verbose_name='状态描述')
+
+    def __str__(self):
+        return self.text
+
+    class Meta:
+        verbose_name = '项目状态'
+        verbose_name_plural = verbose_name
+
+
+class TaskStatus(models.Model):
+    """
+    任务状态
+    """
+    index = models.IntegerField(verbose_name='排序')
+    value = models.IntegerField(verbose_name='状态真实序号')
+    key = models.CharField(max_length=30, verbose_name='状态英文表示')
+    text = models.CharField(max_length=30, verbose_name='状态中文表示')
+    desc = models.CharField(max_length=50, null=True, blank=True, verbose_name='状态描述')
+
+    def __str__(self):
+        return self.text
+
+    class Meta:
+        verbose_name = '任务状态'
+        verbose_name_plural = verbose_name
+
+
 class TaskType(models.Model):
     """
     任务类型
     """
-    company = models.ForeignKey(Company, verbose_name='公司标识', on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     name = models.CharField(max_length=30, verbose_name='类型名称')
     index = models.IntegerField(verbose_name='类型序号')
     is_active = models.IntegerField(verbose_name='是否激活')
@@ -24,7 +60,7 @@ class TaskPriority(models.Model):
     """
     任务优先级模型
     """
-    company = models.ForeignKey(Company, verbose_name='公司标识', on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     name = models.CharField(max_length=30, verbose_name='优先级名称')
     index = models.IntegerField(verbose_name='优先级序号')
     weight = models.FloatField(verbose_name='权重')
@@ -43,7 +79,7 @@ class TaskQuality(models.Model):
     """
     任务品质要求表模型
     """
-    company = models.ForeignKey(Company, verbose_name='公司标识', on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     name = models.CharField(max_length=30, verbose_name='品质要求名称')
     index = models.IntegerField(verbose_name='品质要求序号')
     weight = models.FloatField(verbose_name='权重')
@@ -64,7 +100,7 @@ class TaskAssessment(models.Model):
     """
     name = models.CharField(max_length=20, verbose_name='评级名称')
     index = models.IntegerField(verbose_name='评级序号')
-    company = models.ForeignKey(Company, verbose_name='公司标识', on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     weight = models.FloatField(verbose_name='权重')
 
     is_active = models.IntegerField(verbose_name='是否激活')
@@ -81,8 +117,8 @@ class TaskDesignType(models.Model):
     """
     任务设计方式
     """
-    company = models.ForeignKey(Company, verbose_name='公司标识', on_delete=models.CASCADE)
-    task_type = models.ForeignKey(TaskType, verbose_name='任务类型标识', on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
+    task_type = models.ForeignKey(TaskType, null=True, blank=True, verbose_name='任务类型标识', on_delete=models.CASCADE)
     name = models.CharField(max_length=80, verbose_name='设计方式名称')
     index = models.IntegerField(verbose_name='设计方式序号')
 
@@ -100,10 +136,10 @@ class TaskStep(models.Model):
     """
     任务步骤表模型
     """
-    company = models.ForeignKey(Company, verbose_name='公司标识', on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     name = models.CharField(max_length=80, verbose_name='任务步骤名称')
-    task_type = models.ForeignKey(TaskType, verbose_name='任务类型标识', on_delete=models.CASCADE)
-    task_design_type = models.ForeignKey(TaskDesignType, verbose_name='任务设计方式标识', on_delete=models.CASCADE)
+    task_type = models.ForeignKey(TaskType, null=True, blank=True, verbose_name='任务类型标识', on_delete=models.CASCADE)
+    task_design_type = models.ForeignKey(TaskDesignType, null=True, blank=True, verbose_name='任务设计方式标识', on_delete=models.CASCADE)
     index = models.IntegerField(verbose_name='步骤序号')
 
     is_active = models.IntegerField(verbose_name='是否激活')
@@ -120,7 +156,7 @@ class Salary(models.Model):
     """
     用户薪水
     """
-    user = models.ForeignKey(UserProfile, verbose_name='用户标识', on_delete=models.CASCADE)
+    user = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='用户标识', on_delete=models.CASCADE)
     wage = models.FloatField(verbose_name='工资')
     is_active = models.IntegerField(verbose_name='是否激活', default=1)
 
@@ -136,8 +172,8 @@ class Skill(models.Model):
     """
     用户技能
     """
-    user = models.ForeignKey(UserProfile, verbose_name='用户标识', on_delete=models.CASCADE)
-    task_type = models.ForeignKey(TaskType, verbose_name='技能标识', on_delete=models.CASCADE)
+    user = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='用户标识', on_delete=models.CASCADE)
+    task_type = models.ForeignKey(TaskType, null=True, blank=True, verbose_name='技能标识', on_delete=models.CASCADE)
     is_active = models.IntegerField(verbose_name='是否激活', default=1)
 
     def __str__(self):

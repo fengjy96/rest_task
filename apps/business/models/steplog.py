@@ -1,12 +1,12 @@
 from django.db import models
 from business.models.step import Step
-from datetime import datetime
+
 
 class StepLog(models.Model):
     """
     步骤日志模型
     """
-    step = models.ForeignKey(Step, verbose_name='步骤标识', on_delete=models.CASCADE)
+    step = models.ForeignKey(Step, null=True, blank=True, verbose_name='步骤标识', on_delete=models.CASCADE)
     title = models.CharField(default='',max_length=150, verbose_name='标题')
     progress = models.IntegerField(default=0, verbose_name='进度')
     memo = models.CharField(default='',max_length=300, verbose_name='备注')

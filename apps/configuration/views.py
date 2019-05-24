@@ -1,12 +1,49 @@
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.viewsets import ModelViewSet
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from configuration.models import (
     TaskStep, TaskAssessment, TaskPriority, TaskQuality,
-    TaskDesignType, TaskType, Skill, Salary)
+    TaskDesignType, TaskType, Skill, Salary, ProjectStatus, TaskStatus)
 from .serializers import (
     TaskTypeSerializer, TaskStepSerializer, TaskAssessmentSerializer,
-    TaskPrioritySerializer, TaskQualitySerializer, TaskDesignTypeSerializer, SkillSerializer, SalarySerializer)
+    TaskPrioritySerializer, TaskQualitySerializer, TaskDesignTypeSerializer, SkillSerializer, SalarySerializer,
+    ProjectStatusSerializer, TaskStatusSerializer)
+
+
+class ProjectStatusViewSet(ModelViewSet):
+    """
+    项目状态：增删改查
+    """
+
+    # 获取查询集
+    queryset = ProjectStatus.objects.all()
+    serializer_class = ProjectStatusSerializer
+    # 指定过滤 backends
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering_fields = ('index',)
+    # 指定授权类
+    permission_classes = (IsAuthenticated,)
+    # 指定认证类
+    authentication_classes = (JSONWebTokenAuthentication,)
+
+
+class TaskStatusViewSet(ModelViewSet):
+    """
+    任务状态：增删改查
+    """
+
+    queryset = TaskStatus.objects.all()
+    serializer_class = TaskStatusSerializer
+    # 指定过滤 backends
+    filter_backends = (DjangoFilterBackend, OrderingFilter,)
+    ordering_fields = ('index',)
+    # 指定授权类
+    permission_classes = (IsAuthenticated,)
+    # 指定认证类
+    authentication_classes = (JSONWebTokenAuthentication,)
 
 
 class TaskTypeViewSet(ModelViewSet):
@@ -60,6 +97,8 @@ class TaskDesignTypeViewSet(ModelViewSet):
     """
     queryset = TaskDesignType.objects.all()
     serializer_class = TaskDesignTypeSerializer
+    filter_backends = (DjangoFilterBackend,)
+    filter_fields = ('task_type_id',)
     permission_classes = (IsAuthenticated,)
 
 
