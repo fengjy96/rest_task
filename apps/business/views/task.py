@@ -9,8 +9,7 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from common.custom import CommonPagination
 from rbac.models import UserProfile
 from business.models.task import Task, TaskAllocateReason
-from business.serializers.task_serializer import TaskSerializer, TaskListSerializer, TaskAllocateReasonSerializer, \
-    TaskCreateSerializer
+from business.serializers.task_serializer import TaskSerializer, TaskListSerializer, TaskAllocateReasonSerializer
 from utils.basic import MykeyResponse
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -19,6 +18,7 @@ from business.views.base import BusinessPublic
 from business.models.project import Project
 from business.models.files import Files
 from configuration.models import ProjectStatus
+
 
 class TaskViewSet(ModelViewSet):
     """
@@ -43,9 +43,8 @@ class TaskViewSet(ModelViewSet):
         根据请求类型动态变更 serializer
         :return:
         """
-        if self.action == 'create':
-            return TaskCreateSerializer
-        elif self.action == 'list':
+
+        if self.action == 'list':
             return TaskListSerializer
         return TaskSerializer
 
@@ -123,7 +122,8 @@ class TaskReceiverView(APIView):
                         dict_obj1["end_time"] = task.end_time
                         dict_obj1["leftdays"] = 12
                         # dict_obj1["leftdays"] = task.duration
-                        dict_obj1["receive_status"] = task.receive_status
+                        # FIXME:
+                        dict_obj1["receive_status"] = task.receive_status.index
                         list_objects.append(dict_obj1)
             else:
                 dict_obj2 = {}
@@ -319,7 +319,7 @@ class TaskAllocateView(APIView):
                 step.save()
 
 
-class TaskFileisEmptyViewSet(ModelViewSet):
+class TaskFileIsEmptyViewSet(ModelViewSet):
     """
     判断参考文件是否存在为空
     """
