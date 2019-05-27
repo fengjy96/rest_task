@@ -83,7 +83,7 @@ class BusinessPublic:
                 project=project,
                 reason=reason,
                 transfer_nums=transfer_nums,
-                sender=receiver,
+                sender=sender,
                 receiver=receiver
             )
 

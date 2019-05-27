@@ -20,6 +20,7 @@ from business.filters import ProjectFilter
 from rbac.models import UserProfile
 from business.models.task import Task
 from points.models.projectpoints import ProjectPoints
+from configuration.models import Salary, ProjectStatus, TaskStatus
 
 class ProjectViewSet(ModelViewSet):
     """
@@ -54,8 +55,14 @@ class ProjectViewSet(ModelViewSet):
         return ProjectSerializer
 
     def create(self, request, *args, **kwargs):
-        # 项目创建人
+        # 将当前登录用户作为项目创建人
         request.data['sender'] = request.user.id
+        # 如果存在项目负责人，则将项目接收状态置为 '已指派项目负责人'
+        if request.data.get('receiver') is not None:
+            request.data['receive_status'] = ProjectStatus.objects.get(key='assigned').id
+        # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
+        else:
+            request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -162,8 +169,12 @@ class ProjectRejectReasonViewSet(ModelViewSet):
     """
     项目拒绝原因：增删改查
     """
+
     queryset = ProjectRejectReason.objects.all()
     serializer_class = ProjectRejectReasonSerializer
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    ordering = ('-add_time',)
+    filter_fields = ('project_id',)
     permission_classes = (IsAuthenticated,)
 
 
@@ -250,7 +261,7 @@ class ProjectAuditPassView(APIView):
                 # 已审核
                 project.audit_status = 2
                 # 等待项目负责人接手项目
-                project.receive_status = 2
+                project.receive_status = ProjectStatus.objects.get(key='wait_accept')
                 # 项目积分
                 project.points = points
                 project.save()
@@ -282,7 +293,7 @@ class ProjectAuditPassView(APIView):
                         task.auditor_id = project.receiver_id
                     if task.receiver_id is not None:
                         # 等待任务负责人接手任务
-                        task.receive_status = 2
+                        task.receive_status = TaskStatus.objects.get(key='wait_accept')
                         task.save()
 
                         self.update_step(task.id)
@@ -296,7 +307,7 @@ class ProjectAuditPassView(APIView):
             steps = Step.objects.filter(task_id=task_id)
             for step in steps:
                 if step.receiver_id is not None:
-                    step.receive_status = 2
+                    # step.receive_status = 2
                     step.save()
 
 
@@ -315,7 +326,8 @@ class ProjectAuditRejectView(APIView):
             self.update_project(project_id, reason)
 
         except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
     def update_project(self, project_id, reason):
@@ -326,9 +338,9 @@ class ProjectAuditRejectView(APIView):
                 project.audit_status = 3
                 project.save()
 
-                BusinessPublic.create_reason(project.id, project.sender_id, project.receiver_id,
+                BusinessPublic.create_reason(project.id, project.auditor_id, project.sender_id,
                                              'ProjectRejectReason', reason)
-                BusinessPublic.create_message(project.sender_id, project.receiver_id, menu_id=2,
+                BusinessPublic.create_message(project.auditor_id, project.sender_id, menu_id=2,
                                               messages='你的项目已被驳回，请尽快处理!')
 
 
@@ -351,7 +363,7 @@ class ProjectAcceptView(APIView):
             project = Project.objects.get(id=project_id)
             if project is not None:
                 # 项目负责人已接手,项目正式开始
-                project.receive_status = 3
+                project.receive_status = ProjectStatus.objects.get(key='accepted')
                 project.save()
                 BusinessPublic.create_message(project.receiver_id, project.auditor_id, menu_id=2,
                                               messages='项目负责人已接手，项目正式开始!')
@@ -364,7 +376,7 @@ class ProjectAcceptView(APIView):
             for task in tasks:
                 if task is not None:
                     # 项目负责人已接手，项目正式开始
-                    task.receive_status = 2
+                    task.receive_status = TaskStatus.objects.get(key='wait_accept')
                     if task.receiver_id is not None:
                         task.save()
 
@@ -373,6 +385,39 @@ class ProjectAcceptView(APIView):
 
 
 list_project_person_objects = []
+class ProjectRejectView(APIView):
+    """
+    项目拒接
+    """
+
+    def post(self, request, format=None):
+        try:
+            # 项目标识
+            project_id = request.data.get('project_id')
+            # 驳回原因
+            reason = request.data.get('reason') or ''
+
+            self.update_project(project_id, reason)
+
+        except Exception as e:
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+
+    def update_project(self, project_id, reason):
+        if project_id is not None:
+            project = Project.objects.get(id=project_id)
+            if project is not None:
+                # 拒接
+                project.receive_status = ProjectStatus.objects.get(key='rejected')
+                project.save()
+
+                BusinessPublic.create_reason(project.id, project.receiver_id, project.auditor_id,
+                                             'ProjectRejectReason', reason)
+                BusinessPublic.create_message(project.receiver_id, project.auditor_id, menu_id=2,
+                                              messages='你的项目已被驳回，请尽快处理!')
+
+
 class ProjectCostAnalysisView(APIView):
     """
     分析项目人员成本

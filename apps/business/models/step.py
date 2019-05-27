@@ -23,7 +23,7 @@ class Step(models.Model):
 
     sender = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='发送者', on_delete=models.CASCADE, related_name='step_sender')
     receiver = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='接收者', on_delete=models.CASCADE, related_name='step_receiver')
-    receive_status = models.IntegerField(default=0, verbose_name='接收状态')
+    # receive_status = models.IntegerField(default=0, verbose_name='接收状态')
     auditor = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='审核员', on_delete=models.CASCADE, related_name='step_auditor')
     audit_status = models.IntegerField(default=0, verbose_name='审核状态')
 

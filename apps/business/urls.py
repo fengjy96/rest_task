@@ -36,6 +36,8 @@ urlpatterns = [
     path(r'api/v1/project/cost/analysis', project.ProjectCostAnalysisView.as_view(), name='project_cost_analysis'),
     # 接手项目
     path(r'api/v1/project/accept', project.ProjectAcceptView.as_view(), name='project_accept'),
+    # 拒接项目
+    path(r'api/v1/project/reject', project.ProjectRejectView.as_view(), name='project_reject'),
     # 接手任务
     path(r'api/v1/task/accept', task.TaskAcceptView.as_view(), name='task_accept'),
     # 任务拒接
