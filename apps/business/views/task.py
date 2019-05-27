@@ -64,7 +64,13 @@ class TaskViewSet(ModelViewSet):
 
         # 如果创建任务时指定了任务负责人，则任务接收状态为 1 - 已安排任务负责人
         if request.data.get('receiver', None):
-            request.data['receive_status'] = GetIdByKey('assigned')
+            if project_id is not None:
+                # 根据项目 id 查项目审核状态
+                project = Project.objects.get(id=project_id)
+                if project.audit_status == 2:
+                    request.data['receive_status'] = GetIdByKey('wait_accept')
+            else:
+                request.data['receive_status'] = GetIdByKey('assigned')
         # 如果创建任务时未指定任务负责人，则任务接收状态为 0 - 未安排任务负责人
         else:
             request.data['receive_status'] = GetIdByKey('unassigned')
@@ -76,7 +82,14 @@ class TaskViewSet(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         if request.data.get('receiver', None):
-            request.data['receive_status'] = GetIdByKey('assigned')
+            project_id = request.data.get('project', None)
+            if project_id is not None:
+                # 根据项目 id 查项目审核状态
+                project = Project.objects.get(id=project_id)
+                if project.audit_status == 2:
+                    request.data['receive_status'] = GetIdByKey('wait_accept')
+                else:
+                    request.data['receive_status'] = GetIdByKey('assigned')
         else:
             request.data['receive_status'] = GetIdByKey('unassigned')
         partial = kwargs.pop('partial', False)
@@ -91,6 +104,65 @@ class TaskViewSet(ModelViewSet):
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        queryset = self.filter_list_queryset(request, queryset)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def filter_list_queryset(self, request, queryset):
+        """
+        根据用户所属角色过滤查询集
+        :param request:
+        :param queryset:
+        :return:
+        """
+        # 过滤已激活的项目数据
+        queryset = queryset.filter(is_active=1)
+
+        # 定义空的数据集
+        emptyQuerySet = self.queryset.filter(is_active=999)
+        queryset_task_auditor = emptyQuerySet
+        queryset_project_manager = emptyQuerySet
+        queryset_business_manager = emptyQuerySet
+
+        # 获取当前用户 id
+        user_id = request.user.id
+        # 获取当前用户所属角色 id 列表
+        user_role_ids = self.get_user_roles(user_id)
+
+        # 如果当前用户拥有管理员权限，则不做特殊处理
+        if 1 in user_role_ids:
+            pass
+        else:
+            # 如果当前用户拥有任务负责人权限，则返回与该任务负责人关联的项目数据
+            if 6 in user_role_ids:
+                queryset_project_manager = queryset.filter(receiver_id=user_id)
+            # 如果当前用户拥有任务审核员（项目负责人）权限，则返回与该任务审核员（项目负责人）关联的项目数据
+            if 7 in user_role_ids:
+                queryset_task_auditor = queryset.filter(auditor_id=user_id)
+            # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
+            if 8 in user_role_ids:
+                queryset_business_manager = queryset.filter(sender_id=user_id)
+
+            queryset = queryset_task_auditor | queryset_project_manager | queryset_business_manager
+
+        return queryset
+
+    def get_user_roles(self, user_id):
+        if user_id is not None:
+            user = UserProfile.objects.get(id=user_id)
+            user_roles = user.roles.all()
+            user_role_ids = set(map(lambda user_role: user_role.id, user_roles))
+            return user_role_ids
 
 
 class TaskReceiverView(APIView):

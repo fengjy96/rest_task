@@ -21,7 +21,7 @@ class TaskListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Task
         fields = '__all__'
-        depth = 1
+        depth = 2
 
 
 class TaskAllocateReasonSerializer(serializers.ModelSerializer):
