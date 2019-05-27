@@ -1,16 +1,19 @@
 from django.db import models
-
 from rbac.models import UserProfile
-
+from business.models.project import Project
+from business.models.task import Task
+from rbac.models import Role
 
 class ProjectPoints(models.Model):
     """
-    积分表模型
+    项目积分表模型
     """
-    user = models.ForeignKey(to=UserProfile, verbose_name='用户标识', on_delete=models.CASCADE)
-    points = models.IntegerField(verbose_name='积分')
-    link_id = models.IntegerField(verbose_name='项目或者任务标识')
-    type_id = models.IntegerField(verbose_name='积分类型')
+    user = models.ForeignKey(to=UserProfile, verbose_name='用户标识', on_delete=models.CASCADE, related_name='project_points_user_id')
+    project = models.ForeignKey(to=Project, verbose_name='项目标识', on_delete=models.CASCADE, related_name='project_points_project_id')
+    task = models.ForeignKey(to=Task, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE, related_name='project_points_task_id')
+    role = models.ForeignKey(to=Role, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE,related_name='project_points_task_id')
+    points = models.IntegerField(default=0, verbose_name='积分')
+    type_id = models.IntegerField(default=0, verbose_name='积分类型')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
 
     def __str__(self):

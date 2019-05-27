@@ -11,7 +11,7 @@ from business.filters import FilesFilter
 #from business.views.forms import UploadFileForm
 from rest_framework.generics import ListAPIView
 from django.conf import settings
-from business.models.steplog import StepLog,FeedBackLog
+from business.models.steplog import StepLog,FeedBackLog,TaskLog
 import os
 import uuid
 
@@ -41,13 +41,57 @@ class FilesListViewSet(ListAPIView):
 
         return Files.objects.filter(is_active=is_active)
 
-
-class StepLogFilesListViewSet(ListAPIView):
+class AddTaskLogFiles(views.APIView):
     """
-    文件：查询反馈信息
+    上传多个文件
     """
-    pass
+    def post(self, request):
+        try:
+         # 任务标识
+         task_id = request.data.get('task_id')
+         # 标题
+         title = request.data.get('title')
+         # 备注
+         memo = request.data.get('memo')
 
+         #增加步骤日志
+         if task_id is not None and title is not None and memo is not None:
+             tasklog = TaskLog(task_id=task_id,title=title,memo=memo)
+             tasklog.save()
+
+             #获取用户上传的文件,保存到服务器,再添加到数据库
+             files = request.FILES.getlist('file')
+             #判断文件列表是否存在文件
+             if len(files) > 0:
+                 #判断上传路径是否存在，不存在则创建
+                 if not os.path.exists(settings.MEDIA_ROOT):
+                     os.makedirs(settings.MEDIA_ROOT)
+                 #遍历用户上传的文件列表
+                 upload_files = []
+                 for file in files:
+                     #获取文件反缀名
+                     extension = os.path.splitext(file.name)[1]
+                     #通过uuid重命名上传的文件
+                     filename = '{}{}'.format(uuid.uuid4(),extension)
+                     #构建文件路径
+                     file_path = '{}/{}'.format(settings.MEDIA_ROOT,filename)
+                     #将上传的文件路径存储到upload_files中
+                     #注意这样要构建相对路径MEDIA_URL+filename,这里可以保存到数据库
+                     upload_files.append('{}{}'.format(settings.MEDIA_URL,filename))
+                     #保存文件
+                     with open(file_path,'wb') as f:
+                         for c in file.chunks():
+                             f.write(c)
+                         f.close()
+
+                     #增加文件
+                     file_ = Files(tasklog_id=tasklog.id,name=filename,path=file_path)
+                     file_.save()
+
+        except Exception as e:
+           return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
 class AddStepLogFiles(views.APIView):
     """
@@ -80,7 +124,7 @@ class AddStepLogFiles(views.APIView):
                      progresstexts.save()
 
              #获取用户上传的文件,保存到服务器,再添加到数据库
-             files = request.files.getlist('file')
+             files = request.FILES.getlist('file')
              #判断文件列表是否存在文件
              if len(files) > 0:
                  #判断上传路径是否存在，不存在则创建
@@ -115,7 +159,7 @@ class AddStepLogFiles(views.APIView):
 
 
 
-class AddFeeBackLogFiles(views.APIView):
+class AddFeedBackLogFiles(views.APIView):
     """
     上传多个文件
     """
@@ -144,7 +188,7 @@ class AddFeeBackLogFiles(views.APIView):
                      feedbacktexts.save()
 
              #获取用户上传的文件,保存到服务器,再添加到数据库
-             files = request.files.getlist('file')
+             files = request.FILES.getlist('file')
              #判断文件列表是否存在文件
              if len(files) > 0:
                  #判断上传路径是否存在，不存在则创建
@@ -181,7 +225,7 @@ class FileDownloadView(views.APIView):
     # 下载文件
     def get(self, request):
         filename = request.data.get('filename')
-        filepath_ = os.path.abspath(os.path.join(os.getcwd(), 'uploadfiles')) + '/' + 'qrcode_for_gh_0ac60a1b8cd2_258.jpg'
+        filepath_ = os.path.abspath(os.path.join(os.getcwd(), 'uploadfiles')) + '/' + filename
         if os.path.isfile(filepath_):
             pass
 

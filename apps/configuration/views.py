@@ -25,7 +25,7 @@ class ProjectStatusViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering_fields = ('index',)
     # 指定授权类
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
     # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
@@ -41,7 +41,7 @@ class TaskStatusViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend, OrderingFilter,)
     ordering_fields = ('index',)
     # 指定授权类
-    permission_classes = (IsAuthenticated,)
+    # permission_classes = (IsAuthenticated,)
     # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
