@@ -48,7 +48,7 @@ class StepFilter(django_filters.rest_framework.FilterSet):
 class FilesFilter(django_filters.rest_framework.FilterSet):
     class Meta:
         model = Files
-        fields = ['task', 'steplog']
+        fields = ['tasklog', 'steplog']
 
 
 class MessageFilter(django_filters.rest_framework.FilterSet):

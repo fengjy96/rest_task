@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 # 密钥，用于 hash 算法
 SECRET_KEY = 'x^*!*=ao%3t2ay-0zw-21!&oz=%4gwu0=&*omt@zi%3t^dyd8!'
 
-# 是否开启 DEBUDG 模式（生产环境中需要关闭）
+# 是否开启 DEBUG 模式（生产环境中需要关闭）
 DEBUG = True
 
 # 一个字符串列表，用来表示 Django 站点可以服务的 host/domain

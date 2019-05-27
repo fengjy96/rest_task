@@ -1,16 +1,16 @@
 from django.db import models
 from business.models.task import Task
-from business.models.steplog import StepLog, FeedBackLog
+from business.models.steplog import StepLog, FeedBackLog, TaskLog
 
 
 class Files(models.Model):
     """
     文件模型
     """
-    task = models.ForeignKey(Task, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE)
-    steplog = models.ForeignKey(StepLog, null=True, blank=True, verbose_name='日志标识', on_delete=models.CASCADE)
-    name = models.CharField(default='', max_length=150, verbose_name='文件名称')
-    path = models.CharField(default='', max_length=300, verbose_name='文件路径')
+    tasklog = models.ForeignKey(TaskLog, null=True, blank=True,verbose_name='任务日志标识', on_delete=models.CASCADE)
+    steplog = models.ForeignKey(StepLog, null=True, blank=True,verbose_name='步骤日志标识', on_delete=models.CASCADE)
+    name = models.CharField(default='',max_length=150, verbose_name='文件名称')
+    path = models.CharField(default='',max_length=300, verbose_name='文件路径')
     type = models.IntegerField(default=1, verbose_name='类型')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
@@ -29,7 +29,7 @@ class ProgressTexts(models.Model):
     """
     steplog = models.ForeignKey(StepLog, null=True, blank=True, verbose_name='日志标识', on_delete=models.CASCADE)
     type = models.IntegerField(default=0, verbose_name='类型')
-    content = models.TextField(default='', max_length=80, verbose_name='内容')
+    content = models.TextField(default='', verbose_name='内容')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
@@ -45,9 +45,10 @@ class FeedBacks(models.Model):
     """
     反馈文件模型
     """
-    feedbacklog = models.ForeignKey(FeedBackLog, null=True, blank=True, verbose_name='日志文件标识', on_delete=models.CASCADE)
-    name = models.CharField(default='', max_length=150, verbose_name='文件名称')
-    path = models.CharField(default='', max_length=300, verbose_name='文件路径')
+    feedbacklog = models.ForeignKey(FeedBackLog, null=True, blank=True,verbose_name='日志文件标识', on_delete=models.CASCADE)
+    name = models.CharField(default='',max_length=150, verbose_name='文件名称')
+    path = models.CharField(default='',max_length=300, verbose_name='文件路径')
+    type = models.IntegerField(default=1, verbose_name='类型')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
@@ -62,7 +63,7 @@ class FeedBackTexts(models.Model):
     """
     feedbacklog = models.ForeignKey(FeedBackLog, null=True, blank=True, verbose_name='日志文件标识', on_delete=models.CASCADE)
     type = models.IntegerField(default=0, verbose_name='类型')
-    content = models.TextField(default='', max_length=80, verbose_name='内容')
+    content = models.TextField(default='', verbose_name='内容')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
