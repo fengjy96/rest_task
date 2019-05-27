@@ -38,6 +38,12 @@ urlpatterns = [
     path(r'api/v1/project/accept', project.ProjectAcceptView.as_view(), name='project_accept'),
     # 拒接项目
     path(r'api/v1/project/reject', project.ProjectRejectView.as_view(), name='project_reject'),
+    # 项目验收提交
+    path(r'api/v1/project/check/submit', project.ProjectCheckSubmitView.as_view(), name='project_check_submit'),
+    # 项目验收通过
+    path(r'api/v1/project/check/pass', project.ProjectCheckPassView.as_view(), name='project_check_pass'),
+    # 项目验收不通过
+    path(r'api/v1/project/check/reject', project.ProjectCheckRejectView.as_view(), name='project_check_reject'),
     # 接手任务
     path(r'api/v1/task/accept', task.TaskAcceptView.as_view(), name='task_accept'),
     # 任务拒接
