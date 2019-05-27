@@ -421,19 +421,19 @@ class ProjectRejectView(APIView):
                                               messages='你的项目已被驳回，请尽快处理!')
 
 
-class ProjectCheckSubmit(APIView):
+class ProjectCheckSubmitView(APIView):
     """
     项目验收提交
     """
 
 
-class ProjectCheckReject(APIView):
+class ProjectCheckRejectView(APIView):
     """
     项目验收不通过
     """
 
 
-class ProjectCheckPass(APIView):
+class ProjectCheckPassView(APIView):
     """
     项目验收成功
     """
