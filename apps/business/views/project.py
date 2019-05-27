@@ -22,6 +22,7 @@ from business.models.task import Task
 from points.models.projectpoints import ProjectPoints
 from configuration.models import Salary, ProjectStatus, TaskStatus
 
+
 class ProjectViewSet(ModelViewSet):
     """
     项目：增删改查
@@ -385,6 +386,8 @@ class ProjectAcceptView(APIView):
 
 
 list_project_person_objects = []
+
+
 class ProjectRejectView(APIView):
     """
     项目拒接
@@ -416,6 +419,24 @@ class ProjectRejectView(APIView):
                                              'ProjectRejectReason', reason)
                 BusinessPublic.create_message(project.receiver_id, project.auditor_id, menu_id=2,
                                               messages='你的项目已被驳回，请尽快处理!')
+
+
+class ProjectCheckSubmit(APIView):
+    """
+    项目验收提交
+    """
+
+
+class ProjectCheckReject(APIView):
+    """
+    项目验收不通过
+    """
+
+
+class ProjectCheckPass(APIView):
+    """
+    项目验收成功
+    """
 
 
 class ProjectCostAnalysisView(APIView):
@@ -653,6 +674,7 @@ class ProjectCostAnalysisView(APIView):
 
         return user_objects_data
 
+
 class ProjectFeeCostAnalysisView(APIView):
     """
     分析项目费用分摊
@@ -707,6 +729,7 @@ class ProjectFeeCostAnalysisView(APIView):
                              list_project_fee_objects.append(fee_obj)
 
         return list_project_fee_objects
+
 
 class ProjectCostAnalysisFinishedView(APIView):
     """
