@@ -18,7 +18,7 @@ from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
 from business.models.files import Files
-from configuration.models import ProjectStatus
+
 
 class TaskViewSet(ModelViewSet):
     """
@@ -63,12 +63,12 @@ class TaskViewSet(ModelViewSet):
             if project_receiver_id is not None:
                 request.data['auditor'] = project_receiver_id
 
-        # 如果创建任务时指定了任务负责人，则任务接收状态为 1 - 已安排任务负责人
+        # 如果创建任务时指定了任务负责人，则任务接收状态为: 已安排任务负责人
         if request.data.get('receiver', None):
-            request.data['receive_status'] = GetIdByKey('assigned')
-        # 如果创建任务时未指定任务负责人，则任务接收状态为 0 - 未安排任务负责人
+            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
+        # 如果创建任务时未指定任务负责人，则任务接收状态为: 未安排任务负责人
         else:
-            request.data['receive_status'] = GetIdByKey('unassigned')
+            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -77,9 +77,9 @@ class TaskViewSet(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         if request.data.get('receiver', None):
-            request.data['receive_status'] = GetIdByKey('assigned')
+            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
         else:
-            request.data['receive_status'] = GetIdByKey('unassigned')
+            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -109,7 +109,7 @@ class TaskReceiverView(APIView):
 
         for user in users:
             # tasks = Task.objects.filter(receiver_id=user.id, is_active=1, receive_status__lte=3)
-            tasks = Task.objects.filter(~Q(receive_status=GetIdByKey('accepted')), receiver_id=user.id, is_active=1)
+            tasks = Task.objects.filter(~Q(receive_status=BusinessPublic.GetTaskStatusIdByKey('accepted')), receiver_id=user.id, is_active=1)
 
             if len(tasks) > 0:
                 for task in tasks:
@@ -163,10 +163,10 @@ class TaskAcceptView(APIView):
             task = Task.objects.get(id=task_id)
             if task is not None:
                 # 任务负责人已接手,任务执行中
-                task.receive_status = GetIdByKey('accepted')
+                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('accepted')
                 task.save()
                 self.create_step(task_id, task_design_type_id)
-                BusinessPublic.create_message(task.receiver_id, task.sender_id, menu_id=2,
+                BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='任务负责人已接手,任务执行中!')
 
     def create_step(self, task_id, task_design_type_id):
@@ -211,15 +211,15 @@ class TaskRejectView(APIView):
             task = Task.objects.get(id=task_id)
             if task is not None:
                 # 任务负责人已拒接手
-                task.receive_status = GetIdByKey('rejected')
+                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('rejected')
                 task.save()
-                BusinessPublic.create_message(task.receiver_id, task.sender_id, menu_id=2,
+                BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='任务负责人已拒接!')
 
 
 class TaskAuditSubmitView(APIView):
     """
-    任务提交审核
+    任务提交验收
     """
 
     def post(self, request, format=None):
@@ -237,16 +237,15 @@ class TaskAuditSubmitView(APIView):
             from business.models.task import Task
             task = Task.objects.get(id=task_id)
             if task is not None:
-                # 审核中
-                task.audit_status = 1
+                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_check')
                 task.save()
-                BusinessPublic.create_message(task.receiver_id, task.sender_id,
-                                              '有新的任务需要你的审核，请尽快处理!')
+                BusinessPublic.create_message(task.receiver.id, task.sender.id,menu_id=2,
+                                              messages='有新的任务需要你的验收，请尽快处理!')
 
 
 class TaskAuditSuccessView(APIView):
     """
-    任务审核通过
+    任务验收通过
     """
 
     def post(self, request, format=None):
@@ -264,13 +263,11 @@ class TaskAuditSuccessView(APIView):
             from business.models.task import Task
             task = Task.objects.get(id=task_id)
             if task is not None:
-                # 审核通过
-                task.audit_status = 2
                 # 任务已完成
-                task.receive_status = GetIdByKey('finished')
+                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('finished')
                 task.save()
-                BusinessPublic.create_message(task.receiver_id, task.sender_id,
-                                              '任务已通过审核!')
+                BusinessPublic.create_message(task.receiver.id, task.sender.id,menu_id=2,
+                                              messages='任务已通过验收!')
 
 
 class TaskAllocateView(APIView):
@@ -300,22 +297,26 @@ class TaskAllocateView(APIView):
             from business.models.task import Task
             task = Task.objects.get(id=task_id)
             if task is not None:
-                task.receiver = receiver_id
-                task.receive_status = GetIdByKey('wait_accept')
+                receiver = UserProfile.objects.get(id=receiver_id)
+                task.receiver = receiver
+                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
                 task.save()
 
-                BusinessPublic.create_reason(task_id, task.sender_id, task.receiver_id,
-                                             'TaskAllocateReason', reason)
-                BusinessPublic.create_message(task.receiver_id, task.sender_id,
-                                              '已安排新的任务,请查看!')
-                self.update_step(task.id, task.sender_id)
+                BusinessPublic.create_reason(task.id, task.sender.id, task.receiver.id,
+                                             BusinessPublic.GetReasonTypeIdByKey('task_allocate'),
+                                             reason)
+                BusinessPublic.create_message(task.receiver.id, task.sender.id,menu_id=2,
+                                              messages='已安排新的任务,请查看!')
+                self.update_step(task.id, task.sender.id)
+
 
     def update_step(self, task_id, receiver_id):
         if task_id is not None:
             from business.models.step import Step
             steps = Step.objects.filter(task_id=task_id)
             for step in steps:
-                step.receiver = receiver_id
+                receiver = UserProfile.objects.get(id=receiver_id)
+                step.receiver = receiver
                 step.save()
 
 
@@ -355,7 +356,3 @@ class TaskAllocateReasonViewSet(ModelViewSet):
     filter_fields = ('task_id', 'receiver_id')
     ordering_fields = ('id',)
     # permission_classes = [IsAuthenticated]
-
-
-def GetIdByKey(key):
-    return ProjectStatus.objects.get(key=key).id

@@ -40,9 +40,9 @@ class FeedBackLog(models.Model):
 
 class TaskLog(models.Model):
     """
-    步骤日志模型
+    任务日志模型
     """
-    task = models.ForeignKey(Task, verbose_name='任务标识', on_delete=models.CASCADE)
+    task = models.ForeignKey(Task, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE)
     title = models.CharField(default='',max_length=150, verbose_name='标题')
     memo = models.CharField(default='',max_length=300, verbose_name='备注')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')

@@ -1,11 +1,13 @@
 from django.contrib.auth import get_user_model
 
 from business.models.message import Message
-from business.models.project import Project, ProjectRejectReason
-from business.models.task import Task, TaskAllocateReason
-from business.models.step import Step, StepRejectReason
+from business.models.project import Project
+from business.models.task import Task
+from business.models.step import Step
 from rbac.models import UserProfile
 from business.models.message import Menu
+from business.models.reason import Reason
+from configuration.models import ProjectStatus, TaskStatus, ReasonType
 
 User = get_user_model()
 
@@ -36,61 +38,80 @@ class BusinessPublic:
         message.save()
 
     @classmethod
-    def create_reason(self, id, sender_id, receiver_id, type='', reason=''):
+    def create_reason(self, id, sender_id, receiver_id, reason_type_id, reason=''):
         """
-        创建驳回转派原因
+        创建原因
         :param id:
         :param sender_id:
         :param receiver_id:
-        :param type:
+        :param key:
         :param reason:
         :return:
         """
 
         sender = UserProfile.objects.get(id=sender_id)
         receiver = UserProfile.objects.get(id=receiver_id)
-        if type == 'StepRejectReason':
-            reasons = StepRejectReason.objects.filter(step_id=id)
-            transfer_nums = reasons.count() + 1
-            step_reject_reason = StepRejectReason(
-                step=id,
-                reason=reason,
-                transfer_nums=transfer_nums,
-                sender=sender,
-                receiver=receiver
-            )
-            step_reject_reason.save()
-        elif type == 'TaskAllocateReason':
-            reasons = TaskAllocateReason.objects.filter(task_id=id)
-            transfer_nums = reasons.count() + 1
+        reason_type = ReasonType.objects.get(id=reason_type_id)
 
-            task_allocate_reason = TaskAllocateReason(
-                task=id,
-                reason=reason,
-                transfer_nums=transfer_nums,
-                sender=receiver,
-                receiver=receiver,
-            )
+        reasons = Reason.objects.filter(type_id=reason_type.id, link_id=id)
+        transfer_nums = reasons.count() + 1
+        reason = Reason(
+            type=reason_type,
+            link_id=id,
+            reason=reason,
+            transfer_nums=transfer_nums,
+            sender=sender,
+            receiver=receiver
+        )
+        reason.save()
 
-            task_allocate_reason.save()
-        else:
-            reasons = ProjectRejectReason.objects.filter(project_id=id)
-            transfer_nums = reasons.count() + 1
+    @classmethod
+    def Caltime(self, date1, date2):
+        """
+        计算两个日期的时间差
+        """
+        return (date1 - date2).days
 
-            project = Project.objects.get(id=id)
+    @classmethod
+    def GetProjectStatusIdByKey(self, key):
+        """
+        根据key值取项目状态表id值
+        """
+        return ProjectStatus.objects.get(key=key).id
 
-            project_reject_reason = ProjectRejectReason(
-                project=project,
-                reason=reason,
-                transfer_nums=transfer_nums,
-                sender=sender,
-                receiver=receiver
-            )
+    @classmethod
+    def GetProjectStatusObjectByKey(self, key):
+        """
+        根据key值取项目状态表对像
+        """
+        return ProjectStatus.objects.get(key=key)
 
-            project_reject_reason.save()
+    @classmethod
+    def GetTaskStatusIdByKey(self, key):
+        """
+        根据key值取任务状态表id值
+        """
+        return TaskStatus.objects.get(key=key).id
 
-    # 根据任务步骤百分比更新任务百分比
+    @classmethod
+    def GetTaskStatusObjectByKey(self, key):
+        """
+        根据key值取任务状态表对像
+        """
+        return TaskStatus.objects.get(key=key)
+
+    @classmethod
+    def GetReasonTypeIdByKey(self, key):
+        """
+        根据key值取原因类型表id值
+        """
+        return ReasonType.objects.get(key=key).id
+
+    @classmethod
     def update_task_progress(self, step_id=0):
+        """
+        根据任务步骤百分比更新任务百分比
+        """
         if step_id is not None:
             # 任务百分比
             task_progress = 0
@@ -115,8 +136,11 @@ class BusinessPublic:
                     task.progress = task_progress
                     task.save()
 
-    # 根据任务百分比更新项目百分比
+    @classmethod
     def update_project_progress(self, step_id=0):
+        """
+        根据任务百分比更新项目百分比
+        """
         if step_id is not None:
             # 任务百分比
             project_progress = 0
