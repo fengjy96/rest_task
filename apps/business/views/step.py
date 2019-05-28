@@ -15,7 +15,7 @@ from business.models.files import Files, FeedBacks, ProgressTexts, FeedBackTexts
 from business.models.steplog import StepLog, FeedBackLog
 from common.custom import CommonPagination
 from utils.basic import MykeyResponse
-
+import json
 
 class StepViewSet(ModelViewSet):
     """
@@ -153,6 +153,51 @@ class StepProgressUpdateView(APIView):
     """
     步骤进度更新
     """
+
+    def post(self, request):
+        try:
+         # 步骤标识
+         step_id = request.data.get('step_id')
+         # 标题
+         title = request.data.get('title')
+         # 进度
+         progress = request.data.get('progress')
+         # 备注
+         memo = request.data.get('memo')
+         # 类型
+         type = request.data.get('type')
+         # 内容
+         content = request.data.get('content')
+
+         urls = request.data.get('url')
+
+         # 增加步骤日志
+         if step_id is not None and title is not None and progress is not None and memo is not None:
+             steplog = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
+             steplog.save()
+
+             if urls:
+                 for url in urls:
+                     #增加文件表记录
+                     file = Files(steplog=steplog,name=url['name'],path=url['url'])
+                     file.save()
+
+             # 如果存在富文本,则先添加富文本
+             if type is not None and content is not None:
+                 if type > 0:
+                     progresstexts = ProgressTexts(steplog=steplog,content=content)
+                     progresstexts.save()
+
+             # 更新步骤表时进度
+             step = Step.objects.get(id=step_id)
+             if step:
+                 step.progress = progress
+                 step.save()
+
+        except Exception as e:
+           return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
 def step_objects(task_id):
     """

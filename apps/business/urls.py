@@ -66,8 +66,9 @@ urlpatterns = [
     ## 文件相关
 
     # 文件上传
-    #path(r'api/v1/imageUpload', files.FileUploadView.as_view(),name='file_upload'),
-    path(r'api/v1/imageUpload', files.AddStepLogFiles.as_view(),name='file_upload'),
+    path(r'api/v1/files/upload', files.UploadFilesView.as_view(),name='files_upload'),
+    # 文件删除
+    path(r'api/v1/files/delete', files.DeleteFileView.as_view(), name='files_delete'),
     # 下载文件
     path(r'api/v1/imageDown', files.FileDownloadView.as_view(),name='file_download'),
     # 文件查询
