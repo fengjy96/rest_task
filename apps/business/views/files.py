@@ -61,6 +61,7 @@ class UploadFilesView(views.APIView):
 
                 # 遍历用户上传的文件列表
                 upload_files = []
+                dict_obj = {}
                 for file in files:
 
                     # 获取文件反缀名
@@ -71,14 +72,17 @@ class UploadFilesView(views.APIView):
                     file_path = '{}/{}'.format(settings.MEDIA_ROOT, filename)
                     # 将上传的文件路径存储到upload_files中
                     # 注意这样要构建相对路径MEDIA_URL+filename,这里可以保存到数据库
-                    upload_files.append('{}{}'.format(settings.MEDIA_URL, filename))
+                    dict_obj["file_name"] = filename
+                    dict_obj["file_path"] = file_path
+
+                    upload_files.append(dict_obj)
                     # 保存文件
                     with open(file_path, 'wb') as f:
                         for c in file.chunks():
                             f.write(c)
                         f.close()
 
-                data = {'files:': upload_files}
+                data = {'files': upload_files}
 
                 return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=data)
 
@@ -86,6 +90,26 @@ class UploadFilesView(views.APIView):
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
 
 
+class DeleteFileView(views.APIView):
+    """
+    删除单个文件或者多个文件
+    """
+
+    def post(self, request):
+        try:
+            # 获取文件名称列表
+            urls = request.POST.getlist('url')
+            # 判断是否存在文件列表
+            if len(urls) > 0:
+                # 判断文件径是否存在，存在则删除
+                for url in urls:
+                     if os.path.exists(url):
+                        os.remove(url)
+
+                return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+
+        except Exception as e:
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
 
 
 class AddTaskLogFiles(views.APIView):
