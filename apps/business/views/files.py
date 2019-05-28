@@ -78,7 +78,7 @@ class UploadFilesView(views.APIView):
                             f.write(c)
                         f.close()
 
-                data = {'files:': upload_files}
+                data = {'files': upload_files}
 
                 return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=data)
 
