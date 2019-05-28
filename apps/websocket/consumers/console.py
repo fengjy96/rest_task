@@ -1,8 +1,6 @@
-# @Time    : 2019/3/21 14:35
-# @Author  : xufqing
-
 from channels.generic.websocket import AsyncWebsocketConsumer
 from common.custom import RedisObj
+
 
 class ConsoleMsgConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -25,7 +23,7 @@ class ConsoleMsgConsumer(AsyncWebsocketConsumer):
         )
 
     async def disconnect(self, code):
-        # 关闭远程tail
+        # 关闭远程 tail
         webuser = self.scope['user'].username
         redis = RedisObj()
         remote_tail_is_stop = redis.get('remote_tail_' + str(webuser))

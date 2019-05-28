@@ -1,5 +1,3 @@
-# @Time    : 2019/1/13 11:28
-# @Author  : xufqing
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import BasePermission
 from rest_framework import serializers
@@ -17,6 +15,12 @@ info_logger = logging.getLogger('info')
 
 
 def xops_exception_handler(exc, context):
+    """
+    自定义异常处理器
+    :param exc:
+    :param context:
+    :return:
+    """
     response = exception_handler(exc, context)
     if response is not None:
         msg = '失败' if response.status_code >= 400 else '成功'
@@ -29,17 +33,18 @@ def xops_exception_handler(exc, context):
 
 
 class CommonPagination(PageNumberPagination):
-    '''
+    """
     分页设置
-    '''
+    """
+
     page_size = 10
     page_size_query_param = 'size'
 
 
 class RbacPermission(BasePermission):
-    '''
-    自定义权限
-    '''
+    """
+    自定义 RBAC 权限验证
+    """
 
     @classmethod
     def get_permission_from_role(self, request):
@@ -68,9 +73,9 @@ class RbacPermission(BasePermission):
 
 
 class ObjPermission(BasePermission):
-    '''
+    """
     密码管理对象级权限控制
-    '''
+    """
 
     def has_object_permission(self, request, view, obj):
         perms = RbacPermission.get_permission_from_role(request)
@@ -81,15 +86,20 @@ class ObjPermission(BasePermission):
 
 
 class TreeSerializer(serializers.Serializer):
+    """
+    自定义树结构的序列化
+    """
+
     id = serializers.IntegerField()
     label = serializers.CharField(max_length=20, source='name')
     pid = serializers.PrimaryKeyRelatedField(read_only=True)
 
 
 class TreeAPIView(ListAPIView):
-    '''
-    自定义树结构View
-    '''
+    """
+    自定义树结构 View
+    """
+
     serializer_class = TreeSerializer
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
@@ -118,39 +128,40 @@ class TreeAPIView(ListAPIView):
         return XopsResponse(results)
 
 
-class CeleryTools(object):
-    '''
-    Celery的一些工具
-    '''
+class CeleryTools:
+    """
+    Celery 的一些工具（异步）
+    """
 
     def get_celery_worker_status(self):
         d = None
         try:
             insp = celery.task.control.inspect()
             if not insp.stats():
-                d = '没有找到可用的celery workers.'
+                d = '没有找到可用的 celery workers.'
         except IOError as e:
-            msg = '无法连接celery backend: ' + str(e)
+            msg = '无法连接 celery backend: ' + str(e)
             if len(e.args) > 0 and errorcode.get(e.args[0]) == 'ECONNREFUSED':
-                msg += '请检查RabbitMQ是否运行.'
+                msg += '请检查 RabbitMQ 是否运行.'
             d = msg
         except ImportError as e:
             d = str(e)
         return d
 
 
-class RedisObj(object):
+class RedisObj:
     def __init__(self, host=settings.REDIS_HOST, port=settings.REDIS_PORT, db=settings.REDIS_DB,
                  password=settings.REDIS_PASSWORD):
         try:
-            self.__conn = redis.StrictRedis(host=host, port=port, db=db, password=password,decode_responses=True)
+            self.__conn = redis.StrictRedis(host=host, port=port, db=db, password=password, decode_responses=True)
         except Exception as e:
-            msg = 'Redis连接失败，错误信息：%s' % e
+            msg = 'Redis 连接失败，错误信息：%s' % e
             error_logger.error(msg)
             print(msg)
 
     def __getattr__(self, command):
         def _(*args):
-            return getattr(self.__conn, command)(*args)  # 重新组装方法调用
+            # 重新组装方法调用
+            return getattr(self.__conn, command)(*args)
 
         return _
