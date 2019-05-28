@@ -64,20 +64,21 @@ class UploadFilesView(views.APIView):
                 dict_obj = {}
                 for file in files:
 
-                    # 获取文件反缀名
+                    # 获取文件后缀名
                     extension = os.path.splitext(file.name)[1]
                     # 通过uuid重命名上传的文件
                     filename = '{}{}'.format(uuid.uuid4(), extension)
                     # 构建文件路径
-                    file_path = '{}/{}'.format(settings.MEDIA_ROOT, filename)
+                    file_path = '{}{}'.format(settings.MEDIA_URL, filename)
+                    file_path_server = '{}/{}'.format(settings.MEDIA_ROOT, filename)
                     # 将上传的文件路径存储到upload_files中
                     # 注意这样要构建相对路径MEDIA_URL+filename,这里可以保存到数据库
-                    dict_obj["file_name"] = filename
-                    dict_obj["file_path"] = file_path
+                    dict_obj["name"] = filename
+                    dict_obj["url"] = file_path
 
                     upload_files.append(dict_obj)
                     # 保存文件
-                    with open(file_path, 'wb') as f:
+                    with open(file_path_server, 'wb') as f:
                         for c in file.chunks():
                             f.write(c)
                         f.close()
