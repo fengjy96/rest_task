@@ -176,9 +176,20 @@ class Skill(models.Model):
     task_type = models.ForeignKey(TaskType, null=True, blank=True, verbose_name='技能标识', on_delete=models.CASCADE)
     is_active = models.IntegerField(verbose_name='是否激活', default=1)
 
-    def __str__(self):
-        return self.task_type
-
     class Meta:
         verbose_name = '用户技能'
+        verbose_name_plural = verbose_name
+
+class ReasonType(models.Model):
+    """
+    原因类型
+    """
+    key = models.CharField(max_length=30, verbose_name='类型英文表示')
+    text = models.CharField(max_length=30, verbose_name='类型中文表示')
+
+    def __str__(self):
+        return self.text
+
+    class Meta:
+        verbose_name = '原因类型'
         verbose_name_plural = verbose_name
