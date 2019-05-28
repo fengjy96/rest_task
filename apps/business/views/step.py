@@ -169,23 +169,23 @@ class StepProgressUpdateView(APIView):
          # 内容
          content = request.data.get('content')
 
-         urls = request.data.get('url')
+         files = request.data.get('files')
 
          # 增加步骤日志
-         if step_id is not None and title is not None and progress is not None and memo is not None:
+         if step_id is not None and title is not None and progress is not None:
              steplog = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
              steplog.save()
 
-             if urls:
-                 for url in urls:
+             if files:
+                 for file in files:
                      #增加文件表记录
-                     file = Files(steplog=steplog,name=url['name'],path=url['url'])
+                     file = Files(steplog=steplog, name=file['name'], path=file['url'])
                      file.save()
 
              # 如果存在富文本,则先添加富文本
              if type is not None and content is not None:
                  if type > 0:
-                     progresstexts = ProgressTexts(steplog=steplog,content=content)
+                     progresstexts = ProgressTexts(steplog=steplog, content=content)
                      progresstexts.save()
 
              # 更新步骤表时进度
