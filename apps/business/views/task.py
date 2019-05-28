@@ -17,7 +17,7 @@ from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
 from business.models.files import Files
-from configuration.models import ProjectStatus
+from configuration.models import TaskStatus, TaskDesignType
 
 
 class TaskViewSet(ModelViewSet):
@@ -235,7 +235,8 @@ class TaskAcceptView(APIView):
             task = Task.objects.get(id=task_id)
             if task is not None:
                 # 任务负责人已接手,任务执行中
-                task.receive_status = GetIdByKey('accepted')
+                task.receive_status = TaskStatus.objects.get(key='accepted')
+                task.task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
                 task.save()
                 self.create_step(task_id, task_design_type_id)
                 BusinessPublic.create_message(task.receiver_id, task.sender_id, menu_id=2,
@@ -244,7 +245,7 @@ class TaskAcceptView(APIView):
     def create_step(self, task_id, task_design_type_id):
         if task_id is not None:
             from business.models.step import Step
-            from configuration.models import TaskStep, TaskDesignType
+            from configuration.models import TaskStep
 
             task = Task.objects.get(id=task_id)
             task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
@@ -430,4 +431,4 @@ class TaskAllocateReasonViewSet(ModelViewSet):
 
 
 def GetIdByKey(key):
-    return ProjectStatus.objects.get(key=key).id
+    return TaskStatus.objects.get(key=key).id
