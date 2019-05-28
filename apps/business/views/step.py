@@ -16,6 +16,7 @@ from business.models.steplog import StepLog, FeedBackLog
 from common.custom import CommonPagination
 from utils.basic import MykeyResponse
 
+
 class StepViewSet(ModelViewSet):
     """
     任务步骤：增删改查
@@ -92,16 +93,18 @@ class StepListView(ListAPIView):
 
         return Step.objects.filter(is_active=is_active)
 
+
 class StepLogFileFeedBacksView(APIView):
     """
     单个文件以及富文本预览以及查看反馈
     """
+
     def get(self, request, format=None):
         try:
             # 文件标识
             file_id = request.data.get('file_id')
             # 类型
-            type= request.data.get('type')
+            type = request.data.get('type')
 
             if type == 0:
                 file_objects_data = one_file_objects(file_id)
@@ -109,13 +112,15 @@ class StepLogFileFeedBacksView(APIView):
                 file_objects_data = one_progresstext_objects(file_id)
 
         except Exception as e:
-                return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=file_objects_data)
+
 
 class StepsLogsView(APIView):
     """
     查询单条步骤以及日志
     """
+
     def get(self, request, format=None):
         try:
             # 步骤标识
@@ -124,13 +129,15 @@ class StepsLogsView(APIView):
             step_objects_data = steplog_objects(step_id)
 
         except Exception as e:
-                return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=step_objects_data)
+
 
 class StepsViewSet(APIView):
     """
     查询所有步骤以及日志
     """
+
     def get(self, request, format=None):
         # 任务标识
         try:
@@ -141,13 +148,19 @@ class StepsViewSet(APIView):
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=step_objects_data)
 
+
+class StepProgressUpdateView(APIView):
+    """
+    步骤进度更新
+    """
+
 def step_objects(task_id):
     """
     步骤
     """
     step_objects_data = []
 
-    steps = Step.objects.filter(task_id=task_id,is_active=1)
+    steps = Step.objects.filter(task_id=task_id, is_active=1)
     for step in steps:
         if step:
             dict_obj = {}
@@ -209,6 +222,7 @@ def step_objects(task_id):
 
     return step_objects_data
 
+
 def steplogs_objects(id):
     """
     时间轴日志列表
@@ -232,6 +246,7 @@ def steplogs_objects(id):
 
     return steplog_objects_data
 
+
 def files_objects(id):
     """
     日志文件列表
@@ -250,35 +265,36 @@ def files_objects(id):
                 dict_obj["content"] = ''
                 dict_obj["add_time"] = file.add_time
 
-                dict_obj["feedbacks"] = feedbacklog_objects(file.id,1)
+                dict_obj["feedbacks"] = feedbacklog_objects(file.id, 1)
 
                 file_objects_data.append(dict_obj)
 
     progresstexts = ProgressTexts.objects.filter(steplog_id=id)
     if progresstexts:
         for progresstext in progresstexts:
-             if progresstext:
-                 dict_obj = {}
-                 dict_obj["id"] = progresstext.id
-                 dict_obj["name"] = ''
-                 dict_obj["path"] = ''
-                 dict_obj["type"] = 0
-                 dict_obj["content"] = progresstext.content
-                 dict_obj["add_time"] = progresstext.add_time
+            if progresstext:
+                dict_obj = {}
+                dict_obj["id"] = progresstext.id
+                dict_obj["name"] = ''
+                dict_obj["path"] = ''
+                dict_obj["type"] = 0
+                dict_obj["content"] = progresstext.content
+                dict_obj["add_time"] = progresstext.add_time
 
-                 dict_obj["feedbacks"] = feedbacklog_objects(progresstext.id,0)
+                dict_obj["feedbacks"] = feedbacklog_objects(progresstext.id, 0)
 
-                 file_objects_data.append(dict_obj)
+                file_objects_data.append(dict_obj)
 
     return file_objects_data
 
-def feedbacklog_objects(id,type):
+
+def feedbacklog_objects(id, type):
     """
     反馈日志
     """
     feedbacklog_objects_data = []
 
-    FeedBackLogs = FeedBackLog.objects.filter(link_id=id,type=type)
+    FeedBackLogs = FeedBackLog.objects.filter(link_id=id, type=type)
     if FeedBackLogs:
         for feedbacklog in FeedBackLogs:
             if feedbacklog:
@@ -293,6 +309,7 @@ def feedbacklog_objects(id,type):
                 feedbacklog_objects_data.append(dict_obj)
 
     return feedbacklog_objects_data
+
 
 def feedback_objects(id):
     """
@@ -316,17 +333,17 @@ def feedback_objects(id):
 
     feedbacktexts = FeedBackTexts.objects.filter(feedbacklog_id=id)
     if feedbacktexts:
-         for feedbacktext in feedbacktexts:
-              if feedbacktext:
-                    dict_obj = {}
-                    dict_obj["id"] = feedbacktext.id
-                    dict_obj["name"] = ''
-                    dict_obj["path"] = ''
-                    dict_obj["type"] = 0
-                    dict_obj["content"] = feedbacktext.content
-                    dict_obj["add_time"] = feedbacktext.add_time
+        for feedbacktext in feedbacktexts:
+            if feedbacktext:
+                dict_obj = {}
+                dict_obj["id"] = feedbacktext.id
+                dict_obj["name"] = ''
+                dict_obj["path"] = ''
+                dict_obj["type"] = 0
+                dict_obj["content"] = feedbacktext.content
+                dict_obj["add_time"] = feedbacktext.add_time
 
-                    feedback_objects_data.append(dict_obj)
+                feedback_objects_data.append(dict_obj)
 
     return feedback_objects_data
 
@@ -354,6 +371,7 @@ def steplog_objects(id):
 
     return steplog_objects_data
 
+
 def one_file_objects(id):
     """
     单个文件以及反馈日志
@@ -363,21 +381,21 @@ def one_file_objects(id):
     files = Files.objects.filter(id=id)
     if files:
         for file in files:
-             if file:
-                 dict_obj = {}
-                 dict_obj["id"] = file.id
-                 dict_obj["name"] = file.name
-                 dict_obj["path"] = file.path
-                 dict_obj["type"] = 1
-                 dict_obj["content"] = ''
-                 dict_obj["add_time"] = file.add_time
+            if file:
+                dict_obj = {}
+                dict_obj["id"] = file.id
+                dict_obj["name"] = file.name
+                dict_obj["path"] = file.path
+                dict_obj["type"] = 1
+                dict_obj["content"] = ''
+                dict_obj["add_time"] = file.add_time
 
+                dict_obj["feedbacks"] = feedbacklog_objects(file.id, 1)
 
-                 dict_obj["feedbacks"] = feedbacklog_objects(file.id,1)
-
-                 file_objects_data.append(dict_obj)
+                file_objects_data.append(dict_obj)
 
     return file_objects_data
+
 
 def one_progresstext_objects(id):
     """
@@ -388,17 +406,17 @@ def one_progresstext_objects(id):
     progresstexts = ProgressTexts.objects.filter(id=id)
     if progresstexts:
         for progresstext in progresstexts:
-             if progresstext:
-                 dict_obj = {}
-                 dict_obj["id"] = progresstext.id
-                 dict_obj["name"] = ''
-                 dict_obj["path"] = ''
-                 dict_obj["type"] = 0
-                 dict_obj["content"] = progresstext.content
-                 dict_obj["add_time"] = progresstext.add_time
+            if progresstext:
+                dict_obj = {}
+                dict_obj["id"] = progresstext.id
+                dict_obj["name"] = ''
+                dict_obj["path"] = ''
+                dict_obj["type"] = 0
+                dict_obj["content"] = progresstext.content
+                dict_obj["add_time"] = progresstext.add_time
 
-                 dict_obj["feedbacks"] = feedbacklog_objects(progresstext.id,0)
+                dict_obj["feedbacks"] = feedbacklog_objects(progresstext.id, 0)
 
-                 file_objects_data.append(dict_obj)
+                file_objects_data.append(dict_obj)
 
     return file_objects_data
