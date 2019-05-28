@@ -65,7 +65,7 @@ urlpatterns = [
 
     ## 文件相关
 
-    # 文件上传    
+    # 文件上传
     path(r'api/v1/upload/files', files.UploadFilesView.as_view(),name='upload_files'),
     # 下载文件
     path(r'api/v1/imageDown', files.FileDownloadView.as_view(),name='file_download'),
