@@ -7,7 +7,7 @@ from business.views.task import TaskViewSet, TaskAllocateReasonViewSet
 from business.views.step import StepViewSet
 from business.views import files
 from business.views import message
-# from business.views import step
+from business.views import step
 
 router = routers.DefaultRouter()
 router.register('art_projects', ProjectViewSet, basename='projects')
@@ -18,14 +18,14 @@ router.register('task_allocate_reason', TaskAllocateReasonViewSet, basename='tas
 router.register('steps', StepViewSet, basename='steps')
 
 urlpatterns = [
-    # API
     path(r'api/v1/', include(router.urls)),
+
+    ## 项目相关
+
     # 选择项目负责人
     path(r'api/v1/project/receivers', project.ProjectReceiverListView.as_view(), name='project_receivers'),
     # 获取所有项目审核员
     path(r'api/v1/project/auditors', project.ProjectAuditorListView.as_view(), name='project_auditors'),
-    # 判断是否存在文件为空的任务
-    #path(r'api/v1/project/file/check', '', name='project_file_check'),
     # 项目审核提交
     path(r'api/v1/project/audit/submit', project.ProjectAuditSubmitView.as_view(), name='project_audit_submit'),
     # 项目审核通过
@@ -44,6 +44,9 @@ urlpatterns = [
     path(r'api/v1/project/check/pass', project.ProjectCheckPassView.as_view(), name='project_check_pass'),
     # 项目验收不通过
     path(r'api/v1/project/check/reject', project.ProjectCheckRejectView.as_view(), name='project_check_reject'),
+
+    ## 任务相关
+
     # 接手任务
     path(r'api/v1/task/accept', task.TaskAcceptView.as_view(), name='task_accept'),
     # 任务拒接
@@ -52,6 +55,16 @@ urlpatterns = [
     path(r'api/v1/task/receivers', task.TaskReceiverView.as_view(), name='task_receivers'),
     # 任务转派
     path(r'api/v1/task/allocate', task.TaskAllocateView.as_view(), name='task_allocate'),
+    # 判断是否存在文件为空的任务
+    # path(r'api/v1/project/file/check', '', name='project_file_check'),
+
+    ## 步骤相关
+
+    # 步骤进度更新
+    path(r'api/v1/step/progress/update', step.StepProgressUpdateView.as_view(), name='step_progress_update'),
+
+    ## 文件相关
+
     # 文件上传
     #path(r'api/v1/imageUpload', files.FileUploadView.as_view(),name='file_upload'),
     path(r'api/v1/imageUpload', files.AddStepLogFiles.as_view(),name='file_upload'),
