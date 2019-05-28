@@ -9,8 +9,7 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from common.custom import CommonPagination
 from rbac.models import UserProfile
 from business.models.task import Task, TaskAllocateReason
-from business.serializers.task_serializer import TaskSerializer, TaskListSerializer, TaskAllocateReasonSerializer, \
-    TaskCreateSerializer
+from business.serializers.task_serializer import TaskSerializer, TaskListSerializer, TaskAllocateReasonSerializer
 from utils.basic import MykeyResponse
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -18,6 +17,7 @@ from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
 from business.models.files import Files
+from configuration.models import TaskStatus, TaskDesignType
 
 
 class TaskViewSet(ModelViewSet):
@@ -43,9 +43,8 @@ class TaskViewSet(ModelViewSet):
         根据请求类型动态变更 serializer
         :return:
         """
-        if self.action == 'create':
-            return TaskCreateSerializer
-        elif self.action == 'list':
+
+        if self.action == 'list':
             return TaskListSerializer
         return TaskSerializer
 
@@ -63,12 +62,18 @@ class TaskViewSet(ModelViewSet):
             if project_receiver_id is not None:
                 request.data['auditor'] = project_receiver_id
 
-        # 如果创建任务时指定了任务负责人，则任务接收状态为: 已安排任务负责人
+        # 如果创建任务时指定了任务负责人，则任务接收状态为 1 - 已安排任务负责人
         if request.data.get('receiver', None):
-            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
-        # 如果创建任务时未指定任务负责人，则任务接收状态为: 未安排任务负责人
+            if project_id is not None:
+                # 根据项目 id 查项目审核状态
+                project = Project.objects.get(id=project_id)
+                if project.audit_status == 2:
+                    request.data['receive_status'] = GetIdByKey('wait_accept')
+            else:
+                request.data['receive_status'] = GetIdByKey('assigned')
+        # 如果创建任务时未指定任务负责人，则任务接收状态为 0 - 未安排任务负责人
         else:
-            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
+            request.data['receive_status'] = GetIdByKey('unassigned')
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -77,9 +82,16 @@ class TaskViewSet(ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         if request.data.get('receiver', None):
-            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
+            project_id = request.data.get('project', None)
+            if project_id is not None:
+                # 根据项目 id 查项目审核状态
+                project = Project.objects.get(id=project_id)
+                if project.audit_status == 2:
+                    request.data['receive_status'] = GetIdByKey('wait_accept')
+                else:
+                    request.data['receive_status'] = GetIdByKey('assigned')
         else:
-            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
+            request.data['receive_status'] = GetIdByKey('unassigned')
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -92,6 +104,65 @@ class TaskViewSet(ModelViewSet):
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        queryset = self.filter_list_queryset(request, queryset)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def filter_list_queryset(self, request, queryset):
+        """
+        根据用户所属角色过滤查询集
+        :param request:
+        :param queryset:
+        :return:
+        """
+        # 过滤已激活的项目数据
+        queryset = queryset.filter(is_active=1)
+
+        # 定义空的数据集
+        emptyQuerySet = self.queryset.filter(is_active=999)
+        queryset_task_auditor = emptyQuerySet
+        queryset_project_manager = emptyQuerySet
+        queryset_business_manager = emptyQuerySet
+
+        # 获取当前用户 id
+        user_id = request.user.id
+        # 获取当前用户所属角色 id 列表
+        user_role_ids = self.get_user_roles(user_id)
+
+        # 如果当前用户拥有管理员权限，则不做特殊处理
+        if 1 in user_role_ids:
+            pass
+        else:
+            # 如果当前用户拥有任务负责人权限，则返回与该任务负责人关联的项目数据
+            if 6 in user_role_ids:
+                queryset_project_manager = queryset.filter(receiver_id=user_id)
+            # 如果当前用户拥有任务审核员（项目负责人）权限，则返回与该任务审核员（项目负责人）关联的项目数据
+            if 7 in user_role_ids:
+                queryset_task_auditor = queryset.filter(auditor_id=user_id)
+            # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
+            if 8 in user_role_ids:
+                queryset_business_manager = queryset.filter(sender_id=user_id)
+
+            queryset = queryset_task_auditor | queryset_project_manager | queryset_business_manager
+
+        return queryset
+
+    def get_user_roles(self, user_id):
+        if user_id is not None:
+            user = UserProfile.objects.get(id=user_id)
+            user_roles = user.roles.all()
+            user_role_ids = set(map(lambda user_role: user_role.id, user_roles))
+            return user_role_ids
 
 
 class TaskReceiverView(APIView):
@@ -123,7 +194,8 @@ class TaskReceiverView(APIView):
                         dict_obj1["end_time"] = task.end_time
                         dict_obj1["leftdays"] = 12
                         # dict_obj1["leftdays"] = task.duration
-                        dict_obj1["receive_status"] = task.receive_status
+                        # FIXME:
+                        dict_obj1["receive_status"] = task.receive_status.index
                         list_objects.append(dict_obj1)
             else:
                 dict_obj2 = {}
@@ -163,7 +235,8 @@ class TaskAcceptView(APIView):
             task = Task.objects.get(id=task_id)
             if task is not None:
                 # 任务负责人已接手,任务执行中
-                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('accepted')
+                task.receive_status = TaskStatus.objects.get(key='accepted')
+                task.task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
                 task.save()
                 self.create_step(task_id, task_design_type_id)
                 BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
@@ -172,7 +245,7 @@ class TaskAcceptView(APIView):
     def create_step(self, task_id, task_design_type_id):
         if task_id is not None:
             from business.models.step import Step
-            from configuration.models import TaskStep, TaskDesignType
+            from configuration.models import TaskStep
 
             task = Task.objects.get(id=task_id)
             task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
@@ -320,7 +393,7 @@ class TaskAllocateView(APIView):
                 step.save()
 
 
-class TaskFileisEmptyViewSet(ModelViewSet):
+class TaskFileIsEmptyViewSet(ModelViewSet):
     """
     判断参考文件是否存在为空
     """
@@ -356,3 +429,7 @@ class TaskAllocateReasonViewSet(ModelViewSet):
     filter_fields = ('task_id', 'receiver_id')
     ordering_fields = ('id',)
     # permission_classes = [IsAuthenticated]
+
+
+def GetIdByKey(key):
+    return TaskStatus.objects.get(key=key).id
