@@ -181,7 +181,7 @@ class StepProgressUpdateView(APIView):
                      file.save()
 
              # 如果存在富文本,则先添加富文本
-             if not content:
+             if content:
                  progresstexts = ProgressTexts(steplog=steplog, content=content)
                  progresstexts.save()
 
@@ -394,7 +394,7 @@ def steplog_objects(id):
     """
     steplog_objects_data = []
 
-    steplogs = StepLog.objects.filter(step_id=id)
+    steplogs = StepLog.objects.filter(step_id=id).order_by("-add_time")
     if steplogs:
         for steplog in steplogs:
             if steplog:
