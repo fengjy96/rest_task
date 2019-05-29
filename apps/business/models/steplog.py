@@ -29,7 +29,7 @@ class FeedBackLog(models.Model):
     反馈日志模型
     """
 
-    link_id = models.IntegerField(default=0, verbose_name='关联标识')
+    step_log_file_id = models.IntegerField(default=0, verbose_name='步骤日志文件或富文本标识')
     type = models.IntegerField(default=1, verbose_name='类型')
     title = models.CharField(default='', max_length=150, verbose_name='标题')
     memo = models.CharField(default='', max_length=300, verbose_name='备注')

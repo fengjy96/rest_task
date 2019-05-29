@@ -17,6 +17,7 @@ from common.custom import CommonPagination
 from utils.basic import MykeyResponse
 import json
 
+
 class StepViewSet(ModelViewSet):
     """
     任务步骤：增删改查
@@ -94,7 +95,7 @@ class StepListView(ListAPIView):
         return Step.objects.filter(is_active=is_active)
 
 
-class StepLogFileFeedBacksView(APIView):
+class StepLogFileFeedBackLogView(APIView):
     """
     单个文件以及富文本预览以及查看反馈
     """
@@ -156,45 +157,88 @@ class StepProgressUpdateView(APIView):
 
     def post(self, request):
         try:
-         # 步骤标识
-         step_id = request.data.get('step_id', None)
-         # 标题
-         title = request.data.get('title', None)
-         # 进度
-         progress = request.data.get('progress', None)
-         # 备注
-         memo = request.data.get('memo', None)
-         # 内容
-         content = request.data.get('content', None)
+            # 步骤标识
+            step_id = request.data.get('step_id', None)
+            # 标题
+            title = request.data.get('title', None)
+            # 进度
+            progress = request.data.get('progress', None)
+            # 备注
+            memo = request.data.get('memo', None)
+            # 内容
+            content = request.data.get('content', None)
+            # 文件列表
+            files = request.data.get('files', None)
 
-         files = request.data.get('files', None)
+            # 增加步骤日志
+            if step_id is not None and title is not None and progress is not None:
+                steplog = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
+                steplog.save()
 
-         # 增加步骤日志
-         if step_id is not None and title is not None and progress is not None:
-             steplog = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
-             steplog.save()
+                if files:
+                    for file in files:
+                        # 增加文件表记录
+                        step_log_file = Files(steplog=steplog, name=file['name'], path=file['url'])
+                        step_log_file.save()
 
-             if files:
-                 for file in files:
-                     #增加文件表记录
-                     file = Files(steplog=steplog, name=file['name'], path=file['url'])
-                     file.save()
+                # 如果存在富文本,则先添加富文本
+                if content:
+                    progresstexts = ProgressTexts(steplog=steplog, content=content)
+                    progresstexts.save()
 
-             # 如果存在富文本,则先添加富文本
-             if not content:
-                 progresstexts = ProgressTexts(steplog=steplog, content=content)
-                 progresstexts.save()
-
-             # 更新步骤表时进度
-             step = Step.objects.get(id=step_id)
-             if step:
-                 step.progress = progress
-                 step.save()
+                # 更新步骤表时进度
+                step = Step.objects.get(id=step_id)
+                if step:
+                    step.progress = progress
+                    step.save()
 
         except Exception as e:
-           return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+
+
+class StepLogFileFeedBackUpdateView(APIView):
+    """
+    增加反馈日志，反馈文件，反馈富文本
+    """
+
+    def post(self, request):
+        try:
+            # 文件或者富文本标识
+            step_log_file_id = request.data.get('step_log_file_id', None)
+            # 类型
+            type = request.data.get('type', None)
+            # 标题
+            title = request.data.get('title', None)
+            # 备注
+            memo = request.data.get('memo', None)
+            # 内容
+            content = request.data.get('content', None)
+            # 文件列表
+            files = request.data.get('files', None)
+
+            # 增加日志
+            if step_log_file_id is not None and type is not None and title is not None:
+                feedbacklog = FeedBackLog(step_log_file_id=step_log_file_id, type=type, title=title, memo=memo)
+                feedbacklog.save()
+
+                if files:
+                    for file in files:
+                        # 增加文件表记录
+                        feedback_file = FeedBacks(feedbacklog=feedbacklog, name=file['name'], path=file['url'])
+                        feedback_file.save()
+
+                # 如果存在反馈富文本,则先添加反馈富文本
+                if content:
+                    feedbacktexts = FeedBackTexts(feedbacklog=feedbacklog, content=content)
+                    feedbacktexts.save()
+
+        except Exception as e:
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+
 
 def step_objects(task_id):
     """
