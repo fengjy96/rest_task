@@ -157,40 +157,41 @@ class StepProgressUpdateView(APIView):
 
     def post(self, request):
         try:
-            # 步骤标识
-            step_id = request.data.get('step_id', None)
-            # 标题
-            title = request.data.get('title', None)
-            # 进度
-            progress = request.data.get('progress', None)
-            # 备注
-            memo = request.data.get('memo', None)
-            # 内容
-            content = request.data.get('content', None)
-            # 文件列表
-            files = request.data.get('files', None)
+         # 步骤标识
+         step_id = request.data.get('step_id', None)
+         # 标题
+         title = request.data.get('title', None)
+         # 进度
+         progress = request.data.get('progress', None)
+         # 备注
+         memo = request.data.get('memo', None)
+         # 内容
+         content = request.data.get('content', None)
 
-            # 增加步骤日志
-            if step_id is not None and title is not None and progress is not None:
-                steplog = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
-                steplog.save()
+         files = request.data.get('files', None)
 
-                if files:
-                    for file in files:
-                        # 增加文件表记录
-                        step_log_file = Files(steplog=steplog, name=file['name'], path=file['url'])
-                        step_log_file.save()
+         # 增加步骤日志
+         if step_id is not None and title is not None and progress is not None:
+             steplog = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
+             steplog.save()
 
-                # 如果存在富文本,则先添加富文本
-                if content:
-                    progresstexts = ProgressTexts(steplog=steplog, content=content)
-                    progresstexts.save()
+             if files:
+                 for file in files:
+                     #增加文件表记录
+                     step_log_file = Files(steplog=steplog, name=file['name'], path=file['url'])
+                     step_log_file.save()
 
-                # 更新步骤表时进度
-                step = Step.objects.get(id=step_id)
-                if step:
-                    step.progress = progress
-                    step.save()
+             # 如果存在富文本,则先添加富文本
+             if content:
+                 progresstexts = ProgressTexts(steplog=steplog, content=content)
+                 progresstexts.save()
+
+             # 更新步骤表时进度
+             step = Step.objects.get(id=step_id)
+             if step:
+                 step.progress = progress
+                 step.save()
+
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
@@ -438,7 +439,7 @@ def steplog_objects(id):
     """
     steplog_objects_data = []
 
-    steplogs = StepLog.objects.filter(step_id=id)
+    steplogs = StepLog.objects.filter(step_id=id).order_by("-add_time")
     if steplogs:
         for steplog in steplogs:
             if steplog:
