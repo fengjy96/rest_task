@@ -157,19 +157,17 @@ class StepProgressUpdateView(APIView):
     def post(self, request):
         try:
          # 步骤标识
-         step_id = request.data.get('step_id')
+         step_id = request.data.get('step_id', None)
          # 标题
-         title = request.data.get('title')
+         title = request.data.get('title', None)
          # 进度
-         progress = request.data.get('progress')
+         progress = request.data.get('progress', None)
          # 备注
-         memo = request.data.get('memo')
-         # 类型
-         type = request.data.get('type')
+         memo = request.data.get('memo', None)
          # 内容
-         content = request.data.get('content')
+         content = request.data.get('content', None)
 
-         files = request.data.get('files')
+         files = request.data.get('files', None)
 
          # 增加步骤日志
          if step_id is not None and title is not None and progress is not None:
@@ -183,10 +181,9 @@ class StepProgressUpdateView(APIView):
                      file.save()
 
              # 如果存在富文本,则先添加富文本
-             if type is not None and content is not None:
-                 if type > 0:
-                     progresstexts = ProgressTexts(steplog=steplog, content=content)
-                     progresstexts.save()
+             if not content:
+                 progresstexts = ProgressTexts(steplog=steplog, content=content)
+                 progresstexts.save()
 
              # 更新步骤表时进度
              step = Step.objects.get(id=step_id)
@@ -274,7 +271,7 @@ def steplogs_objects(id):
     """
     steplog_objects_data = []
 
-    steplogs = StepLog.objects.filter(step_id=id)
+    steplogs = StepLog.objects.filter(step_id=id).order_by("-add_time")
     if steplogs:
         for steplog in steplogs:
             if steplog:
@@ -306,7 +303,6 @@ def files_objects(id):
                 dict_obj["id"] = file.id
                 dict_obj["name"] = file.name
                 dict_obj["path"] = file.path
-                dict_obj["type"] = 1
                 dict_obj["content"] = ''
                 dict_obj["add_time"] = file.add_time
 
@@ -322,7 +318,6 @@ def files_objects(id):
                 dict_obj["id"] = progresstext.id
                 dict_obj["name"] = ''
                 dict_obj["path"] = ''
-                dict_obj["type"] = 0
                 dict_obj["content"] = progresstext.content
                 dict_obj["add_time"] = progresstext.add_time
 
