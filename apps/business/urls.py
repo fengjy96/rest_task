@@ -62,6 +62,8 @@ urlpatterns = [
 
     # 步骤进度更新
     path(r'api/v1/step/progress/update', step.StepProgressUpdateView.as_view(), name='step_progress_update'),
+    # 步骤进度更新日志
+    path(r'api/v1/step/progress/log', step.StepsLogsView.as_view(), name='step_progress_log'),
 
     ## 文件相关
 

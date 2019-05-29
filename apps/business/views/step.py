@@ -124,7 +124,7 @@ class StepsLogsView(APIView):
     def get(self, request, format=None):
         try:
             # 步骤标识
-            step_id = request.data.get('step_id')
+            step_id = request.query_params.get('step_id')
 
             step_objects_data = steplog_objects(step_id)
 
@@ -399,7 +399,7 @@ def steplog_objects(id):
     """
     steplog_objects_data = []
 
-    steplogs = StepLog.objects.filter(id=id)
+    steplogs = StepLog.objects.filter(step_id=id)
     if steplogs:
         for steplog in steplogs:
             if steplog:
