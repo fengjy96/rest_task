@@ -14,18 +14,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='points',
-            name='user',
-        ),
-        migrations.RemoveField(
-            model_name='pointsdetail',
-            name='user',
-        ),
-        migrations.RemoveField(
-            model_name='projectpoints',
-            name='link_id',
-        ),
         migrations.AddField(
             model_name='projectpoints',
             name='project',
@@ -55,11 +43,5 @@ class Migration(migrations.Migration):
             model_name='projectpoints',
             name='user',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='project_points_user_id', to=settings.AUTH_USER_MODEL, verbose_name='用户标识'),
-        ),
-        migrations.DeleteModel(
-            name='Points',
-        ),
-        migrations.DeleteModel(
-            name='PointsDetail',
         ),
     ]
