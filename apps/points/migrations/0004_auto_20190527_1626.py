@@ -14,18 +14,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='points',
-            name='user',
-        ),
-        migrations.RemoveField(
-            model_name='pointsdetail',
-            name='user',
-        ),
-        migrations.RemoveField(
-            model_name='projectpoints',
-            name='link_id',
-        ),
         migrations.AddField(
             model_name='projectpoints',
             name='project',

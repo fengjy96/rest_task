@@ -45,15 +45,6 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': '任务日志',
             },
         ),
-        migrations.RenameField(
-            model_name='feedbacklog',
-            old_name='linkid',
-            new_name='link_id',
-        ),
-        migrations.RemoveField(
-            model_name='files',
-            name='task',
-        ),
         migrations.AddField(
             model_name='feedbacklog',
             name='type',
