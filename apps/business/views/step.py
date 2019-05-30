@@ -103,18 +103,19 @@ class StepLogFileFeedBackLogView(APIView):
     def get(self, request, format=None):
         try:
             # 文件标识
-            file_id = request.data.get('file_id')
+            file_id = request.query_params.get('file_id', None)
             # 类型
-            type = request.data.get('type')
+            type = request.query_params.get('type', None)
 
-            if type == 0:
-                file_objects_data = one_file_objects(file_id)
-            else:
-                file_objects_data = one_progresstext_objects(file_id)
+            if file_id is not None and type is not None:
+                if type == '1':
+                    file_objects_data = one_file_objects(file_id)
+                else:
+                    file_objects_data = one_progresstext_objects(file_id)
+                return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=file_objects_data)
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=file_objects_data)
 
 
 class StepsLogsView(APIView):
