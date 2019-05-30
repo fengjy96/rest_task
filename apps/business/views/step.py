@@ -464,47 +464,23 @@ def one_file_objects(id):
     """
     单个文件以及反馈日志
     """
-    file_objects_data = []
+    feedback_logs = []
 
-    files = Files.objects.filter(id=id)
-    if files:
-        for file in files:
-            if file:
-                dict_obj = {}
-                dict_obj["id"] = file.id
-                dict_obj["name"] = file.name
-                dict_obj["path"] = file.path
-                dict_obj["type"] = 1
-                dict_obj["content"] = ''
-                dict_obj["add_time"] = file.add_time
+    file = Files.objects.get(id=id)
+    if file:
+        feedback_logs = feedbacklog_objects(file.id, 1)
 
-                dict_obj["feedbacks"] = feedbacklog_objects(file.id, 1)
-
-                file_objects_data.append(dict_obj)
-
-    return file_objects_data
+    return feedback_logs
 
 
 def one_progresstext_objects(id):
     """
     单个文件以及反馈日志
     """
-    file_objects_data = []
+    feedback_logs = []
 
-    progresstexts = ProgressTexts.objects.filter(id=id)
-    if progresstexts:
-        for progresstext in progresstexts:
-            if progresstext:
-                dict_obj = {}
-                dict_obj["id"] = progresstext.id
-                dict_obj["name"] = ''
-                dict_obj["path"] = ''
-                dict_obj["type"] = 0
-                dict_obj["content"] = progresstext.content
-                dict_obj["add_time"] = progresstext.add_time
+    progresstext = ProgressTexts.objects.get(id=id)
+    if progresstext:
+        feedback_logs = feedbacklog_objects(progresstext.id, 0)
 
-                dict_obj["feedbacks"] = feedbacklog_objects(progresstext.id, 0)
-
-                file_objects_data.append(dict_obj)
-
-    return file_objects_data
+    return feedback_logs
