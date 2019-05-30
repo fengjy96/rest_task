@@ -348,6 +348,7 @@ def files_objects(id):
                 dict_obj["id"] = file.id
                 dict_obj["name"] = file.name
                 dict_obj["path"] = file.path
+                dict_obj["type"] = 1
                 dict_obj["content"] = ''
                 dict_obj["add_time"] = file.add_time
 
@@ -363,6 +364,7 @@ def files_objects(id):
                 dict_obj["id"] = progresstext.id
                 dict_obj["name"] = ''
                 dict_obj["path"] = ''
+                dict_obj["type"] = 0
                 dict_obj["content"] = progresstext.content
                 dict_obj["add_time"] = progresstext.add_time
 
