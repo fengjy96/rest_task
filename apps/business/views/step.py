@@ -379,7 +379,7 @@ def feedbacklog_objects(id, type):
     """
     feedbacklog_objects_data = []
 
-    FeedBackLogs = FeedBackLog.objects.filter(link_id=id, type=type)
+    FeedBackLogs = FeedBackLog.objects.filter(step_log_file_id=id, type=type)
     if FeedBackLogs:
         for feedbacklog in FeedBackLogs:
             if feedbacklog:
