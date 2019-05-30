@@ -199,6 +199,12 @@ class StepProgressUpdateView(APIView):
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
+    def updateTaskProgress(self):
+        """
+        更新任务进度
+        :return:
+        """
+
 
 class StepLogFileFeedBackUpdateView(APIView):
     """
@@ -382,7 +388,7 @@ def feedbacklog_objects(id, type):
     """
     feedbacklog_objects_data = []
 
-    FeedBackLogs = FeedBackLog.objects.filter(step_log_file_id=id, type=type)
+    FeedBackLogs = FeedBackLog.objects.filter(step_log_file_id=id, type=type).order_by('-add_time')
     if FeedBackLogs:
         for feedbacklog in FeedBackLogs:
             if feedbacklog:
