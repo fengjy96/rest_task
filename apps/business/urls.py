@@ -62,8 +62,8 @@ urlpatterns = [
 
     # 步骤进度更新
     path(r'api/v1/step/progress/update', step.StepProgressUpdateView.as_view(), name='step_progress_update'),
-    # 步骤进度更新日志
-    path(r'api/v1/step/progress/log', step.StepsLogsView.as_view(), name='step_progress_log'),
+    # 单条步骤进度更新日志
+    path(r'api/v1/step/progress/log', step.StepProgressUpdateLogsView.as_view(), name='step_progress_log'),
     # 步骤进度日志反馈提交
     path(r'api/v1/step/file/feedback/submit', step.StepLogFileFeedBackUpdateView.as_view(), name='step_log_file_feedback_submit'),
     # 获取步骤进度反馈日志

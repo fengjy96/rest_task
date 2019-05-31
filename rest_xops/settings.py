@@ -16,13 +16,13 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 # mini 对外 ip
-# HOST = '192.168.1.117'
+HOST = '192.168.1.117'
 # 内网 centOS 服务器对外 IP
 # HOST = '192.168.1.110'
 # 本地 ip
 # HOST = '127.0.0.1'
 # pro 对外 ip
-HOST = '192.168.1.165'
+# HOST = '192.168.1.165'
 # 内网 centos 对外 ip
 # HOST = '192.168.1.110'
 # others
