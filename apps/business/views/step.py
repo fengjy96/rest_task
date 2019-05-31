@@ -15,6 +15,8 @@ from business.models.steplog import StepLog, FeedBackLog
 from common.custom import CommonPagination
 from utils.basic import MykeyResponse
 
+from .base import BusinessPublic
+
 
 class StepViewSet(ModelViewSet):
     """
@@ -106,6 +108,7 @@ class StepProgressUpdateView(APIView):
                 if step:
                     step.progress = progress
                     step.save()
+                    self.updateProgress(step_id)
 
         except Exception as e:
             msg = e.args if e else '请求失败'
@@ -113,11 +116,13 @@ class StepProgressUpdateView(APIView):
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def updateTaskProgress(self):
+    def updateProgress(self, step_id):
         """
-        更新任务进度
+        更新进度
         :return:
         """
+        BusinessPublic.update_task_progress(step_id)
+        BusinessPublic.update_project_progress(step_id)
 
 
 class StepProgressUpdateLogsView(APIView):

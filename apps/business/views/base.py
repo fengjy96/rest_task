@@ -108,7 +108,7 @@ class BusinessPublic:
         return ReasonType.objects.get(key=key).id
 
     @classmethod
-    def update_task_progress(self, step_id=0):
+    def update_task_progress(self, step_id):
         """
         根据任务步骤百分比更新任务百分比
         """
@@ -118,14 +118,12 @@ class BusinessPublic:
             step = Step.objects.get(id=step_id)
             if step is not None:
                 task_id = step.task_id
-                # 所有生效的任务步骤,包括未审核通过
-                steps_all = Step.objects.filter(task_id=task_id, is_active=1)
-                step_nums = steps_all.count()
 
-                # 所有生效的审核通过的任务步骤
-                steps_preview = Step.objects.filter(task_id=task_id, is_active=1, audit_status=2)
-                for step in steps_preview:
-                    progress = steps_preview.progress
+                steps = Step.objects.filter(task_id=task_id, is_active=1)
+                step_nums = steps.count()
+
+                for step in steps:
+                    progress = step.progress
                     step_percentage = progress / (step_nums * 100)
                     step_percentage = round(step_percentage, 2)
                     step_percentage = step_percentage * 100
@@ -137,12 +135,12 @@ class BusinessPublic:
                     task.save()
 
     @classmethod
-    def update_project_progress(self, step_id=0):
+    def update_project_progress(self, step_id):
         """
         根据任务百分比更新项目百分比
         """
         if step_id is not None:
-            # 任务百分比
+            # 项目百分比
             project_progress = 0
 
             step = Step.objects.get(id=step_id)
@@ -152,12 +150,11 @@ class BusinessPublic:
                 if task is not None:
                     project_id = task.project_id
 
-                    # 所有生效的任务
-                    tasks_all = Task.objects.filter(project_id=task_id, is_active=1, audit_status=2)
-                    tasks_nums = tasks_all.count()
+                    tasks = Task.objects.filter(project_id=project_id, is_active=1)
+                    tasks_nums = tasks.count()
 
-                    for tasks in tasks_all:
-                        progress = tasks_all.progress
+                    for task in tasks:
+                        progress = task.progress
                         task_percentage = progress / (tasks_nums * 100)
                         task_percentage = round(task_percentage, 2)
                         task_percentage = task_percentage * 100
