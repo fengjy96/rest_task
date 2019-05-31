@@ -55,6 +55,12 @@ urlpatterns = [
     path(r'api/v1/task/receivers', task.TaskReceiverView.as_view(), name='task_receivers'),
     # 任务转派
     path(r'api/v1/task/allocate', task.TaskAllocateView.as_view(), name='task_allocate'),
+    # 任务验收提交
+    path(r'api/v1/task/check/submit', task.TaskCheckSubmitView.as_view(), name='task_check_submit'),
+    # 任务验收通过
+    path(r'api/v1/task/check/pass', task.TaskCheckPassView.as_view(), name='task_check_pass'),
+    # 任务验收不通过
+    path(r'api/v1/task/check/reject', task.TaskCheckRejectView.as_view(), name='task_check_reject'),
     # 判断是否存在文件为空的任务
     # path(r'api/v1/project/file/check', '', name='project_file_check'),
 

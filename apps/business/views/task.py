@@ -193,7 +193,8 @@ class TaskReceiverView(APIView):
 
         for user in users:
             # tasks = Task.objects.filter(receiver_id=user.id, is_active=1, receive_status__lte=3)
-            tasks = Task.objects.filter(~Q(receive_status=BusinessPublic.GetTaskStatusIdByKey('accepted')), receiver_id=user.id, is_active=1)
+            tasks = Task.objects.filter(~Q(receive_status=BusinessPublic.GetTaskStatusIdByKey('accepted')),
+                                        receiver_id=user.id, is_active=1)
 
             if len(tasks) > 0:
                 for task in tasks:
@@ -303,7 +304,7 @@ class TaskRejectView(APIView):
                                               messages='任务负责人已拒接!')
 
 
-class TaskAuditSubmitView(APIView):
+class TaskCheckSubmitView(APIView):
     """
     任务提交验收
     """
@@ -325,11 +326,11 @@ class TaskAuditSubmitView(APIView):
             if task is not None:
                 task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_check')
                 task.save()
-                BusinessPublic.create_message(task.receiver.id, task.sender.id,menu_id=2,
+                BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='有新的任务需要你的验收，请尽快处理!')
 
 
-class TaskAuditSuccessView(APIView):
+class TaskCheckPassView(APIView):
     """
     任务验收通过
     """
@@ -349,11 +350,38 @@ class TaskAuditSuccessView(APIView):
             from business.models.task import Task
             task = Task.objects.get(id=task_id)
             if task is not None:
-                # 任务已完成
-                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('finished')
+                # 任务已通过验收
+                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('checked')
                 task.save()
-                BusinessPublic.create_message(task.receiver.id, task.sender.id,menu_id=2,
+                BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='任务已通过验收!')
+
+
+class TaskCheckRejectView(APIView):
+    """
+    项目验收不通过
+    """
+
+    def post(self, request, format=None):
+        try:
+            # 任务标识
+            task_id = request.data.get('task_id')
+
+            self.update_task(task_id)
+        except Exception as e:
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+
+    def update_task(self, task_id):
+        if task_id is not None:
+            from business.models.task import Task
+            task = Task.objects.get(id=task_id)
+            if task is not None:
+                # 任务验收不通过
+                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('check_rejected')
+                task.save()
+                BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
+                                              messages='任务验收不通过')
 
 
 class TaskAllocateView(APIView):
@@ -391,10 +419,9 @@ class TaskAllocateView(APIView):
                 BusinessPublic.create_reason(task.id, task.sender.id, task.receiver.id,
                                              BusinessPublic.GetReasonTypeIdByKey('task_allocate'),
                                              reason)
-                BusinessPublic.create_message(task.receiver.id, task.sender.id,menu_id=2,
+                BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='已安排新的任务,请查看!')
                 self.update_step(task.id, task.sender.id)
-
 
     def update_step(self, task_id, receiver_id):
         if task_id is not None:
