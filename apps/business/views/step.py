@@ -5,23 +5,22 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from business.models.step import Step
-from business.serializers.step_serializer import StepSerializer, StepListSerializer, StepCreateSerializer
+from business.serializers.step_serializer import StepSerializer, StepListSerializer
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from business.filters import StepFilter
-from rest_framework.generics import ListAPIView
 from rest_framework.views import APIView
 from business.models.files import Files, FeedBacks, ProgressTexts, FeedBackTexts
 from business.models.steplog import StepLog, FeedBackLog
 from common.custom import CommonPagination
 from utils.basic import MykeyResponse
-import json
 
 
 class StepViewSet(ModelViewSet):
     """
     任务步骤：增删改查
     """
+
     queryset = Step.objects.all()
     serializer_class = StepSerializer
     ordering_fields = ('id',)
@@ -40,18 +39,11 @@ class StepViewSet(ModelViewSet):
         根据请求类型动态变更 serializer
         :return:
         """
-        if self.action == 'create':
-            return StepCreateSerializer
-        elif self.action == 'list':
+        if self.action == 'list':
             return StepListSerializer
         return StepSerializer
 
     def create(self, request, *args, **kwargs):
-        # request.data['sender'] = request.user.id
-        # if request.data['receiver']:
-        #     request.data['receive_status'] = 1
-        # else:
-        #     request.data['receive_status'] = 0
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -59,10 +51,6 @@ class StepViewSet(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
-        # if request.data['receiver']:
-        #     request.data['receive_status'] = 1
-        # else:
-        #     request.data['receive_status'] = 0
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -77,80 +65,6 @@ class StepViewSet(ModelViewSet):
         return Response(serializer.data)
 
 
-class StepListView(ListAPIView):
-    """
-    任务步骤：增删改查
-    """
-    queryset = Step.objects.all()
-    serializer_class = StepListSerializer
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    # 指定筛选类
-    filter_class = StepFilter
-    ordering_fields = ('id',)
-
-    def get_queryset(self):
-        # 步骤状态值为激活
-        is_active = 1
-
-        return Step.objects.filter(is_active=is_active)
-
-
-class StepLogFileFeedBackLogView(APIView):
-    """
-    单个文件以及富文本预览以及查看反馈
-    """
-
-    def get(self, request, format=None):
-        try:
-            # 文件标识
-            file_id = request.query_params.get('file_id', None)
-            # 类型
-            type = request.query_params.get('type', None)
-
-            if file_id is not None and type is not None:
-                if type == '1':
-                    file_objects_data = one_file_objects(file_id)
-                else:
-                    file_objects_data = one_progresstext_objects(file_id)
-                return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=file_objects_data)
-
-        except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-
-
-class StepsLogsView(APIView):
-    """
-    查询单条步骤以及日志
-    """
-
-    def get(self, request, format=None):
-        try:
-            # 步骤标识
-            step_id = request.query_params.get('step_id')
-
-            step_objects_data = steplog_objects(step_id)
-
-        except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=step_objects_data)
-
-
-class StepsViewSet(APIView):
-    """
-    查询所有步骤以及日志
-    """
-
-    def get(self, request, format=None):
-        # 任务标识
-        try:
-            task_id = request.data.get('task_id')
-
-            step_objects_data = step_objects(task_id)
-        except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=step_objects_data)
-
-
 class StepProgressUpdateView(APIView):
     """
     步骤进度更新
@@ -158,44 +72,44 @@ class StepProgressUpdateView(APIView):
 
     def post(self, request):
         try:
-         # 步骤标识
-         step_id = request.data.get('step_id', None)
-         # 标题
-         title = request.data.get('title', None)
-         # 进度
-         progress = request.data.get('progress', None)
-         # 备注
-         memo = request.data.get('memo', None)
-         # 内容
-         content = request.data.get('content', None)
+            # 步骤标识
+            step_id = request.data.get('step_id', None)
+            # 标题
+            title = request.data.get('title', None)
+            # 进度
+            progress = request.data.get('progress', None)
+            # 备注
+            memo = request.data.get('memo', None)
+            # 富文本内容
+            content = request.data.get('content', None)
+            # 文件
+            files = request.data.get('files', None)
 
-         files = request.data.get('files', None)
+            # 增加步骤日志
+            if step_id is not None and title is not None and progress is not None:
+                step_log = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
+                step_log.save()
 
-         # 增加步骤日志
-         if step_id is not None and title is not None and progress is not None:
-             steplog = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
-             steplog.save()
+                if files:
+                    for file in files:
+                        # 增加文件表记录
+                        step_log_file = Files(steplog=step_log, name=file['name'], path=file['url'])
+                        step_log_file.save()
 
-             if files:
-                 for file in files:
-                     #增加文件表记录
-                     step_log_file = Files(steplog=steplog, name=file['name'], path=file['url'])
-                     step_log_file.save()
+                # 如果存在富文本，则先添加富文本
+                if content:
+                    progresstexts = ProgressTexts(steplog=step_log, content=content)
+                    progresstexts.save()
 
-             # 如果存在富文本,则先添加富文本
-             if content:
-                 progresstexts = ProgressTexts(steplog=steplog, content=content)
-                 progresstexts.save()
-
-             # 更新步骤表时进度
-             step = Step.objects.get(id=step_id)
-             if step:
-                 step.progress = progress
-                 step.save()
-
+                # 更新步骤进度
+                step = Step.objects.get(id=step_id)
+                if step:
+                    step.progress = progress
+                    step.save()
 
         except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
@@ -204,6 +118,118 @@ class StepProgressUpdateView(APIView):
         更新任务进度
         :return:
         """
+
+
+class StepProgressUpdateLogsView(APIView):
+    """
+    查询单条步骤的进度更新日志
+    """
+
+    def get(self, request, format=None):
+        try:
+            # 步骤标识
+            step_id = request.query_params.get('step_id')
+
+            # 获取步骤日志
+            step_logs = self.get_step_logs(step_id)
+
+        except Exception as e:
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=step_logs)
+
+    def get_step_logs(self, id):
+        """
+        获取步骤日志
+        """
+        step_logs_list = []
+
+        step_logs = StepLog.objects.filter(step_id=id).order_by("-add_time")
+        for step_log in step_logs:
+            log_obj = {}
+            log_obj['id'] = step_log.id
+            log_obj['title'] = step_log.title
+            log_obj['progress'] = step_log.progress
+            log_obj['add_time'] = step_log.add_time
+            log_obj['files'] = self.get_step_log_files(step_log.id)
+            step_logs_list.append(log_obj)
+
+        return step_logs_list
+
+    def get_step_log_files(self, id):
+        """
+        日志文件列表
+        """
+        step_log_file_list = []
+
+        files = Files.objects.filter(steplog_id=id)
+        for file in files:
+            log_file_obj = {}
+            log_file_obj['id'] = file.id
+            log_file_obj['name'] = file.name
+            log_file_obj['path'] = file.path
+            log_file_obj['type'] = 1
+            log_file_obj['add_time'] = file.add_time
+            log_file_obj["feedbacks"] = self.get_feedback_logs(file.id, 1)
+            step_log_file_list.append(log_file_obj)
+
+        progresstexts = ProgressTexts.objects.filter(steplog_id=id)
+        for progresstext in progresstexts:
+            log_text_obj = {}
+            log_text_obj['id'] = progresstext.id
+            log_text_obj['content'] = progresstext.content
+            log_text_obj["type"] = 0
+            log_text_obj['add_time'] = progresstext.add_time
+            log_text_obj["feedbacks"] = self.get_feedback_logs(progresstext.id, 0)
+            step_log_file_list.append(log_text_obj)
+
+        return step_log_file_list
+
+    def get_feedback_logs(self, id, type):
+        """
+        反馈日志
+        """
+        feedback_logs_list = []
+
+        feedback_logs = FeedBackLog.objects.filter(step_log_file_id=id, type=type).order_by('-add_time')
+        for feedback_log in feedback_logs:
+            log_file_obj = {}
+            log_file_obj['id'] = feedback_log.id
+            log_file_obj['title'] = feedback_log.title
+            log_file_obj['memo'] = feedback_log.memo
+            log_file_obj['add_time'] = feedback_log.add_time
+            log_file_obj["files"] = self.get_feedback_log_files(feedback_log.id)
+            feedback_logs_list.append(log_file_obj)
+
+        return feedback_logs_list
+
+    def get_feedback_log_files(self, id):
+        """
+        反馈文件
+        """
+        feedback_log_file_list = []
+
+        feedback_log_files = FeedBacks.objects.filter(feedbacklog_id=id)
+        for log_file in feedback_log_files:
+            log_file_obj = {}
+            log_file_obj['id'] = log_file.id
+            log_file_obj['name'] = log_file.name
+            log_file_obj['path'] = log_file.path
+            log_file_obj['type'] = 1
+            log_file_obj['add_time'] = log_file.add_time
+            feedback_log_file_list.append(log_file_obj)
+
+
+        feedback_log_contents = FeedBackTexts.objects.filter(feedbacklog_id=id)
+        for log_content in feedback_log_contents:
+            log_text_obj = {}
+            log_text_obj['id'] = log_content.id
+            log_text_obj['content'] = log_content.content
+            log_text_obj['type'] = 0
+            log_text_obj['add_time'] = log_content.add_time
+            feedback_log_file_list.append(log_text_obj)
+
+        return feedback_log_file_list
 
 
 class StepLogFileFeedBackUpdateView(APIView):
@@ -228,265 +254,115 @@ class StepLogFileFeedBackUpdateView(APIView):
 
             # 增加日志
             if step_log_file_id is not None and type is not None and title is not None:
-                feedbacklog = FeedBackLog(step_log_file_id=step_log_file_id, type=type, title=title, memo=memo)
-                feedbacklog.save()
+                feedback_log = FeedBackLog(step_log_file_id=step_log_file_id, type=type, title=title, memo=memo)
+                feedback_log.save()
 
                 if files:
                     for file in files:
                         # 增加文件表记录
-                        feedback_file = FeedBacks(feedbacklog=feedbacklog, name=file['name'], path=file['url'])
+                        feedback_file = FeedBacks(feedbacklog=feedback_log, name=file['name'], path=file['url'])
                         feedback_file.save()
 
                 # 如果存在反馈富文本,则先添加反馈富文本
                 if content:
-                    feedbacktexts = FeedBackTexts(feedbacklog=feedbacklog, content=content)
-                    feedbacktexts.save()
+                    feedback_log_contents = FeedBackTexts(feedbacklog=feedback_log, content=content)
+                    feedback_log_contents.save()
 
         except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
 
-def step_objects(task_id):
+class StepLogFileFeedBackLogView(APIView):
     """
-    步骤
+    单个文件以及富文本预览以及查看反馈
     """
-    step_objects_data = []
 
-    steps = Step.objects.filter(task_id=task_id, is_active=1)
-    for step in steps:
-        if step:
-            dict_obj = {}
-            dict_obj["id"] = step.id
+    def get(self, request, format=None):
+        try:
+            # 文件标识
+            file_id = request.query_params.get('file_id', None)
+            # 类型
+            type = request.query_params.get('type', None)
 
-            dict_obj_company = {}
-            if step.company:
-                dict_obj_company["id"] = step.company.id
-                dict_obj_company["name"] = step.company.name
+            if file_id is not None and type is not None:
+                if type == '1':
+                    step_log_file_list = self.one_get_step_log_files(file_id)
+                else:
+                    step_log_file_list = self.one_progresstext_objects(file_id)
+                return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=step_log_file_list)
 
-            dict_obj_task = {}
-            if step.task:
-                dict_obj_task["id"] = step.task.id
-                dict_obj_task["name"] = step.task.name
+        except Exception as e:
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
 
-            dict_obj_design_type = {}
-            if step.task_design_type:
-                dict_obj_design_type["id"] = step.task_design_type.id
-                dict_obj_design_type["name"] = step.task_design_type.name
+    def one_get_step_log_files(self, id):
+        """
+        单个文件以及反馈日志
+        """
+        feedback_logs = []
 
-            dict_obj_sender = {}
-            if step.sender:
-                dict_obj_sender["id"] = step.sender.id
-                dict_obj_sender["name"] = step.sender.name
+        file = Files.objects.get(id=id)
+        if file:
+            feedback_logs = self.get_feedback_logs(file.id, 1)
 
-            dict_obj_receiver = {}
-            if step.receiver:
-                dict_obj_receiver["id"] = step.receiver.id
-                dict_obj_receiver["name"] = step.receiver.name
+        return feedback_logs
 
-            dict_obj_auditor = {}
-            if step.auditor:
-                dict_obj_auditor["id"] = step.auditor.id
-                dict_obj_auditor["name"] = step.auditor.name
+    def one_progresstext_objects(self, id):
+        """
+        单个文件以及反馈日志
+        """
+        feedback_logs = []
 
-            dict_obj["company"] = dict_obj_company
-            dict_obj["task_id"] = dict_obj_task
-            dict_obj["name"] = step.name
+        progresstext = ProgressTexts.objects.get(id=id)
+        if progresstext:
+            feedback_logs = self.get_feedback_logs(progresstext.id, 0)
 
-            if step.index:
-                dict_obj["index"] = step.index
-            else:
-                dict_obj["index"] = ''
+        return feedback_logs
 
-            dict_obj["progress"] = step.progress
-            dict_obj["task_design_type"] = dict_obj_design_type
-            dict_obj["is_active"] = step.is_active
-            dict_obj["is_finished"] = step.is_finished
-            dict_obj["sender"] = dict_obj_sender
-            dict_obj["send_status"] = step.send_status
-            dict_obj["receiver"] = dict_obj_receiver
-            dict_obj["receive_status"] = step.receive_status
-            dict_obj["auditor"] = dict_obj_auditor
-            dict_obj["audit_status"] = step.audit_status
+    def get_feedback_logs(self, id, type):
+        """
+        获取反馈日志
+        """
+        feedback_logs_list = []
 
-            dict_obj["logs"] = steplogs_objects(step.id)
+        feedback_logs = FeedBackLog.objects.filter(step_log_file_id=id, type=type).order_by('-add_time')
+        for feedback_log in feedback_logs:
+            log_obj = {}
+            log_obj['id'] = feedback_log.id
+            log_obj['title'] = feedback_log.title
+            log_obj['memo'] = feedback_log.memo
+            log_obj['add_time'] = feedback_log.add_time
+            log_obj["files"] = self.get_feedback_log_files(feedback_log.id)
+            feedback_logs_list.append(log_obj)
 
-            step_objects_data.append(dict_obj)
+        return feedback_logs_list
 
-    return step_objects_data
+    def get_feedback_log_files(self, id):
+        """
+        获取反馈日志文件
+        """
+        feedback_log_file_list = []
 
+        feedback_log_files = FeedBacks.objects.filter(feedbacklog_id=id)
+        for file in feedback_log_files:
+            file_obj = {}
+            file_obj['id'] = file.id
+            file_obj['name'] = file.name
+            file_obj['path'] = file.path
+            file_obj['type'] = 1
+            file_obj['add_time'] = file.add_time
+            feedback_log_file_list.append(file_obj)
 
-def steplogs_objects(id):
-    """
-    时间轴日志列表
-    """
-    steplog_objects_data = []
+        feedback_log_contents = FeedBackTexts.objects.filter(feedbacklog_id=id)
+        for log_content in feedback_log_contents:
+            text_obj = {}
+            text_obj['id'] = log_content.id
+            text_obj['content'] = log_content.content
+            text_obj['add_time'] = log_content.add_time
+            text_obj['type'] = 0
+            feedback_log_file_list.append(text_obj)
 
-    steplogs = StepLog.objects.filter(step_id=id).order_by("-add_time")
-    if steplogs:
-        for steplog in steplogs:
-            if steplog:
-                dict_obj = {}
-                dict_obj["id"] = steplog.id
-                dict_obj["title"] = steplog.title
-                dict_obj["progress"] = steplog.progress
-                dict_obj["memo"] = steplog.memo
-                dict_obj["add_time"] = steplog.add_time
-
-                dict_obj["files"] = files_objects(steplog.id)
-
-                steplog_objects_data.append(dict_obj)
-
-    return steplog_objects_data
-
-
-def files_objects(id):
-    """
-    日志文件列表
-    """
-    file_objects_data = []
-
-    files = Files.objects.filter(steplog_id=id)
-    if files:
-        for file in files:
-            if file:
-                dict_obj = {}
-                dict_obj["id"] = file.id
-                dict_obj["name"] = file.name
-                dict_obj["path"] = file.path
-                dict_obj["type"] = 1
-                dict_obj["content"] = ''
-                dict_obj["add_time"] = file.add_time
-
-                dict_obj["feedbacks"] = feedbacklog_objects(file.id, 1)
-
-                file_objects_data.append(dict_obj)
-
-    progresstexts = ProgressTexts.objects.filter(steplog_id=id)
-    if progresstexts:
-        for progresstext in progresstexts:
-            if progresstext:
-                dict_obj = {}
-                dict_obj["id"] = progresstext.id
-                dict_obj["name"] = ''
-                dict_obj["path"] = ''
-                dict_obj["type"] = 0
-                dict_obj["content"] = progresstext.content
-                dict_obj["add_time"] = progresstext.add_time
-
-                dict_obj["feedbacks"] = feedbacklog_objects(progresstext.id, 0)
-
-                file_objects_data.append(dict_obj)
-
-    return file_objects_data
-
-
-def feedbacklog_objects(id, type):
-    """
-    反馈日志
-    """
-    feedbacklog_objects_data = []
-
-    FeedBackLogs = FeedBackLog.objects.filter(step_log_file_id=id, type=type).order_by('-add_time')
-    if FeedBackLogs:
-        for feedbacklog in FeedBackLogs:
-            if feedbacklog:
-                dict_obj = {}
-                dict_obj["id"] = feedbacklog.id
-                dict_obj["title"] = feedbacklog.title
-                dict_obj["memo"] = feedbacklog.memo
-                dict_obj["add_time"] = feedbacklog.add_time
-
-                dict_obj["files"] = feedback_objects(feedbacklog.id)
-
-                feedbacklog_objects_data.append(dict_obj)
-
-    return feedbacklog_objects_data
-
-
-def feedback_objects(id):
-    """
-    反馈文件
-    """
-    feedback_objects_data = []
-
-    feedbacks = FeedBacks.objects.filter(feedbacklog_id=id)
-    if feedbacks:
-        for feedback in feedbacks:
-            if feedback:
-                dict_obj = {}
-                dict_obj["id"] = feedback.id
-                dict_obj["name"] = feedback.name
-                dict_obj["path"] = feedback.path
-                dict_obj["type"] = 1
-                dict_obj["content"] = ''
-                dict_obj["add_time"] = feedback.add_time
-
-                feedback_objects_data.append(dict_obj)
-
-    feedbacktexts = FeedBackTexts.objects.filter(feedbacklog_id=id)
-    if feedbacktexts:
-        for feedbacktext in feedbacktexts:
-            if feedbacktext:
-                dict_obj = {}
-                dict_obj["id"] = feedbacktext.id
-                dict_obj["name"] = ''
-                dict_obj["path"] = ''
-                dict_obj["type"] = 0
-                dict_obj["content"] = feedbacktext.content
-                dict_obj["add_time"] = feedbacktext.add_time
-
-                feedback_objects_data.append(dict_obj)
-
-    return feedback_objects_data
-
-
-def steplog_objects(id):
-    """
-    单条时间轴日志
-    """
-    steplog_objects_data = []
-
-    steplogs = StepLog.objects.filter(step_id=id).order_by("-add_time")
-    if steplogs:
-        for steplog in steplogs:
-            if steplog:
-                dict_obj = {}
-                dict_obj["id"] = steplog.id
-                dict_obj["title"] = steplog.title
-                dict_obj["progress"] = steplog.progress
-                dict_obj["memo"] = steplog.memo
-                dict_obj["add_time"] = steplog.add_time
-
-                dict_obj["files"] = files_objects(steplog.id)
-
-                steplog_objects_data.append(dict_obj)
-
-    return steplog_objects_data
-
-
-def one_file_objects(id):
-    """
-    单个文件以及反馈日志
-    """
-    feedback_logs = []
-
-    file = Files.objects.get(id=id)
-    if file:
-        feedback_logs = feedbacklog_objects(file.id, 1)
-
-    return feedback_logs
-
-
-def one_progresstext_objects(id):
-    """
-    单个文件以及反馈日志
-    """
-    feedback_logs = []
-
-    progresstext = ProgressTexts.objects.get(id=id)
-    if progresstext:
-        feedback_logs = feedbacklog_objects(progresstext.id, 0)
-
-    return feedback_logs
+        return feedback_log_file_list

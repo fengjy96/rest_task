@@ -24,16 +24,6 @@ class StepSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-class StepCreateSerializer(serializers.ModelSerializer):
-    """
-    任务步骤创建
-    """
-
-    class Meta:
-        model = Step
-        fields = '__all__'
-
-
 class StepRejectReasonSerializer(serializers.ModelSerializer):
     """
     任务步骤拒绝原因：增删改查
