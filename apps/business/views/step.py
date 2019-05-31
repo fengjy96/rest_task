@@ -50,6 +50,10 @@ class StepViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
+
+        task_id = request.data.get('task', None)
+        BusinessPublic.update_progress_by_task_id(task_id)
+
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
@@ -65,6 +69,15 @@ class StepViewSet(ModelViewSet):
             instance._prefetched_objects_cache = {}
 
         return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+
+        task_id = instance.task_id
+        BusinessPublic.update_progress_by_task_id(task_id)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class StepProgressUpdateView(APIView):
@@ -108,21 +121,15 @@ class StepProgressUpdateView(APIView):
                 if step:
                     step.progress = progress
                     step.save()
-                    self.updateProgress(step_id)
+
+                    task_id = step.task_id
+                    BusinessPublic.update_progress_by_task_id(task_id)
 
         except Exception as e:
             msg = e.args if e else '请求失败'
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
-
-    def updateProgress(self, step_id):
-        """
-        更新进度
-        :return:
-        """
-        BusinessPublic.update_task_progress(step_id)
-        BusinessPublic.update_project_progress(step_id)
 
 
 class StepProgressUpdateLogsView(APIView):
