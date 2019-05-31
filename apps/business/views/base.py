@@ -118,11 +118,13 @@ class BusinessPublic:
             task_percentage = progress / (task_nums * 100)
             task_percentage = round(task_percentage, 2)
             task_percentage = task_percentage * 100
-            project_progress = project_progress + task_percentage
+            project_progress = int(project_progress + task_percentage)
 
         project = Project.objects.get(id=project_id)
         if project:
             project.progress = project_progress
+            if project_progress == 100:
+                project.receive_status = cls.GetTaskStatusObjectByKey('finished')
             project.save()
 
     @classmethod
@@ -136,11 +138,13 @@ class BusinessPublic:
             step_percentage = progress / (step_nums * 100)
             step_percentage = round(step_percentage, 2)
             step_percentage = step_percentage * 100
-            task_progress = task_progress + step_percentage
+            task_progress = int(task_progress + step_percentage)
 
         task = Task.objects.get(id=task_id)
         if task:
             task.progress = task_progress
+            if task_progress == 100:
+                task.receive_status = cls.GetTaskStatusObjectByKey('finished')
             task.save()
             project_id = task.project_id
             cls.update_progress_by_project_id(project_id)
