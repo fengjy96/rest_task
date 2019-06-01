@@ -58,6 +58,11 @@ class TaskViewSet(ModelViewSet):
             project = Project.objects.get(id=project_id)
             project_receiver_id = project.receiver_id
 
+            # 如果项目状态为已完成，则当创建任务时，需要将项目状态改为已接手
+            if project.receive_status.key == 'finished':
+                project.receive_status_id = BusinessPublic.GetProjectStatusIdByKey('accepted')
+                project.save()
+
             # 如果存在项目负责人则将该项目负责人作为任务审核员
             if project_receiver_id is not None:
                 request.data['auditor'] = project_receiver_id
@@ -353,6 +358,10 @@ class TaskCheckPassView(APIView):
                 # 任务已通过验收
                 task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('checked')
                 task.save()
+
+                project_id = task.project_id
+                BusinessPublic.update_progress_by_project_id(project_id)
+
                 BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='任务已通过验收!')
 
@@ -366,13 +375,15 @@ class TaskCheckRejectView(APIView):
         try:
             # 任务标识
             task_id = request.data.get('task_id')
+            # 验收不通过原因
+            reason = request.data.get('reason') or ''
 
-            self.update_task(task_id)
+            self.update_task(task_id, reason)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def update_task(self, task_id):
+    def update_task(self, task_id, reason):
         if task_id is not None:
             from business.models.task import Task
             task = Task.objects.get(id=task_id)
@@ -380,6 +391,9 @@ class TaskCheckRejectView(APIView):
                 # 任务验收不通过
                 task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('check_rejected')
                 task.save()
+                BusinessPublic.create_reason(task.id, task.receiver.id, task.sender.id,
+                                             BusinessPublic.GetReasonTypeIdByKey('task_check_reject'),
+                                             reason)
                 BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='任务验收不通过')
 

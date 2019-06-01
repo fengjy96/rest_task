@@ -111,9 +111,10 @@ class BusinessPublic:
     def update_progress_by_project_id(cls, project_id):
         tasks = Task.objects.filter(project_id=project_id, is_active=1)
         task_nums = tasks.count()
+        checked_tasks = tasks.filter(receive_status_id=cls.GetTaskStatusIdByKey('checked'))
 
         project_progress = 0
-        for task in tasks:
+        for task in checked_tasks:
             progress = task.progress
             task_percentage = progress / (task_nums * 100)
             task_percentage = round(task_percentage, 2)
@@ -124,7 +125,7 @@ class BusinessPublic:
         if project:
             project.progress = project_progress
             if project_progress == 100:
-                project.receive_status = cls.GetTaskStatusObjectByKey('finished')
+                project.receive_status = cls.GetProjectStatusObjectByKey('finished')
             project.save()
 
     @classmethod
