@@ -6,12 +6,25 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from configuration.models import (
     TaskStep, TaskAssessment, TaskPriority, TaskQuality,
-    TaskDesignType, TaskType, Skill, Salary, ProjectStatus, TaskStatus)
+    TaskDesignType, TaskType, Skill, Salary, ProjectStatus, TaskStatus, ReasonType)
 from .serializers import (
     TaskTypeSerializer, TaskStepSerializer, TaskAssessmentSerializer,
     TaskPrioritySerializer, TaskQualitySerializer, TaskDesignTypeSerializer, SkillSerializer, SalarySerializer,
-    ProjectStatusSerializer, TaskStatusSerializer)
+    ProjectStatusSerializer, TaskStatusSerializer, ReasonTypeSerializer)
 
+
+class ReasonTypeViewSet(ModelViewSet):
+    """
+    原因类型：增删改查
+    """
+
+    # 获取查询集
+    queryset = ReasonType.objects.all()
+    serializer_class = ReasonTypeSerializer
+    # 指定授权类
+    # permission_classes = (IsAuthenticated,)
+    # 指定认证类
+    authentication_classes = (JSONWebTokenAuthentication,)
 
 class ProjectStatusViewSet(ModelViewSet):
     """

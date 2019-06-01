@@ -5,7 +5,7 @@ from business.models.task import Task
 from business.models.step import Step
 from business.models.files import Files
 from business.models.message import Message
-
+from business.models.reason import Reason
 
 class ProjectFilter(django_filters.rest_framework.FilterSet):
     """
@@ -55,3 +55,9 @@ class MessageFilter(django_filters.rest_framework.FilterSet):
     class Meta:
         model = Message
         fields = ['receiver', ]
+
+
+class ReasonFilter(django_filters.rest_framework.FilterSet):
+    class Meta:
+        model = Reason
+        fields = ['type_id', 'link_id']
