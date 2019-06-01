@@ -4,10 +4,11 @@ from rest_framework import routers
 
 from configuration.views import (
     TaskTypeViewSet, SalaryViewSet, SkillViewSet, TaskDesignTypeViewSet, TaskPriorityViewSet, TaskQualityViewSet,
-    TaskStepViewSet, ProjectStatusViewSet, TaskStatusViewSet)
+    TaskStepViewSet, ProjectStatusViewSet, TaskStatusViewSet, ReasonTypeViewSet)
 
 # 创建路由器并注册相关视图
 router = routers.DefaultRouter()
+router.register('reason_types', ReasonTypeViewSet, basename='reason_types')
 router.register('project_statuses', ProjectStatusViewSet, basename='project_statuses')
 router.register('task_statuses', TaskStatusViewSet, basename='task_statuses')
 router.register('task_types', TaskTypeViewSet, basename='task_types')

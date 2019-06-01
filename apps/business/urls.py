@@ -8,6 +8,7 @@ from business.views.step import StepViewSet
 from business.views import files
 from business.views import message
 from business.views import step
+from business.views import reasons
 
 router = routers.DefaultRouter()
 router.register('art_projects', ProjectViewSet, basename='projects')
@@ -87,4 +88,7 @@ urlpatterns = [
     path(r'api/v1/files', files.FilesListViewSet.as_view(),name='files'),
     # 消息查询
     path(r'api/v1/messages', message.MessageViewSet.as_view(), name='messages'),
+
+    ## 原因相关
+    path(r'api/v1/reasons', reasons.ReasonViewSet.as_view(), name='reasons'),
 ]

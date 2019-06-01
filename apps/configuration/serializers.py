@@ -1,7 +1,16 @@
 from rest_framework import serializers
 from configuration.models import TaskDesignType, TaskType, TaskQuality, TaskPriority, TaskAssessment, TaskStep, Skill, \
-    Salary, ProjectStatus, TaskStatus
+    Salary, ProjectStatus, TaskStatus, ReasonType
 
+
+class ReasonTypeSerializer(serializers.ModelSerializer):
+    """
+    项目状态序列化
+    """
+
+    class Meta:
+        model = ReasonType
+        fields = '__all__'
 
 class ProjectStatusSerializer(serializers.ModelSerializer):
     """
