@@ -6,7 +6,7 @@ from business.views import project
 from business.views.task import TaskViewSet, TaskAllocateReasonViewSet
 from business.views.step import StepViewSet
 from business.views import files
-from business.views import message
+from business.views.message import MessageViewSet, MessageUpdateViewSet
 from business.views import step
 from business.views import reasons
 
@@ -17,6 +17,8 @@ router.register('project_fee', ProjectFeeViewSet, basename='project_fee')
 router.register('tasks', TaskViewSet, basename='tasks')
 router.register('task_allocate_reason', TaskAllocateReasonViewSet, basename='task_allocate_reason')
 router.register('steps', StepViewSet, basename='steps')
+router.register('messages', MessageViewSet, basename='messages')
+
 
 urlpatterns = [
     path(r'api/v1/', include(router.urls)),
@@ -91,8 +93,11 @@ urlpatterns = [
     path(r'api/v1/imageDown', files.FileDownloadView.as_view(),name='file_download'),
     # 文件查询
     path(r'api/v1/files', files.FilesListViewSet.as_view(),name='files'),
+
+    ## 消息相关
+
     # 消息查询
-    path(r'api/v1/messages', message.MessageViewSet.as_view(), name='messages'),
+    path(r'api/v1/message/update', MessageUpdateViewSet.as_view(), name='message_update'),
 
     ## 原因相关
     path(r'api/v1/reasons', reasons.ReasonViewSet.as_view(), name='reasons'),

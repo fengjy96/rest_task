@@ -11,4 +11,14 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = '__all__'
+
+
+class MessageListSerializer(serializers.ModelSerializer):
+    """
+    消息：查
+    """
+
+    class Meta:
+        model = Message
+        fields = '__all__'
         depth = 1
