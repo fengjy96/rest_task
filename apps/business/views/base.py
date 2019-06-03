@@ -70,7 +70,7 @@ class BusinessPublic:
         """
         计算两个日期的时间差
         """
-        return (date1 - date2).days
+        return (date1 - date2).days + 1
 
     @classmethod
     def GetProjectStatusIdByKey(cls, key):
