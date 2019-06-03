@@ -193,3 +193,17 @@ class ReasonType(models.Model):
     class Meta:
         verbose_name = '原因类型'
         verbose_name_plural = verbose_name
+
+class Fee(models.Model):
+    """
+    基本费用表
+    """
+    name = models.CharField(max_length=80, verbose_name='费用名称')
+    value = models.IntegerField(verbose_name='费用', default=0)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        verbose_name = '基本费用'
+        verbose_name_plural = verbose_name
