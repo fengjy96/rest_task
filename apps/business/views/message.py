@@ -61,7 +61,11 @@ class MessageViewSet(ModelViewSet):
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
 
-        queryset = self.filter_list_queryset(request, queryset)
+        receiver_id = request.user.id
+
+        queryset = queryset.filter(receiver_id=receiver_id)
+
+        # queryset = self.filter_list_queryset(request, queryset)
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -70,50 +74,6 @@ class MessageViewSet(ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-    def filter_list_queryset(self, request, queryset):
-        """
-        根据用户所属角色过滤查询集
-        :param request:
-        :param queryset:
-        :return:
-        """
-
-        # 定义空的数据集
-        emptyQuerySet = self.queryset.filter(status=999)
-        queryset_project_auditor = emptyQuerySet
-        queryset_project_manager = emptyQuerySet
-        queryset_business_manager = emptyQuerySet
-
-        # 获取当前用户 id
-        user_id = request.user.id
-        # 获取当前用户所属角色 id 列表
-        user_role_ids = self.get_user_roles(user_id)
-
-        # 如果当前用户拥有管理员权限，则不做特殊处理
-        if 1 in user_role_ids:
-            pass
-        else:
-            # 如果当前用户拥有项目审核员权限，则返回与该审核员关联的项目数据
-            if 5 in user_role_ids:
-                queryset_project_auditor = queryset.filter(auditor_id=user_id)
-            # 如果当前用户拥有项目负责人权限，则返回与该项目负责人关联的项目数据
-            if 7 in user_role_ids:
-                queryset_project_manager = queryset.filter(receiver_id=user_id)
-            # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
-            if 8 in user_role_ids:
-                queryset_business_manager = queryset.filter(sender_id=user_id)
-
-            queryset = queryset_project_auditor | queryset_project_manager | queryset_business_manager
-
-        return queryset
-
-    def get_user_roles(self, user_id):
-        if user_id is not None:
-            user = UserProfile.objects.get(id=user_id)
-            user_roles = user.roles.all()
-            user_role_ids = set(map(lambda user_role: user_role.id, user_roles))
-            return user_role_ids
 
 
 class MessageUpdateViewSet(APIView):
