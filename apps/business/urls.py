@@ -35,11 +35,11 @@ urlpatterns = [
     path(r'api/v1/project/audit/pass', project.ProjectAuditPassView.as_view(), name='project_audit_pass'),
     # 项目审核驳回
     path(r'api/v1/project/audit/reject', project.ProjectAuditRejectView.as_view(), name='project_audit_reject'),
-    # 项目成本分析
+    # 项目人员工资成本
     path(r'api/v1/project/cost/analysis', project.ProjectCostAnalysisView.as_view(), name='project_cost_analysis'),
-    # 分析项目费用分摊
+    # 项目其它费用成本
     path(r'api/v1/project/fee/cost/analysis', project.ProjectFeeCostAnalysisView.as_view(), name='project_fee_cost_analysis'),
-    # 分析项目费用分摊
+    # 项目成本分析完成
     path(r'api/v1/project/cost/analysis/finished', project.ProjectCostAnalysisFinishedView.as_view(),name='project_cost_analysis_finished'),
 
     # 接手项目

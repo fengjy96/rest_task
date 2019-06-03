@@ -11,8 +11,6 @@ from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from business.filters import MessageFilter
 from common.custom import CommonPagination
-
-from rbac.models import UserProfile
 from utils.basic import MykeyResponse
 
 
@@ -44,29 +42,11 @@ class MessageViewSet(ModelViewSet):
             return MessageListSerializer
         return MessageSerializer
 
-    def get_queryset(self):
-        # 取状态数组
+    def list(self, request, *args, **kwargs):
+        receiver_id = request.user.id
         status = self.request.query_params.get('status', '')
         status_list = status.split(',')
-
-        queryset = Message.objects.filter(status__in=status_list)
-
-        for message in queryset:
-            if message.status == 0:
-                message.status = 1
-                message.save()
-
-        return queryset
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        receiver_id = request.user.id
-
-        queryset = queryset.filter(receiver_id=receiver_id)
-
-        # queryset = self.filter_list_queryset(request, queryset)
-
+        queryset = Message.objects.filter(receiver_id=receiver_id, status__in=status_list)
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -83,10 +63,12 @@ class MessageUpdateViewSet(APIView):
 
     def post(self, request, format=None):
         try:
+            message_status = request.data.get('status', None)
+
             message_ids = request.data
             for message_id in message_ids:
-                # 更新消息状态为已读
-                self.update_message(message_id, 2)
+                # 更新消息状态为相应的值：未读或已读
+                self.update_message(message_id, message_status)
 
         except Exception as e:
             msg = e.args if e else '请求失败'

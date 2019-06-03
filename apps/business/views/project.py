@@ -499,7 +499,7 @@ class ProjectCheckPassView(APIView):
 
 class ProjectCostAnalysisView(APIView):
     """
-    分析项目人员成本
+    项目人员工资成本
     """
     def get(self, request, format=None):
         try:
@@ -790,7 +790,7 @@ class ProjectCostAnalysisView(APIView):
 
 class ProjectFeeCostAnalysisView(APIView):
     """
-    分析项目费用分摊
+    项目其它费用成本
     """
     def get(self, request, format=None):
         try:
