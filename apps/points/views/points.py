@@ -27,7 +27,7 @@ class PointsAssignmentView(ListAPIView):
     filter_fields = ('project_id',)
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         try:
@@ -112,7 +112,10 @@ class PointsAssignmentView(ListAPIView):
                             task_weight_percentage = round(taskweight / totalweight, 2)
                             points = int(task_weight_percentage * project_left_points)
 
-                            self.create_task_points(project_id, task.id, task.receiver.id, points, 1, 6)
+                            if task.receiver:
+                                self.create_task_points(project_id, task.id, task.receiver.id, points, 1, 6)
+                            else:
+                                self.create_task_points(project_id, task.id, None, points, 1, 6)
 
     def create_project_points(self, project_id, user_id, points, type, role_id):
         """
@@ -154,7 +157,11 @@ class PointsAssignmentView(ListAPIView):
         :return:
         """
         # task = None
-        user = UserProfile.objects.get(id=user_id)
+        if user_id is not None:
+            user = UserProfile.objects.get(id=user_id)
+        else:
+            user = None
+
         project = Project.objects.get(id=project_id)
         role = Role.objects.get(id=role_id)
 
@@ -162,10 +169,10 @@ class PointsAssignmentView(ListAPIView):
             task = Task.objects.get(id=task_id)
 
             projectpoints = ProjectPoints.objects.filter(project_id=project_id, task_id=task_id, type=type,
-                                                         user_id=user_id, role_id=role_id)
+                                                         role_id=role_id)
             if projectpoints.exists():
                 projectpoint = ProjectPoints.objects.get(project_id=project_id, task_id=task_id, type=type,
-                                                         user_id=user_id, role_id=role_id)
+                                                         role_id=role_id)
                 projectpoint.project = project
                 projectpoint.task = task
                 projectpoint.user = user
