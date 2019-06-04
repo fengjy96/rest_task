@@ -45,17 +45,9 @@ class PointsAssignmentView(ListAPIView):
             self.create_task_receiver_points(project_id, project_points, project_receiver_percentage,
                                              project_sender_percentage)
 
-            queryset = self.filter_queryset(self.get_queryset()).filter(project_id=project_id)
-
-            page = self.paginate_queryset(queryset)
-            if page is not None:
-                serializer = self.get_serializer(page, many=True)
-                return self.get_paginated_response(serializer.data)
-
-            serializer = self.get_serializer(queryset, many=True)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=serializer.data)
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
     def create_project_receiver_points(self, project_id, project_points, project_receiver_percentage):
         """
@@ -122,13 +114,13 @@ class PointsAssignmentView(ListAPIView):
 
                             self.create_task_points(project_id, task.id, task.receiver.id, points, 1, 6)
 
-    def create_project_points(self, project_id, user_id, points, type_id, role_id):
+    def create_project_points(self, project_id, user_id, points, type, role_id):
         """
         如果项目积分表中存在记录则更新，如果没有则新增
         :param project_id:项目标识
         :param user_id:用户标识
         :param points:积分
-        :param type_id:0:项目 1:任务
+        :param type:0:项目 1:任务
         :return:
         """
         # task = None
@@ -136,29 +128,29 @@ class PointsAssignmentView(ListAPIView):
         project = Project.objects.get(id=project_id)
         role = Role.objects.get(id=role_id)
 
-        projectpoints = ProjectPoints.objects.filter(project_id=project_id, type_id=type_id, user_id=user_id,
+        projectpoints = ProjectPoints.objects.filter(project_id=project_id, type=type, user_id=user_id,
                                                      role_id=role_id)
         if projectpoints.exists():
-            projectpoint = ProjectPoints.objects.get(project_id=project_id, type_id=type_id, user_id=user_id,
+            projectpoint = ProjectPoints.objects.get(project_id=project_id, type=type, user_id=user_id,
                                                      role_id=role_id)
             projectpoint.project = project
             projectpoint.user = user
             projectpoint.role = role
             projectpoint.points = points
-            projectpoint.type_id = type_id
+            projectpoint.type = type
 
             projectpoint.save()
         else:
-            ProjectPoints.objects.create(project=project, type_id=type_id, user=user, points=points, role=role)
+            ProjectPoints.objects.create(project=project, type=type, user=user, points=points, role=role)
 
-    def create_task_points(self, project_id, task_id, user_id, points, type_id, role_id):
+    def create_task_points(self, project_id, task_id, user_id, points, type, role_id):
         """
         如果项目积分表中存在记录则更新，如果没有则新增
         :param project_id:项目标识
         :param task_id:任务标识
         :param user_id:用户标识
         :param points:积分
-        :param type_id:0:项目 1:任务
+        :param type:0:项目 1:任务
         :return:
         """
         # task = None
@@ -169,18 +161,18 @@ class PointsAssignmentView(ListAPIView):
         if task_id != 0:
             task = Task.objects.get(id=task_id)
 
-            projectpoints = ProjectPoints.objects.filter(project_id=project_id, task_id=task_id, type_id=type_id,
+            projectpoints = ProjectPoints.objects.filter(project_id=project_id, task_id=task_id, type=type,
                                                          user_id=user_id, role_id=role_id)
             if projectpoints.exists():
-                projectpoint = ProjectPoints.objects.get(project_id=project_id, task_id=task_id, type_id=type_id,
+                projectpoint = ProjectPoints.objects.get(project_id=project_id, task_id=task_id, type=type,
                                                          user_id=user_id, role_id=role_id)
                 projectpoint.project = project
                 projectpoint.task = task
                 projectpoint.user = user
                 projectpoint.role = role
                 projectpoint.points = points
-                projectpoint.type_id = type_id
+                projectpoint.type = type
                 projectpoint.save()
             else:
-                ProjectPoints.objects.create(project=project, task=task, type_id=type_id, user=user, points=points,
+                ProjectPoints.objects.create(project=project, task=task, type=type, user=user, points=points,
                                              role=role)

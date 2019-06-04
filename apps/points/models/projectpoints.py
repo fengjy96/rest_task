@@ -13,7 +13,7 @@ class ProjectPoints(models.Model):
     task = models.ForeignKey(to=Task, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE, related_name='project_points_task_id')
     role = models.ForeignKey(to=Role, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE,related_name='project_points_task_id')
     points = models.IntegerField(default=0, verbose_name='积分')
-    type_id = models.IntegerField(default=0, verbose_name='积分类型')
+    type = models.IntegerField(default=0, verbose_name='积分类型')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
 
     def __str__(self):
