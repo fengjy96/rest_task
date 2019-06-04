@@ -45,6 +45,7 @@ class TaskType(models.Model):
     """
     company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     name = models.CharField(max_length=30, verbose_name='类型名称')
+    average_salary = models.IntegerField(default=0, verbose_name='平均工资')
     index = models.IntegerField(verbose_name='类型序号')
     is_active = models.IntegerField(verbose_name='是否激活')
 
