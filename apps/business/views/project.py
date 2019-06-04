@@ -568,7 +568,7 @@ class ProjectCostAnalysisView(APIView):
                         salary_obj["fee"] = int(aveage_fee)
                         salary_obj["total_fee"] = int(total_fee)
 
-                        salary_obj["project"] = self.get_project_objects(project.id)
+                        salary_obj["project"] = {}
                         salary_obj["type"] = 0
                         salary_obj["role"] = "项目负责人"
 
@@ -608,7 +608,7 @@ class ProjectCostAnalysisView(APIView):
                         salary_obj["fee"] = int(aveage_fee)
                         salary_obj["total_fee"] = int(total_fee)
 
-                        salary_obj["project"] = self.get_project_objects(project.id)
+                        salary_obj["project"] = {}
                         salary_obj["type"] = 0
                         salary_obj["role"] = "商务人员"
 
@@ -655,7 +655,7 @@ class ProjectCostAnalysisView(APIView):
                             salary_obj["fee"] = int(aveage_fee)
                             salary_obj["total_fee"] = int(total_fee)
 
-                            salary_obj["task"] = self.get_task_objects(task.id)
+                            salary_obj["task"] = {}
                             salary_obj["type"] = 1
                             salary_obj["role"] = "任务负责人"
 
@@ -664,128 +664,6 @@ class ProjectCostAnalysisView(APIView):
                             all_total_fee = all_total_fee + int(total_fee)
 
             return all_total_fee
-
-    def get_project_objects(self,id):
-        """
-        项目信息
-        """
-
-        project = Project.objects.get(id=id)
-        if project:
-            dict_obj = {}
-            dict_obj["id"] = project.id
-            dict_obj["name"] = project.name
-            dict_obj["style"] = project.style
-            dict_obj["audit_status"] = project.audit_status
-            dict_obj["receive_status"] = project.receive_status.id
-            dict_obj["customer"] = project.customer
-
-            if project.sender:
-                sender_obj = {}
-                sender_obj["id"] = project.sender.id
-                sender_obj["name"] = project.sender.name
-                dict_obj["sender"] = sender_obj
-            else:
-                dict_obj["sender"] = {}
-            if project.receiver:
-                receiver_obj = {}
-                receiver_obj["id"] = project.receiver.id
-                receiver_obj["name"] = project.receiver.name
-                dict_obj["receiver"] = receiver_obj
-            else:
-                dict_obj["receiver"] = {}
-            if project.auditor:
-                auditor_obj = {}
-                auditor_obj["id"] = project.auditor.id
-                auditor_obj["name"] = project.auditor.name
-                dict_obj["auditor"] = auditor_obj
-            else:
-                dict_obj["auditor"] = {}
-
-            dict_obj["begin_time"] = project.begin_time
-            dict_obj["end_time"] = project.end_time
-            dict_obj["add_time"] = project.add_time
-            dict_obj["points"] = project.points
-            dict_obj["progress"] = project.progress
-
-            return dict_obj
-
-    def get_task_objects(self,id):
-        """
-        任务信息
-        """
-
-        task = Task.objects.get(id=id)
-        if task:
-            dict_obj = {}
-            dict_obj["id"] = task.id
-            dict_obj["name"] = task.name
-
-            if task.task_type:
-                task_type_obj = {}
-                task_type_obj["id"] = task.task_type.id
-                task_type_obj["name"] = task.task_type.name
-                dict_obj["task_type"] = task_type_obj
-            else:
-                dict_obj["task_type"] = {}
-
-            dict_obj["content"] = task.content
-            dict_obj["progress"] = task.progress
-
-            if task.task_priority:
-                task_priority_obj = {}
-                task_priority_obj["id"] = task.task_priority.id
-                task_priority_obj["name"] = task.task_priority.name
-                dict_obj["task_priority"] = task_priority_obj
-            else:
-                dict_obj["task_priority"] = {}
-
-            if task.task_priority:
-                task_quality_obj = {}
-                task_quality_obj["id"] = task.task_quality.id
-                task_quality_obj["name"] = task.task_quality.name
-                dict_obj["task_quality"] = task_quality_obj
-            else:
-                dict_obj["task_quality"] = {}
-
-            dict_obj["begin_time"] = task.begin_time
-            dict_obj["end_time"] = task.end_time
-
-            dict_obj["points"] = task.points
-            dict_obj["memo"] = task.memo
-
-
-            if task.sender:
-                sender_obj = {}
-                sender_obj["id"] = task.sender.id
-                sender_obj["name"] = task.sender.name
-                dict_obj["sender"] = sender_obj
-            else:
-                dict_obj["sender"] = {}
-            if task.receiver:
-                receiver_obj = {}
-                receiver_obj["id"] = task.receiver.id
-                receiver_obj["name"] = task.receiver.name
-                dict_obj["receiver"] = receiver_obj
-            else:
-                dict_obj["receiver"] = {}
-
-            dict_obj["receive_status"] = task.receive_status.id
-
-            if task.auditor:
-                auditor_obj = {}
-                auditor_obj["id"] = task.auditor.id
-                auditor_obj["name"] = task.auditor.name
-                dict_obj["auditor"] = auditor_obj
-            else:
-                dict_obj["auditor"] = {}
-
-            dict_obj["audit_status"] = task.audit_status
-            dict_obj["is_active"] = task.is_active
-            dict_obj["is_finished"] = task.is_finished
-            dict_obj["add_time"] = task.add_time
-
-            return dict_obj
 
 
 class ProjectFeeCostAnalysisView(APIView):
