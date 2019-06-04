@@ -1,6 +1,4 @@
 from rest_framework import status
-#from rest_framework.permissions import IsAuthenticated
-from rest_framework.views import APIView
 from points.models.projectpoints import ProjectPoints
 from business.models.project import Project
 from business.models.task import Task
@@ -8,11 +6,27 @@ from configuration.models import TaskPriority
 from configuration.models import TaskQuality
 from utils.basic import MykeyResponse
 from rbac.models import UserProfile,Role
+from rest_framework.generics import ListAPIView
+from points.serializers import ProjectPointsSerializer
+from rest_framework.filters import OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+from rest_framework.permissions import IsAuthenticated
+from common.custom import CommonPagination
 
-class PointsAssignmentView(APIView):
+class PointsAssignmentView(ListAPIView):
     """
     项目积分分配
     """
+
+    queryset = ProjectPoints.objects.all()
+    serializer_class = ProjectPointsSerializer
+    pagination_class = CommonPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filter_fields = ('project_id',)
+    ordering_fields = ('id',)
+    authentication_classes = (JSONWebTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         try:
@@ -29,9 +43,18 @@ class PointsAssignmentView(APIView):
             self.create_project_sender_points(project_id, project_points, project_sender_percentage)
             self.create_task_receiver_points(project_id, project_points, project_receiver_percentage,project_sender_percentage)
 
+
+            queryset = self.filter_queryset(self.get_queryset())
+
+            page = self.paginate_queryset(queryset)
+            if page is not None:
+                serializer = self.get_serializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+
+            serializer = self.get_serializer(queryset, many=True)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=serializer.data)
 
     def create_project_receiver_points(self, project_id, project_points, project_receiver_percentage):
         """

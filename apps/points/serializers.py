@@ -18,10 +18,27 @@ class ProjectPointsSerializer(serializers.ModelSerializer):
     """
     项目积分：增删改查
     """
+    user = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+
+    def get_user(self, obj):
+        if obj.user:
+            return {
+                'id': obj.user.id,
+                'name': obj.user.name,
+            }
+
+    def get_role(self, obj):
+        if obj.role:
+            return {
+                'id': obj.role.id,
+                'name': obj.role.name,
+            }
 
     class Meta:
         model = ProjectPoints
         fields = '__all__'
+        depth = 1
 
 class PointsDetailSerializer(serializers.ModelSerializer):
     """
