@@ -64,11 +64,12 @@ class MessageUpdateViewSet(APIView):
     def post(self, request, format=None):
         try:
             message_status = request.data.get('status', None)
+            message_ids = request.data.get('msg_ids', [])
 
-            message_ids = request.data
-            for message_id in message_ids:
-                # 更新消息状态为相应的值：未读或已读
-                self.update_message(message_id, message_status)
+            if message_status and len(message_ids) > 0:
+                for message_id in message_ids:
+                    # 更新消息状态为相应的值：未读或已读
+                    self.update_message(message_id, message_status)
 
         except Exception as e:
             msg = e.args if e else '请求失败'
