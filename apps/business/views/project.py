@@ -20,7 +20,7 @@ from business.filters import ProjectFilter
 from rbac.models import UserProfile
 from business.models.task import Task
 from points.models.projectpoints import ProjectPoints
-from configuration.models import ProjectStatus, Fee
+from configuration.models import ProjectStatus, Fee, TaskType
 
 # 项目人员成本
 list_project_person_objects = []
@@ -631,37 +631,43 @@ class ProjectCostAnalysisView(APIView):
             from business.models.task import Task
             tasks = Task.objects.filter(project_id=project_id,is_active=1)
             all_total_fee = 0
+            salary = 0
 
             for task in tasks:
                 if task:
                     if task.receiver:
                         receiver_id = task.receiver.id
-
                         user = UserProfile.objects.get(id=receiver_id)
                         if user:
                             salary = user.base_salary
+                    else:
+                        task_type = TaskType.objects.get(id=task.task_type.id)
+                        salary = task_type.average_salary
 
-                            aveage_fee = salary / 21.75
-                            aveage_fee = round(aveage_fee, 2)
+                    aveage_fee = salary / 21.75
+                    aveage_fee = round(aveage_fee, 2)
 
-                            total_fee = duration * aveage_fee
-                            total_fee = round(total_fee, 2)
+                    total_fee = duration * aveage_fee
+                    total_fee = round(total_fee, 2)
 
-                            salary_obj = {}
-                            salary_obj["person_nums"] = 1
-                            salary_obj["user"] = task.receiver.name
-                            salary_obj["duration"] = duration
-                            salary_obj["name"] = '平均工资'
-                            salary_obj["fee"] = int(aveage_fee)
-                            salary_obj["total_fee"] = int(total_fee)
+                    salary_obj = {}
+                    salary_obj["person_nums"] = 1
+                    if task.receiver:
+                        salary_obj["user"] = task.receiver.name
+                    else:
+                        salary_obj["user"] = ''
+                    salary_obj["duration"] = duration
+                    salary_obj["name"] = '平均工资'
+                    salary_obj["fee"] = int(aveage_fee)
+                    salary_obj["total_fee"] = int(total_fee)
 
-                            salary_obj["task"] = {}
-                            salary_obj["type"] = 1
-                            salary_obj["role"] = "任务负责人"
+                    salary_obj["task"] = {}
+                    salary_obj["type"] = 1
+                    salary_obj["role"] = "任务负责人"
 
-                            list_project_person_objects.append(salary_obj)
+                    list_project_person_objects.append(salary_obj)
 
-                            all_total_fee = all_total_fee + int(total_fee)
+                    all_total_fee = all_total_fee + int(total_fee)
 
             return all_total_fee
 
