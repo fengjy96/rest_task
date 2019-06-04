@@ -5,7 +5,7 @@ from business.models.task import Task
 from configuration.models import TaskPriority
 from configuration.models import TaskQuality
 from utils.basic import MykeyResponse
-from rbac.models import UserProfile,Role
+from rbac.models import UserProfile, Role
 from rest_framework.generics import ListAPIView
 from points.serializers import ProjectPointsSerializer
 from rest_framework.filters import OrderingFilter
@@ -13,6 +13,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from common.custom import CommonPagination
+
 
 class PointsAssignmentView(ListAPIView):
     """
@@ -31,20 +32,20 @@ class PointsAssignmentView(ListAPIView):
     def post(self, request, format=None):
         try:
             # 项目标识
-            project_id = request.data.get('project_id')
+            project_id = request.data.get('project_id', None)
             # 项目负责人百分比
-            project_receiver_percentage = request.data.get('project_receiver_percentage')
+            project_receiver_percentage = request.data.get('project_receiver_percentage', None)
             # 商务人员百分比
-            project_sender_percentage = request.data.get('project_sender_percentage')
+            project_sender_percentage = request.data.get('project_sender_percentage', None)
             # 项目总积分
-            project_points = request.data.get('project_points')
+            project_points = request.data.get('project_points', None)
 
             self.create_project_receiver_points(project_id, project_points, project_receiver_percentage)
             self.create_project_sender_points(project_id, project_points, project_sender_percentage)
-            self.create_task_receiver_points(project_id, project_points, project_receiver_percentage,project_sender_percentage)
+            self.create_task_receiver_points(project_id, project_points, project_receiver_percentage,
+                                             project_sender_percentage)
 
-
-            queryset = self.filter_queryset(self.get_queryset())
+            queryset = self.filter_queryset(self.get_queryset()).filter(project_id=project_id)
 
             page = self.paginate_queryset(queryset)
             if page is not None:
@@ -80,7 +81,8 @@ class PointsAssignmentView(ListAPIView):
 
                 self.create_project_points(project.id, project.sender.id, points, 0, 8)
 
-    def create_task_receiver_points(self, project_id, project_points, project_receiver_percentage,project_sender_percentage):
+    def create_task_receiver_points(self, project_id, project_points, project_receiver_percentage,
+                                    project_sender_percentage):
         if project_id is not None and project_points is not None and project_receiver_percentage is not None and project_sender_percentage is not None:
             # 项目负责人积分
             project_receiver_points = (int(project_points) * int(project_receiver_percentage)) / 100
@@ -115,12 +117,12 @@ class PointsAssignmentView(ListAPIView):
                         if task.task_quality:
                             taskquality = TaskQuality.objects.get(id=task.task_quality.id)
                             taskweight = taskpriority.weight * taskquality.weight
-                            task_weight_percentage = round(taskweight/totalweight, 2)
+                            task_weight_percentage = round(taskweight / totalweight, 2)
                             points = int(task_weight_percentage * project_left_points)
 
                             self.create_task_points(project_id, task.id, task.receiver.id, points, 1, 6)
 
-    def create_project_points(self, project_id, user_id, points,type_id,role_id):
+    def create_project_points(self, project_id, user_id, points, type_id, role_id):
         """
         如果项目积分表中存在记录则更新，如果没有则新增
         :param project_id:项目标识
@@ -134,9 +136,11 @@ class PointsAssignmentView(ListAPIView):
         project = Project.objects.get(id=project_id)
         role = Role.objects.get(id=role_id)
 
-        projectpoints = ProjectPoints.objects.filter(project_id=project_id,type_id=type_id,user_id=user_id,role_id=role_id)
+        projectpoints = ProjectPoints.objects.filter(project_id=project_id, type_id=type_id, user_id=user_id,
+                                                     role_id=role_id)
         if projectpoints.exists():
-            projectpoint = ProjectPoints.objects.get(project_id=project_id,type_id=type_id,user_id=user_id,role_id=role_id)
+            projectpoint = ProjectPoints.objects.get(project_id=project_id, type_id=type_id, user_id=user_id,
+                                                     role_id=role_id)
             projectpoint.project = project
             projectpoint.user = user
             projectpoint.role = role
@@ -147,7 +151,7 @@ class PointsAssignmentView(ListAPIView):
         else:
             ProjectPoints.objects.create(project=project, type_id=type_id, user=user, points=points, role=role)
 
-    def create_task_points(self, project_id, task_id, user_id, points,type_id,role_id):
+    def create_task_points(self, project_id, task_id, user_id, points, type_id, role_id):
         """
         如果项目积分表中存在记录则更新，如果没有则新增
         :param project_id:项目标识
@@ -165,9 +169,11 @@ class PointsAssignmentView(ListAPIView):
         if task_id != 0:
             task = Task.objects.get(id=task_id)
 
-            projectpoints = ProjectPoints.objects.filter(project_id=project_id,task_id=task_id,type_id=type_id,user_id=user_id,role_id=role_id)
+            projectpoints = ProjectPoints.objects.filter(project_id=project_id, task_id=task_id, type_id=type_id,
+                                                         user_id=user_id, role_id=role_id)
             if projectpoints.exists():
-                projectpoint = ProjectPoints.objects.get(project_id=project_id,task_id=task_id,type_id=type_id,user_id=user_id,role_id=role_id)
+                projectpoint = ProjectPoints.objects.get(project_id=project_id, task_id=task_id, type_id=type_id,
+                                                         user_id=user_id, role_id=role_id)
                 projectpoint.project = project
                 projectpoint.task = task
                 projectpoint.user = user
@@ -176,4 +182,5 @@ class PointsAssignmentView(ListAPIView):
                 projectpoint.type_id = type_id
                 projectpoint.save()
             else:
-                ProjectPoints.objects.create(project=project, task=task, type_id=type_id, user=user, points=points, role=role)
+                ProjectPoints.objects.create(project=project, task=task, type_id=type_id, user=user, points=points,
+                                             role=role)
