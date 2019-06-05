@@ -46,7 +46,7 @@ class MessageViewSet(ModelViewSet):
         receiver_id = request.user.id
         status = self.request.query_params.get('status', '')
         status_list = status.split(',')
-        queryset = Message.objects.filter(receiver_id=receiver_id, status__in=status_list)
+        queryset = Message.objects.filter(receiver_id=receiver_id, status__in=status_list).order_by('-add_time')
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
