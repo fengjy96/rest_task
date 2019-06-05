@@ -4,7 +4,7 @@ from rest_framework import routers
 
 from configuration.views import (
     TaskTypeViewSet, SalaryViewSet, SkillViewSet, TaskDesignTypeViewSet, TaskPriorityViewSet, TaskQualityViewSet,
-    TaskStepViewSet, ProjectStatusViewSet, TaskStatusViewSet, ReasonTypeViewSet)
+    TaskStepViewSet, ProjectStatusViewSet, TaskStatusViewSet, ReasonTypeViewSet, TaskAssessmentViewSet)
 
 # 创建路由器并注册相关视图
 router = routers.DefaultRouter()
@@ -18,6 +18,7 @@ router.register('task_qualities', TaskQualityViewSet, basename='task_qualities')
 router.register('task_steps', TaskStepViewSet, basename='task_steps')
 router.register('salaries', SalaryViewSet, basename='salaries')
 router.register('skills', SkillViewSet, basename='skills')
+router.register('task_assessments', TaskAssessmentViewSet, basename='skills')
 
 urlpatterns = [
     # API

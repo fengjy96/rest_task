@@ -26,6 +26,7 @@ class ReasonTypeViewSet(ModelViewSet):
     # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
+
 class ProjectStatusViewSet(ModelViewSet):
     """
     项目状态：增删改查
