@@ -1,20 +1,21 @@
-# @Time    : 2019/3/7 16:19
-# @Author  : xufqing
+from io import StringIO
+import logging, os
+
 from fabric2 import Connection
 from invoke import Responder, Result
 from utils.websocket_tail import Tailf
-from io import StringIO
-import logging, os
-from cmdb.models import DeviceInfo,ConnectionInfo
+from cmdb.models import DeviceInfo, ConnectionInfo
 
 error_logger = logging.getLogger('error')
 info_logger = logging.getLogger('info')
+
 
 def say_yes():
     return Responder(
         pattern=r'yes/no',
         response='yes\n',
     )
+
 
 def connect_init(id):
     device_info = DeviceInfo.objects.filter(id=int(id)).values()
@@ -28,6 +29,7 @@ def connect_init(id):
     auth_key = {auth_type: passwd}
     connect = Shell(auth_info, connect_timeout=5, connect_kwargs=auth_key)
     return connect
+
 
 class Shell(Connection):
     run_mode_remote = 'remote'
@@ -49,15 +51,17 @@ class Shell(Connection):
                 stream_err = io_dict[io + '_err'] = StringIO()
                 message = '[%s@%s]# %s\n' % (self.user, self.host, command)
                 file = open(write, 'a')
-                #file.write(message)
+                # file.write(message)
                 stream_out = stream_err = file
                 stream_out.write(message)
             if run_mode == self.run_mode_local:
-                result = super(Shell, self).local(command, pty=pty, warn=True, out_stream=stream_out, err_stream=stream_err,
+                result = super(Shell, self).local(command, pty=pty, warn=True, out_stream=stream_out,
+                                                  err_stream=stream_err,
                                                   watchers=[say_yes()],
                                                   env=self.custom_global_env, **kwargs)
             else:
-                result = super(Shell, self).run(command, pty=pty, warn=True, out_stream=stream_out, err_stream=stream_err,
+                result = super(Shell, self).run(command, pty=pty, warn=True, out_stream=stream_out,
+                                                err_stream=stream_err,
                                                 watchers=[say_yes()],
                                                 env=self.custom_global_env, **kwargs)
             exited, stdout, stderr = result.exited, result.stdout, result.stderr
@@ -102,23 +106,23 @@ class Shell(Connection):
             if wtype == 'put':
                 result = super(Shell, self).put(local, remote=remote)
                 message = '[%s@%s]# [上传文件]\n[INFO] 本地:%s 上传到 [%s]:%s\n' % (
-                            self.user, self.host, local, result.connection.host, remote)
+                    self.user, self.host, local, result.connection.host, remote)
                 info_logger.info(message)
                 if write:
                     with open(write, 'a') as f:
                         f.write(message)
                 elif webuser:
-                    Tailf.send_message(webuser,message)
+                    Tailf.send_message(webuser, message)
             else:
                 result = super(Shell, self).get(remote, local=local)
                 message = '[%s@%s]# [下载文件]\n[INFO] [%s]:%s 下载到 本地:%s\n' % (
-                            self.user, self.host, result.connection.host, remote, local)
+                    self.user, self.host, result.connection.host, remote, local)
                 info_logger.info(message)
                 if write:
                     with open(write, 'a') as f:
                         f.write(message)
                 elif webuser:
-                    Tailf.send_message(webuser,message)
+                    Tailf.send_message(webuser, message)
             return result
         except Exception as e:
             if wtype == 'put':
@@ -128,7 +132,7 @@ class Shell(Connection):
                     with open(write, 'a') as f:
                         f.write(message)
                 elif webuser:
-                    Tailf.send_message(webuser,message)
+                    Tailf.send_message(webuser, message)
             else:
                 message = '[%s@%s]# [下载文件]\n[ERROR] [目标目录:%s][%s]\n' % (self.user, self.host, remote, str(e))
                 error_logger.info(message)
@@ -136,4 +140,4 @@ class Shell(Connection):
                     with open(write, 'a') as f:
                         f.write(message)
                 elif webuser:
-                    Tailf.send_message(webuser,message)
+                    Tailf.send_message(webuser, message)

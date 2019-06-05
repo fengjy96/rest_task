@@ -1,31 +1,31 @@
-# @Time    : 2019/2/15 14:35
-# @Author  : xufqing
-
 import os, logging
+
 from django.conf import settings
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.viewsets import GenericViewSet
-from rest_framework.mixins import ListModelMixin, DestroyModelMixin,RetrieveModelMixin
+from rest_framework.mixins import ListModelMixin, DestroyModelMixin, RetrieveModelMixin
 from utils.common import ConfigFileMixin
-from common.custom import RbacPermission, CommonPagination, CeleryTools
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from ruamel import yaml
 from rest_framework import status
-from ..models import DeviceScanInfo,DeviceInfo,DeviceAbstract,ConnectionAbstract,ConnectionInfo
-from ..serializers.scan_serializer import DeviceScanInfoSerializer,DeviceScanListSerializer
+
+from ..models import DeviceScanInfo, DeviceInfo, DeviceAbstract, ConnectionAbstract, ConnectionInfo
+from ..serializers.scan_serializer import DeviceScanInfoSerializer, DeviceScanListSerializer
 from ..tasks import scan_execution
+from common.custom import RbacPermission, CommonPagination, CeleryTools
 
 error_logger = logging.getLogger('error')
 info_logger = logging.getLogger('info')
 
 
 class ScanSettingView(APIView, ConfigFileMixin):
-    '''
+    """
     扫描设置
-    '''
+    """
+
     perms_map = ({'*': 'admin'}, {'*': 'asset_all'})
     config_file = os.path.join(settings.YML_CONF_DIR, 'scan_settings.yml')
     permission_classes = (RbacPermission,)
@@ -56,9 +56,10 @@ class ScanSettingView(APIView, ConfigFileMixin):
 
 
 class ScanExcuView(APIView, CeleryTools):
-    '''
+    """
     设备入库和扫描
-    '''
+    """
+
     perms_map = ({'*': 'admin'}, {'*': 'scan_all'})
     permission_classes = (RbacPermission,)
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -72,16 +73,16 @@ class ScanExcuView(APIView, CeleryTools):
                 error_logger.error('执行失败：' + str(celery_status))
                 http_status = status.HTTP_400_BAD_REQUEST
                 request_status = {
-                    'code':400,
+                    'code': 400,
                     'detail': '执行失败：' + str(celery_status),
-                    }
+                }
             else:
                 scan_execution.delay()
                 info_logger.info('执行成功：请等待扫描结果!')
                 http_status = status.HTTP_200_OK
                 request_status = {
                     'code': 200,
-                    'detail':'执行成功,请等待扫描结果!'
+                    'detail': '执行成功,请等待扫描结果!'
                 }
         elif request.data['excu'] == 'inbound':
             login_succeed = list(DeviceScanInfo.objects.filter(status='Succeed').values())
@@ -114,14 +115,14 @@ class ScanExcuView(APIView, CeleryTools):
                     'code': 400,
                     'detail': '可入库设备为空!'
                 }
-        return Response(request_status,status=http_status)
+        return Response(request_status, status=http_status)
 
 
-
-class DeviceScanInfoViewSet(ListModelMixin, DestroyModelMixin,RetrieveModelMixin, GenericViewSet):
-    '''
+class DeviceScanInfoViewSet(ListModelMixin, DestroyModelMixin, RetrieveModelMixin, GenericViewSet):
+    """
     扫描完毕的设备信息
-    '''
+    """
+
     perms_map = ({'*': 'admin'}, {'*': 'scan_all'})
     permission_classes = (RbacPermission,)
     queryset = DeviceScanInfo.objects.all()
@@ -134,7 +135,7 @@ class DeviceScanInfoViewSet(ListModelMixin, DestroyModelMixin,RetrieveModelMixin
     authentication_classes = (JSONWebTokenAuthentication,)
 
     def get_serializer_class(self):
-        # 根据请求类型动态变更serializer
+        # 根据请求类型动态变更 serializer
         if self.action == 'list':
             return DeviceScanListSerializer
         return DeviceScanInfoSerializer

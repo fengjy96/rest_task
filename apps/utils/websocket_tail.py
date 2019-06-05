@@ -1,5 +1,3 @@
-# @Time    : 2019/3/21 16:16
-# @Author  : xufqing
 import paramiko, logging, time
 from paramiko_expect import SSHClientInteraction
 from channels.layers import get_channel_layer
@@ -7,6 +5,7 @@ from asgiref.sync import async_to_sync
 from common.custom import RedisObj
 
 info_logger = logging.getLogger('info')
+
 
 class Tailf(object):
     @classmethod
@@ -37,7 +36,8 @@ class Tailf(object):
                 interact.send('tail -f %s|grep --color=never %s' % (logfile, filter_text_re))
             else:
                 interact.send('tail -f %s' % (logfile))
-            interact.tail(output_callback=lambda m: self.send_message(webuser, m), stop_callback=lambda x: self.get_is_stop(webuser))
+            interact.tail(output_callback=lambda m: self.send_message(webuser, m),
+                          stop_callback=lambda x: self.get_is_stop(webuser))
         except Exception as e:
             self.send_message(webuser, e)
         finally:

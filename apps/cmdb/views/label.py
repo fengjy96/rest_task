@@ -1,5 +1,3 @@
-# @Time    : 2019/4/24 22:34
-# @Author  : xufqing
 from rest_framework.viewsets import ModelViewSet
 from ..models import Label
 from ..serializers.label_serializer import LabelSerializer

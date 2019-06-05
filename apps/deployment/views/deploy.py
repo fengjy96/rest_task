@@ -1,33 +1,34 @@
-# @Time    : 2019/3/4 15:41
-# @Author  : xufqing
+import os, logging, time
+
 from rest_framework.views import APIView
 from rest_framework.viewsets import ReadOnlyModelViewSet
-from rest_xops.code import *
-from rest_xops.basic import XopsResponse
-from ..models import Project, DeployRecord
-from cmdb.models import DeviceInfo, ConnectionInfo
-from utils.shell_excu import Shell, connect_init
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
-import os, logging, time
-from common.custom import CommonPagination, RbacPermission
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from ..serializers.project_serializer import DeployRecordSerializer
-from utils.websocket_tail import Tailf
-from ..tasks import deploy
-from common.custom import RedisObj
 from django.conf import settings
 from django.http import FileResponse
+
+from rest_xops.code import *
+from rest_xops.basic import XopsResponse
+from cmdb.models import DeviceInfo, ConnectionInfo
+from utils.shell_excu import Shell, connect_init
+from utils.websocket_tail import Tailf
+from common.custom import RedisObj
+from common.custom import CommonPagination, RbacPermission
 from ..tasks import local_tailf
+from ..models import Project, DeployRecord
+from ..serializers.project_serializer import DeployRecordSerializer
+from ..tasks import deploy
 
 error_logger = logging.getLogger('error')
 info_logger = logging.getLogger('info')
 
 
 class DeployRecordViewSet(ReadOnlyModelViewSet):
-    '''
+    """
     部署记录：查
-    '''
+    """
+
     perms_map = ({'*': 'admin'}, {'*': 'deploy_all'}, {'get': 'deploy_excu'})
     queryset = DeployRecord.objects.all()
     serializer_class = DeployRecordSerializer
@@ -76,9 +77,10 @@ class VersionView(APIView):
 
 
 class DeployView(APIView):
-    '''
+    """
     执行部署的逻辑
-    '''
+    """
+
     perms_map = ({'*': 'admin'}, {'*': 'deploy_all'}, {'post': 'deploy_excu'})
     permission_classes = (RbacPermission,)
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -100,15 +102,20 @@ class DeployView(APIView):
                 with localhost.cd(path):
                     command = 'git clone %s %s' % (repo[0]['repo_url'], repo[0]['alias'])
                     result = localhost.local(command)
-                    massage = '正在克隆%s到%s ...' % (repo[0]['repo_url'], path)
+                    massage = '正在克隆 %s 到 %s ...' % (repo[0]['repo_url'], path)
                     info_logger.info(massage)
             localhost.close()
             return result
 
     def do_rollback(self, id, log, record_id):
-        '''
+        """
         回滚
-        '''
+        :param id:
+        :param log:
+        :param record_id:
+        :return:
+        """
+
         sequence = 1
         with open(log, 'a') as f:
             f.write('[INFO]------正在执行回滚 [%s]------\n' % (sequence))
@@ -128,7 +135,7 @@ class DeployView(APIView):
                         # 删除目标软链
                         command = 'find %s -type l -delete' % (record[0]['target_root'])
                         self.result = connect.run(command, write=log)
-                        # 创建需回滚版本软链到webroot
+                        # 创建需回滚版本软链到 webroot
                         command = 'ln -sfn %s/%s/* %s' % (
                             record[0]['target_releases'], record[0]['prev_record'], record[0]['target_root'])
                         if self.result.exited == 0: self.result = connect.run(command, write=log)
@@ -205,9 +212,9 @@ class DeployView(APIView):
             log = local_log_path + '/' + record_id + '.log'
             version = request.data['version'].strip()
             serverid = request.data['server_ids']
-            # 调用celery异步任务
+            # 调用 celery 异步任务
             deploy.delay(id, log, version, serverid, record_id, webuser, self.start_time)
-            #deploy.run(id, log, version, serverid, record_id, webuser, self.start_time)
+            # deploy.run(id, log, version, serverid, record_id, webuser, self.start_time)
             return XopsResponse(record_id)
 
         elif request.data['excu'] == 'rollback':
