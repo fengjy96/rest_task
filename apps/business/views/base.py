@@ -156,16 +156,17 @@ class BusinessPublic:
     def create_task_file_texts(cls, task_id, files, content):
         # 增加日志
         if task_id is not None:
-            task_log = TaskLog(task_id=task_id)
-            task_log.save()
+            if files or content:
+                task_log = TaskLog(task_id=task_id)
+                task_log.save()
 
-            if files:
-                for file in files:
-                    # 增加文件表记录
-                    step_log_file = Files(tasklog=task_log, name=file['name'], path=file['url'])
-                    step_log_file.save()
+                if files:
+                    for file in files:
+                        # 增加文件表记录
+                        step_log_file = Files(tasklog=task_log, name=file['name'], path=file['url'])
+                        step_log_file.save()
 
-            # 如果存在富文本，则先添加富文本
-            if content:
-                progresstexts = ProgressTexts(tasklog=task_log, content=content)
-                progresstexts.save()
+                # 如果存在富文本，则先添加富文本
+                if content:
+                    progresstexts = ProgressTexts(tasklog=task_log, content=content)
+                    progresstexts.save()
