@@ -500,7 +500,6 @@ class TaskAllocateReasonViewSet(ModelViewSet):
     filter_fields = ('task_id', 'receiver_id')
     ordering_fields = ('id',)
     # permission_classes = [IsAuthenticated]
-<<<<<<< HEAD
 
 
 class TaskLogsView(APIView):
@@ -563,9 +562,3 @@ class TaskLogsView(APIView):
             task_log_file_list.append(log_text_obj)
 
         return task_log_file_list
-
-
-def GetIdByKey(key):
-    return TaskStatus.objects.get(key=key).id
-=======
->>>>>>> 701e797ea139a50e71c2dc22b7f2140ccfdf8d06
