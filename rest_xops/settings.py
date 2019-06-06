@@ -16,11 +16,11 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 # mini 对外 ip
-# HOST = '192.168.1.117'
+HOST = '192.168.1.117'
 # 内网 centOS 服务器对外 IP
 # HOST = '192.168.1.110'
 # 本地 ip
-HOST = '127.0.0.1'
+# HOST = '127.0.0.1'
 # pro 对外 ip
 # HOST = '192.168.1.165'
 # 内网 centos 对外 ip
@@ -107,12 +107,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # 数据库名
         'NAME': 'rest_xops',
-        # 'HOST': '192.168.1.110',
-        'HOST': HOST,
+        'HOST': '192.168.1.110',
+        # 'HOST': HOST,
         'USER': 'root',
-        'PASSWORD': 'mysql',
+        # 'PASSWORD': 'mysql',
         # 内网 centos mysql 密码
-        # 'PASSWORD': 'mikai',
+        'PASSWORD': 'mikai',
         'PORT': '3306',
         'OPTIONS': {'init_command': 'SET storage_engine=INNODB;'}
     }
