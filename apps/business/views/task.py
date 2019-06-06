@@ -80,6 +80,8 @@ class TaskViewSet(ModelViewSet):
                 project = Project.objects.get(id=project_id)
                 if project.audit_status == 2:
                     request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
+                elif project.audit_status == 3:
+                    request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
             else:
                 request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
         # 如果创建任务时未指定任务负责人，则任务接收状态为 0 - 未安排任务负责人
