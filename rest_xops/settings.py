@@ -110,7 +110,7 @@ DATABASES = {
         # 'HOST': '192.168.1.110',
         'HOST': HOST,
         'USER': 'root',
-        'PASSWORD': 'mysql',
+        'PASSWORD': 'mikai',
         # 内网 centos mysql 密码
         # 'PASSWORD': 'mikai',
         'PORT': '3306',

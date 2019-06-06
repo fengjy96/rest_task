@@ -46,7 +46,6 @@ class Task(models.Model):
 
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='更新时间')
-
     
     def __str__(self):
         return self.name
