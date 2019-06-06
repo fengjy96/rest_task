@@ -854,7 +854,7 @@ class ProjectCostAnalysisFinishedView(APIView):
 
     def update_task(self, project_id):
         if project_id is not None:
-            projectpoints = ProjectPoints.objects.filter(project_id=project_id, type_id=1)
+            projectpoints = ProjectPoints.objects.filter(project_id=project_id, type=1)
             if projectpoints:
                 for projectpoint in projectpoints:
                     if projectpoint:

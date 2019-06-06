@@ -79,12 +79,12 @@ class TaskViewSet(ModelViewSet):
                 # 根据项目 id 查项目审核状态
                 project = Project.objects.get(id=project_id)
                 if project.audit_status == 2:
-                    request.data['receive_status'] = GetIdByKey('wait_accept')
+                    request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
             else:
-                request.data['receive_status'] = GetIdByKey('assigned')
+                request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
         # 如果创建任务时未指定任务负责人，则任务接收状态为 0 - 未安排任务负责人
         else:
-            request.data['receive_status'] = GetIdByKey('unassigned')
+            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -119,11 +119,11 @@ class TaskViewSet(ModelViewSet):
                 # 根据项目 id 查项目审核状态
                 project = Project.objects.get(id=project_id)
                 if project.audit_status == 2:
-                    request.data['receive_status'] = GetIdByKey('wait_accept')
+                    request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
                 else:
-                    request.data['receive_status'] = GetIdByKey('assigned')
+                    request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
         else:
-            request.data['receive_status'] = GetIdByKey('unassigned')
+            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -500,6 +500,7 @@ class TaskAllocateReasonViewSet(ModelViewSet):
     filter_fields = ('task_id', 'receiver_id')
     ordering_fields = ('id',)
     # permission_classes = [IsAuthenticated]
+<<<<<<< HEAD
 
 
 class TaskLogsView(APIView):
@@ -566,3 +567,5 @@ class TaskLogsView(APIView):
 
 def GetIdByKey(key):
     return TaskStatus.objects.get(key=key).id
+=======
+>>>>>>> 701e797ea139a50e71c2dc22b7f2140ccfdf8d06
