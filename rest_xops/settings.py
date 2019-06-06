@@ -16,11 +16,11 @@ DEBUG = True
 ALLOWED_HOSTS = ['*']
 
 # mini 对外 ip
-HOST = '192.168.1.117'
+# HOST = '192.168.1.117'
 # 内网 centOS 服务器对外 IP
 # HOST = '192.168.1.110'
 # 本地 ip
-# HOST = '127.0.0.1'
+HOST = '127.0.0.1'
 # pro 对外 ip
 # HOST = '192.168.1.165'
 # 内网 centos 对外 ip
@@ -107,12 +107,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # 数据库名
         'NAME': 'rest_xops',
-        'HOST': '192.168.1.110',
-        # 'HOST': HOST,
+        # 'HOST': '192.168.1.110',
+        'HOST': HOST,
         'USER': 'root',
-        # 'PASSWORD': 'mysql',
+        'PASSWORD': 'mysql',
         # 内网 centos mysql 密码
-        'PASSWORD': 'mikai',
+        # 'PASSWORD': 'mikai',
         'PORT': '3306',
         'OPTIONS': {'init_command': 'SET storage_engine=INNODB;'}
     }
@@ -137,7 +137,7 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
-    # 指定默认的认证类
+    ## 指定默认的认证类
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # jwt 认证
         'rest_framework_jwt.authentication.JSONWebTokenAuthentication',
@@ -146,9 +146,9 @@ REST_FRAMEWORK = {
         # 会话认证
         'rest_framework.authentication.SessionAuthentication',
     ),
-    # 自定义异常处理
+    ## 自定义异常处理
     'EXCEPTION_HANDLER': 'apps.common.custom.xops_exception_handler',
-    # 定制字段过滤
+    ## 定制字段过滤
     'DEFAULT_FILTER_BACKENDS': (
         # 过滤功能
         # 'django_filters.rest_framework.DjangoFilterBackend',
@@ -157,6 +157,11 @@ REST_FRAMEWORK = {
         # 排序功能：OrderingFilter 类支持简单的查询参数控制结果排序
         # 'rest_framework.filters.OrderingFilter',
     ),
+    ## 默认的渲染器类
+    # 'DEFAULT_RENDERER_CLASSES': (
+    #     'rest_framework.renderers.JSONRenderer',
+    #     'rest_framework.renderers.BrowsableAPIRenderer',
+    # ),
 }
 
 ## jwt 设置
