@@ -71,6 +71,8 @@ urlpatterns = [
     path(r'api/v1/task/check/reject', task.TaskCheckRejectView.as_view(), name='task_check_reject'),
     # 判断是否存在文件为空的任务
     # path(r'api/v1/project/file/check', '', name='project_file_check'),
+    # 获取任务的文件或富文本提交信息列表
+    path(r'api/v1/task/log', task.TaskLogsView.as_view(), name='task_log'),
 
     ## 步骤相关
 

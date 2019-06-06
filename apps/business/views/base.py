@@ -8,6 +8,8 @@ from rbac.models import UserProfile
 from business.models.message import Menu
 from business.models.reason import Reason
 from configuration.models import ProjectStatus, TaskStatus, ReasonType
+from business.models.steplog import TaskLog
+from business.models.files import Files, ProgressTexts
 
 User = get_user_model()
 
@@ -149,3 +151,21 @@ class BusinessPublic:
             task.save()
             project_id = task.project_id
             cls.update_progress_by_project_id(project_id)
+
+    @classmethod
+    def create_task_file_texts(cls, task_id, files, content):
+        # 增加日志
+        if task_id is not None:
+            task_log = TaskLog(task_id=task_id)
+            task_log.save()
+
+            if files:
+                for file in files:
+                    # 增加文件表记录
+                    step_log_file = Files(tasklog=task_log, name=file['name'], path=file['url'])
+                    step_log_file.save()
+
+            # 如果存在富文本，则先添加富文本
+            if content:
+                progresstexts = ProgressTexts(tasklog=task_log, content=content)
+                progresstexts.save()

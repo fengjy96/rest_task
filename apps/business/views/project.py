@@ -20,7 +20,9 @@ from business.filters import ProjectFilter
 from rbac.models import UserProfile
 from business.models.task import Task
 from points.models.projectpoints import ProjectPoints
-from configuration.models import ProjectStatus, Fee, TaskType
+from points.models.points import Points
+from points.models.pointsdetail import PointsDetail
+from configuration.models import ProjectStatus, Fee, TaskType, TaskAssessment
 
 # 项目人员成本
 list_project_person_objects = []
@@ -491,10 +493,105 @@ class ProjectCheckPassView(APIView):
                 project.save()
 
                 # 积分及米值分配
-
+                projectpoints = ProjectPoints.objects.filter(project_id=project_id, is_created=0)
+                if projectpoints:
+                    for projectpoint in projectpoints:
+                         if projectpoint:
+                             if projectpoints.task:
+                                 self.create_user_points(projectpoint.project.id, projectpoint.task.id, projectpoint.user, projectpoint.points, 1, 1,
+                                                         projectpoint.type, projectpoint.task.task_assessment.id)
+                             else:
+                                 self.create_user_points(projectpoint.project.id, projectpoint.task.id, projectpoint.user, projectpoint.points, 1, 1,
+                                                         projectpoint.type)
 
                 BusinessPublic.create_message(project.auditor_id, project.receiver_id, menu_id=2,
                                               messages='恭喜,你的项目已验收通过!')
+
+    def create_user_points(self, project_id, task_id, user_id, points, operation_type, points_status, points_type, task_assessment_id=None):
+        """
+        创建或更新用户积分以及米值,如果用户积分表中存在记录则更新,如果没有则新增
+        :param user_id:用户标识
+        :param points:积分
+        :param operation_type:操作类型：（1：增加积分或0：减少积分）
+        :param points_status:积分状态：（1：有效）
+        :param points_type:积分类型：（1：项目送或2：任务送）
+        :return:
+        """
+
+        if task_assessment_id:
+            task_assessment = TaskAssessment.objects.get(id=task_assessment_id)
+            weight = task_assessment.weight
+        if user_id is not None:
+            user = UserProfile.objects.get(id=user_id)
+
+            user_points = Points.objects.filter(user_id=user_id)
+            if user_points.exists():
+                point = Points.objects.get(user_id=user_id)
+                point.user = user
+
+                # 最终积分
+                total_points = self.user_total_points(project_id, task_id, points)
+
+                total_points = point.total_points + total_points
+                point.total_points = total_points
+                available_points = point.available_points + total_points
+                point.available_points = available_points
+                total_coins = round(total_points / 1000,2)
+                point.total_coins = total_coins
+                point.save()
+                self.create_user_pointsdetail(user_id,points,operation_type,points_status,points_type)
+            else:
+                Points.objects.create(user=user, points=points,available_points=points)
+                self.create_user_pointsdetail(user_id,points,operation_type,points_status,points_type)
+
+    def create_user_pointsdetail(self, user_id, points,operation_type, points_type, points_status, points_source=0):
+        """
+        创建用户积分明细
+        :param user_id:用户标识
+        :param points:积分
+        :param operation_type:操作类型：（1：增加积分或0：减少积分）
+        :param points_type:积分类型：（0：项目或1：任务）
+        :param points_status:积分状态：（1：有效）
+        :param points_source:积分来源：追溯积分
+        :return:
+        """
+
+        if user_id is not None:
+            user = UserProfile.objects.get(id=user_id)
+            PointsDetail.objects.create(user=user,
+                                        operation_points=points,
+                                        available_points=points,
+                                        operation_type=operation_type,
+                                        points_type=points_type,
+                                        points_status=points_status,
+                                        points_source=points_source)
+
+
+    def user_total_points(self, project_id, task_id, points):
+        final_total_value = 0
+        original_total_value = 0
+        weights_total_value = 0
+        if task_id is not None:
+            tasks = Task.objects.filter(project_id=project_id, is_active=1)
+            for task in tasks:
+                if task is not None:
+                    # 取任务的评级
+                    if task.task_assessment:
+                        task_assessment = TaskAssessment.objects.get(id=task.task_assessment.id)
+                        if task_assessment:
+                            assessment_weight = task_assessment.weight * points
+                            assessment_weight = round(assessment_weight, 2)
+                            weights_total_value = weights_total_value + int(assessment_weight)
+                            original_total_value = original_total_value + points
+
+            task = Task.objects.get(id=task_id)
+            if task:
+                final_total_value = task.points * original_total_value
+                final_total_value = int(final_total_value / weights_total_value)
+        else:
+            final_total_value = points
+
+        return final_total_value
 
 
 class ProjectCostAnalysisView(APIView):
