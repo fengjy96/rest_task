@@ -27,6 +27,7 @@ class ProgressTexts(models.Model):
     """
     进度富文本模型
     """
+    tasklog = models.ForeignKey(TaskLog, null=True, blank=True, verbose_name='任务日志标识', on_delete=models.CASCADE)
     steplog = models.ForeignKey(StepLog, null=True, blank=True, verbose_name='日志标识', on_delete=models.CASCADE)
     type = models.IntegerField(default=0, verbose_name='类型')
     content = models.TextField(default='', verbose_name='内容')

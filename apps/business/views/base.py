@@ -8,6 +8,10 @@ from rbac.models import UserProfile
 from business.models.message import Menu
 from business.models.reason import Reason
 from configuration.models import ProjectStatus, TaskStatus, ReasonType
+from business.models.steplog import TaskLog
+from business.models.files import Files, ProgressTexts
+from django.db.models import Sum
+import datetime
 
 User = get_user_model()
 
@@ -109,43 +113,64 @@ class BusinessPublic:
 
     @classmethod
     def update_progress_by_project_id(cls, project_id):
+        progress = 0
         tasks = Task.objects.filter(project_id=project_id, is_active=1)
         task_nums = tasks.count()
-        checked_tasks = tasks.filter(receive_status_id=cls.GetTaskStatusIdByKey('checked'))
+        checked_tasks = tasks.filter(receive_status_id=cls.GetTaskStatusIdByKey('checked')).aggregate(nums=Sum('progress'))
+        if checked_tasks['nums'] is not None:
+            progress = checked_tasks['nums']
 
-        project_progress = 0
-        for task in checked_tasks:
-            progress = task.progress
-            task_percentage = progress / (task_nums * 100)
-            task_percentage = round(task_percentage, 2)
-            task_percentage = task_percentage * 100
-            project_progress = int(project_progress + task_percentage)
+        project_progress = progress / (task_nums * 100)
+        project_progress = round(project_progress, 2)
+        project_progress = int(project_progress * 100)
 
         project = Project.objects.get(id=project_id)
         if project:
             project.progress = project_progress
             if project_progress == 100:
                 project.receive_status = cls.GetProjectStatusObjectByKey('finished')
+                project.finish_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             project.save()
 
     @classmethod
     def update_progress_by_task_id(cls, task_id):
+        progress = 0
         steps = Step.objects.filter(task_id=task_id, is_active=1)
         step_nums = steps.count()
 
-        task_progress = 0
-        for step in steps:
-            progress = step.progress
-            step_percentage = progress / (step_nums * 100)
-            step_percentage = round(step_percentage, 2)
-            step_percentage = step_percentage * 100
-            task_progress = int(task_progress + step_percentage)
+        check_steps = Step.objects.filter(task_id=task_id, is_active=1).aggregate(nums=Sum('progress'))
+        if check_steps['nums'] is not None:
+            progress = check_steps['nums']
+
+        task_progress = progress / (step_nums * 100)
+        task_progress = round(task_progress, 2)
+        task_progress = int(task_progress * 100)
 
         task = Task.objects.get(id=task_id)
         if task:
             task.progress = task_progress
             if task_progress == 100:
                 task.receive_status = cls.GetTaskStatusObjectByKey('finished')
+                task.finish_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             task.save()
             project_id = task.project_id
             cls.update_progress_by_project_id(project_id)
+
+    @classmethod
+    def create_task_file_texts(cls, task_id, files, content):
+        # 增加日志
+        if task_id is not None:
+            if files or content:
+                task_log = TaskLog(task_id=task_id)
+                task_log.save()
+
+                if files:
+                    for file in files:
+                        # 增加文件表记录
+                        step_log_file = Files(tasklog=task_log, name=file['name'], path=file['url'])
+                        step_log_file.save()
+
+                # 如果存在富文本，则先添加富文本
+                if content:
+                    progresstexts = ProgressTexts(tasklog=task_log, content=content)
+                    progresstexts.save()

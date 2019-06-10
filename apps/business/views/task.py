@@ -16,8 +16,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
-from business.models.files import Files
-from configuration.models import TaskStatus, TaskDesignType
+from business.models.files import Files, ProgressTexts
+from configuration.models import TaskStatus, TaskDesignType, TaskAssessment
+from business.models.steplog import TaskLog
 
 
 class TaskViewSet(ModelViewSet):
@@ -53,6 +54,11 @@ class TaskViewSet(ModelViewSet):
         request.data['sender'] = request.user.id
         # 获取该任务所属的项目 id
         project_id = request.data.get('project', None)
+        # 富文本内容
+        content = request.data.get('content', None)
+        # 文件
+        files = request.data.get('files', None)
+
         if project_id is not None:
             # 根据项目 id 查项目负责人
             project = Project.objects.get(id=project_id)
@@ -74,6 +80,8 @@ class TaskViewSet(ModelViewSet):
                 project = Project.objects.get(id=project_id)
                 if project.audit_status == 2:
                     request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
+                else:
+                    request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
             else:
                 request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
         # 如果创建任务时未指定任务负责人，则任务接收状态为 0 - 未安排任务负责人
@@ -83,7 +91,10 @@ class TaskViewSet(ModelViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
 
+        # 更新项目进度
         BusinessPublic.update_progress_by_project_id(project_id)
+        # 新增任务上传文件日志
+        BusinessPublic.create_task_file_texts(serializer.data['id'], files, content)
 
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
@@ -99,6 +110,11 @@ class TaskViewSet(ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def update(self, request, *args, **kwargs):
+        # 富文本内容
+        content = request.data.get('content', None)
+        # 文件
+        files = request.data.get('files', None)
+
         if request.data.get('receiver', None):
             project_id = request.data.get('project', None)
             if project_id is not None:
@@ -115,6 +131,9 @@ class TaskViewSet(ModelViewSet):
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
+
+        # 新增任务上传文件日志
+        BusinessPublic.create_task_file_texts(serializer.data['id'], files, content)
 
         if getattr(instance, '_prefetched_objects_cache', None):
             # If 'prefetch_related' has been applied to a queryset, we need to
@@ -343,26 +362,33 @@ class TaskCheckPassView(APIView):
     def post(self, request, format=None):
         try:
             # 任务标识
-            task_id = request.data.get('task_id')
+            task_id = request.data.get('task_id', None)
+            # 评级
+            task_assessment_id = request.data.get('task_assessment_id', None)
+            # 评语
+            comments = request.data.get('comments', None)
 
-            self.update_task(task_id)
+            self.update_task(task_id, task_assessment_id, comments)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def update_task(self, task_id):
+    def update_task(self, task_id, assessment_id, comments):
         if task_id is not None:
-            from business.models.task import Task
-            task = Task.objects.get(id=task_id)
-            if task is not None:
-                # 任务已通过验收
-                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('checked')
-                task.save()
+            if assessment_id is not None and comments is not None:
+                assessment = TaskAssessment.objects.get(id=assessment_id)
+                task = Task.objects.get(id=task_id)
+                if task is not None:
+                    # 任务已通过验收
+                    task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('checked')
+                    task.task_assessment = assessment
+                    task.comments = comments
+                    task.save()
 
-                project_id = task.project_id
-                BusinessPublic.update_progress_by_project_id(project_id)
+                    project_id = task.project_id
+                    BusinessPublic.update_progress_by_project_id(project_id)
 
-                BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
+                BusinessPublic.create_message(task.sender.id, task.receiver.id, menu_id=2,
                                               messages='任务已通过验收!')
 
 
@@ -483,3 +509,65 @@ class TaskAllocateReasonViewSet(ModelViewSet):
     filter_fields = ('task_id', 'receiver_id')
     ordering_fields = ('id',)
     # permission_classes = [IsAuthenticated]
+
+
+class TaskLogsView(APIView):
+    """
+    查询单条任务的日志
+    """
+
+    def get(self, request, format=None):
+        try:
+            # 任务标识
+            task_id = request.query_params.get('task_id')
+
+            # 获取任务日志
+            task_logs = self.get_task_logs(task_id)
+
+        except Exception as e:
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=task_logs)
+
+    def get_task_logs(self, id):
+        """
+        获取任务日志
+        """
+        task_logs_list = []
+
+        task_logs = TaskLog.objects.filter(task_id=id).order_by("-add_time")
+        for task_log in task_logs:
+            log_obj = {}
+            log_obj['id'] = task_log.id
+            log_obj['add_time'] = task_log.add_time
+            log_obj['files'] = self.get_task_log_files(task_log.id)
+            task_logs_list.append(log_obj)
+
+        return task_logs_list
+
+    def get_task_log_files(self, id):
+        """
+        日志文件列表
+        """
+        task_log_file_list = []
+
+        files = Files.objects.filter(tasklog_id=id)
+        for file in files:
+            log_file_obj = {}
+            log_file_obj['id'] = file.id
+            log_file_obj['name'] = file.name
+            log_file_obj['path'] = file.path
+            log_file_obj['type'] = 1
+            log_file_obj['add_time'] = file.add_time
+            task_log_file_list.append(log_file_obj)
+
+        progresstexts = ProgressTexts.objects.filter(tasklog_id=id)
+        for progresstext in progresstexts:
+            log_text_obj = {}
+            log_text_obj['id'] = progresstext.id
+            log_text_obj['content'] = progresstext.content
+            log_text_obj["type"] = 0
+            log_text_obj['add_time'] = progresstext.add_time
+            task_log_file_list.append(log_text_obj)
+
+        return task_log_file_list

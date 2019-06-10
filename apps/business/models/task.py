@@ -21,6 +21,7 @@ class Task(models.Model):
 
     begin_time = models.DateField(null=True, blank=True, verbose_name='开始时间')
     end_time = models.DateField(null=True, blank=True, verbose_name='结束时间')
+    finish_time = models.DateTimeField(null=True, blank=True, verbose_name='完成时间')
 
     task_assessment = models.ForeignKey(TaskAssessment, null=True, blank=True, on_delete=models.CASCADE,
                                         verbose_name='任务评级')
@@ -45,7 +46,7 @@ class Task(models.Model):
 
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='更新时间')
-
+    
     def __str__(self):
         return self.name
 
