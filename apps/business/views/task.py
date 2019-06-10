@@ -336,25 +336,19 @@ class TaskCheckSubmitView(APIView):
     def post(self, request, format=None):
         try:
             # 任务标识
-            task_id = request.data.get('task_id', None)
-            # 评级
-            task_assessment_id = request.data.get('task_assessment_id', None)
-            # 评语
-            comments = request.data.get('comments', None)
+            task_id = request.data.get('task_id')
 
-            self.update_task(task_id, task_assessment_id, comments)
+            self.update_task(task_id)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def update_task(self, task_id, task_assessment_id, comments):
+    def update_task(self, task_id):
         if task_id is not None:
-            task_assessment = TaskAssessment.objects.get(id=task_assessment_id)
+            from business.models.task import Task
             task = Task.objects.get(id=task_id)
             if task is not None:
                 task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_check')
-                task.task_assessment = task_assessment
-                task.comments = comments
                 task.save()
                 BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='有新的任务需要你的验收，请尽快处理!')
@@ -394,8 +388,8 @@ class TaskCheckPassView(APIView):
                     project_id = task.project_id
                     BusinessPublic.update_progress_by_project_id(project_id)
 
-                    BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
-                                                  messages='任务已通过验收!')
+                BusinessPublic.create_message(task.sender.id, task.receiver.id, menu_id=2,
+                                              messages='任务已通过验收!')
 
 
 class TaskCheckRejectView(APIView):
