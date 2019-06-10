@@ -336,19 +336,25 @@ class TaskCheckSubmitView(APIView):
     def post(self, request, format=None):
         try:
             # 任务标识
-            task_id = request.data.get('task_id')
+            task_id = request.data.get('task_id', None)
+            # 评级
+            task_assessment_id = request.data.get('task_assessment_id', None)
+            # 评语
+            comments = request.data.get('comments', None)
 
-            self.update_task(task_id)
+            self.update_task(task_id, task_assessment_id, comments)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def update_task(self, task_id):
+    def update_task(self, task_id, task_assessment_id, comments):
         if task_id is not None:
-            from business.models.task import Task
+            task_assessment = TaskAssessment.objects.get(id=task_assessment_id)
             task = Task.objects.get(id=task_id)
             if task is not None:
                 task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_check')
+                task.task_assessment = task_assessment
+                task.comments = comments
                 task.save()
                 BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='有新的任务需要你的验收，请尽快处理!')
@@ -364,11 +370,11 @@ class TaskCheckPassView(APIView):
             # 任务标识
             task_id = request.data.get('task_id', None)
             # 评级
-            assessment_id = request.data.get('assessment_id', None)
+            task_assessment_id = request.data.get('task_assessment_id', None)
             # 评语
             comments = request.data.get('comments', None)
 
-            self.update_task(task_id, assessment_id, comments)
+            self.update_task(task_id, task_assessment_id, comments)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
