@@ -140,7 +140,7 @@ class ProjectViewSet(ModelViewSet):
                 queryset_project_auditor = queryset.filter(auditor_id=user_id)
             # 如果当前用户拥有项目负责人权限，则返回与该项目负责人关联的项目数据
             if 7 in user_role_ids:
-                queryset_project_manager = queryset.filter(receiver_id=user_id, audit_status=2)
+                queryset_project_manager = queryset.filter(receiver_id=user_id)
             # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
             if 8 in user_role_ids:
                 queryset_business_manager = queryset.filter(sender_id=user_id)
@@ -309,7 +309,7 @@ class ProjectAuditPassView(APIView):
                 # 已审核
                 project.audit_status = 2
                 # 等待项目负责人接手项目
-                project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('wait_accept')
+                # project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('wait_accept')
                 # 项目积分
                 # project.points = points
                 project.save()
@@ -375,7 +375,7 @@ class ProjectAcceptView(APIView):
                 # 项目负责人已接手,项目正式开始
                 project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('accepted')
                 project.save()
-                BusinessPublic.create_message(project.receiver_id, project.auditor_id, menu_id=2,
+                BusinessPublic.create_message(project.receiver_id, project.sender_id, menu_id=2,
                                               messages='项目负责人已接手，项目正式开始!')
                 self.update_task(project_id)
 

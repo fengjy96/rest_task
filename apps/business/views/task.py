@@ -381,7 +381,7 @@ class TaskCheckPassView(APIView):
                 project_id = task.project_id
                 BusinessPublic.update_progress_by_project_id(project_id)
 
-                BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
+                BusinessPublic.create_message(task.sender.id, task.receiver.id, menu_id=2,
                                               messages='任务已通过验收!')
 
 
