@@ -80,7 +80,7 @@ class TaskViewSet(ModelViewSet):
                 project = Project.objects.get(id=project_id)
                 if project.audit_status == 2:
                     request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
-                elif project.audit_status == 0 or project.audit_status == 3:
+                else:
                     request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
             else:
                 request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
