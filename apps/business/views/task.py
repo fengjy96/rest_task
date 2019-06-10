@@ -17,7 +17,7 @@ from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
 from business.models.files import Files, ProgressTexts
-from configuration.models import TaskStatus, TaskDesignType
+from configuration.models import TaskStatus, TaskDesignType, TaskAssessment
 from business.models.steplog import TaskLog
 
 
@@ -362,24 +362,31 @@ class TaskCheckPassView(APIView):
     def post(self, request, format=None):
         try:
             # 任务标识
-            task_id = request.data.get('task_id')
+            task_id = request.data.get('task_id', None)
+            # 评级
+            task_assessment_id = request.data.get('task_assessment_id', None)
+            # 评语
+            comments = request.data.get('comments', None)
 
-            self.update_task(task_id)
+            self.update_task(task_id, task_assessment_id, comments)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def update_task(self, task_id):
+    def update_task(self, task_id, assessment_id, comments):
         if task_id is not None:
-            from business.models.task import Task
-            task = Task.objects.get(id=task_id)
-            if task is not None:
-                # 任务已通过验收
-                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('checked')
-                task.save()
+            if assessment_id is not None and comments is not None:
+                assessment = TaskAssessment.objects.get(id=assessment_id)
+                task = Task.objects.get(id=task_id)
+                if task is not None:
+                    # 任务已通过验收
+                    task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('checked')
+                    task.task_assessment = assessment
+                    task.comments = comments
+                    task.save()
 
-                project_id = task.project_id
-                BusinessPublic.update_progress_by_project_id(project_id)
+                    project_id = task.project_id
+                    BusinessPublic.update_progress_by_project_id(project_id)
 
                 BusinessPublic.create_message(task.sender.id, task.receiver.id, menu_id=2,
                                               messages='任务已通过验收!')
