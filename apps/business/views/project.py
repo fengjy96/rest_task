@@ -66,7 +66,7 @@ class ProjectViewSet(ModelViewSet):
         request.data['sender'] = request.user.id
         # 如果存在项目负责人，则将项目接收状态置为 '已指派项目负责人'
         if request.data.get('receiver') is not None:
-            request.data['receive_status'] = ProjectStatus.objects.get(key='assigned').id
+            request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
         # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
         else:
             request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
@@ -75,6 +75,27 @@ class ProjectViewSet(ModelViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def update(self, request, *args, **kwargs):
+        # 如果存在项目负责人，则将项目接收状态置为 '已指派项目负责人'
+        if request.data.get('receiver') is not None:
+            request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
+        # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
+        else:
+            request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
@@ -119,7 +140,7 @@ class ProjectViewSet(ModelViewSet):
                 queryset_project_auditor = queryset.filter(auditor_id=user_id)
             # 如果当前用户拥有项目负责人权限，则返回与该项目负责人关联的项目数据
             if 7 in user_role_ids:
-                queryset_project_manager = queryset.filter(receiver_id=user_id, audit_status=2)
+                queryset_project_manager = queryset.filter(receiver_id=user_id)
             # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
             if 8 in user_role_ids:
                 queryset_business_manager = queryset.filter(sender_id=user_id)
@@ -288,7 +309,7 @@ class ProjectAuditPassView(APIView):
                 # 已审核
                 project.audit_status = 2
                 # 等待项目负责人接手项目
-                project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('wait_accept')
+                # project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('wait_accept')
                 # 项目积分
                 # project.points = points
                 project.save()
@@ -354,7 +375,7 @@ class ProjectAcceptView(APIView):
                 # 项目负责人已接手,项目正式开始
                 project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('accepted')
                 project.save()
-                BusinessPublic.create_message(project.receiver_id, project.auditor_id, menu_id=2,
+                BusinessPublic.create_message(project.receiver_id, project.sender_id, menu_id=2,
                                               messages='项目负责人已接手，项目正式开始!')
                 self.update_task(project_id)
 
