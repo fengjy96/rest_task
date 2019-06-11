@@ -167,6 +167,12 @@ class TaskViewSet(ModelViewSet):
         # 过滤已激活的项目数据
         queryset = queryset.filter(is_active=1)
 
+        # 过滤任务接收者为 None 的数据，在任务发布大厅中显示
+        has_receiver = request.query_params.get('has_receiver', None)
+        if has_receiver == '0':
+            queryset = queryset.filter(receiver__isnull=True)
+            return queryset
+
         # 定义空的数据集
         emptyQuerySet = self.queryset.filter(is_active=999)
         queryset_task_auditor = emptyQuerySet
@@ -264,18 +270,20 @@ class TaskAcceptView(APIView):
             # 任务设计类型标识
             task_design_type_id = request.data.get('task_design_type_id')
 
-            self.update_task(task_id, task_design_type_id)
+            self.update_task(request, task_id, task_design_type_id)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def update_task(self, task_id, task_design_type_id):
+    def update_task(self, request, task_id, task_design_type_id):
         if task_id is not None:
             from business.models.task import Task
             task = Task.objects.get(id=task_id)
             if task is not None:
                 # 任务负责人已接手,任务执行中
                 task.receive_status = TaskStatus.objects.get(key='accepted')
+                if task.receiver is None:
+                    task.receiver = request.user
                 task.task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
                 task.save()
                 self.create_step(task_id, task_design_type_id)
