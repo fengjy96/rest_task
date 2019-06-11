@@ -48,6 +48,7 @@ class Task(models.Model):
     modify_time = models.DateTimeField(auto_now=True, verbose_name='更新时间')
 
     is_published = models.IntegerField(default=0, verbose_name='是否已发布')
+    publish_time = models.DateTimeField(null=True, blank=True, verbose_name='发布时间')
 
     def __str__(self):
         return self.name
