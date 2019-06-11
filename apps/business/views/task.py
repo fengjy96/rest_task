@@ -80,7 +80,7 @@ class TaskViewSet(ModelViewSet):
                 project = Project.objects.get(id=project_id)
                 if project.audit_status == 2:
                     request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
-                elif project.audit_status == 0 or project.audit_status == 3:
+                else:
                     request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
             else:
                 request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
@@ -571,3 +571,26 @@ class TaskLogsView(APIView):
             task_log_file_list.append(log_text_obj)
 
         return task_log_file_list
+
+
+class TaskPublishView(APIView):
+    """任务发布"""
+
+    def post(self, request, format=None):
+        try:
+            # 任务 id 列表
+            task_ids = request.data.get('selected_task_ids', [])
+            if task_ids and len(task_ids) > 0:
+                for task_id in task_ids:
+                    self.update_task(task_id)
+        except Exception as e:
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+
+    def update_task(self, task_id):
+        if task_id is not None:
+            task = Task.objects.filter(id=task_id, is_published=0).first()
+            if task:
+                task.is_published = 1
+                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
+                task.save()
