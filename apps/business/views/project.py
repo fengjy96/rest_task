@@ -883,3 +883,7 @@ class ProjectCostAnalysisFinishedView(APIView):
                             task = Task.objects.get(id=projectpoint.task.id)
                             task.points = projectpoint.points
                             task.save()
+
+
+class ProjectPublishView(APIView):
+    """项目发布"""
