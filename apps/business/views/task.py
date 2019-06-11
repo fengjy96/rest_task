@@ -1,3 +1,5 @@
+import datetime
+
 from django.db.models import Q
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -592,5 +594,6 @@ class TaskPublishView(APIView):
             task = Task.objects.filter(id=task_id, is_published=0).first()
             if task:
                 task.is_published = 1
+                task.publish_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
                 task.save()
