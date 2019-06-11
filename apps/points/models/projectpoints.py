@@ -11,10 +11,11 @@ class ProjectPoints(models.Model):
     user = models.ForeignKey(to=UserProfile, null=True, blank=True, verbose_name='用户标识', on_delete=models.CASCADE, related_name='project_points_user_id')
     project = models.ForeignKey(to=Project, null=True, blank=True, verbose_name='项目标识', on_delete=models.CASCADE, related_name='project_points_project_id')
     task = models.ForeignKey(to=Task, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE, related_name='project_points_task_id')
-    role = models.ForeignKey(to=Role, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE,related_name='project_points_task_id')
+    role = models.ForeignKey(to=Role, null=True, blank=True, verbose_name='角色标识', on_delete=models.CASCADE,related_name='project_points_role_id')
     points = models.IntegerField(default=0, verbose_name='积分')
     type = models.IntegerField(default=0, verbose_name='积分类型')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
+    is_created = models.IntegerField(default=0, verbose_name='是否已生成积分')
 
     def __str__(self):
         return self.points
