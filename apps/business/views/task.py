@@ -149,6 +149,8 @@ class TaskViewSet(ModelViewSet):
 
         queryset = self.filter_list_queryset(request, queryset)
 
+        queryset = self.filter_task_hall(request, queryset)
+
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -156,6 +158,34 @@ class TaskViewSet(ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    def filter_task_hall(self, request, queryset):
+        """
+        根据输入条件查询相应的任务
+        :param request:
+        :param queryset:
+        :return:
+        """
+        q = Q()
+
+        task_type_ids = request.query_params.get('task_type_ids', None)
+        if task_type_ids:
+            task_type_ids = task_type_ids.split(',')
+            q.add(Q(task_type__in=task_type_ids), Q.AND)
+
+        task_priority_ids = request.query_params.get('task_priority_ids', None)
+        if task_priority_ids:
+            task_priority_ids = task_priority_ids.split(',')
+            q.add(Q(task_priority__in=task_priority_ids), Q.AND)
+
+        task_quality_ids = request.query_params.get('task_quality_ids', None)
+        if task_quality_ids:
+            task_quality_ids = task_quality_ids.split(',')
+            q.add(Q(task_quality__in=task_quality_ids), Q.AND)
+
+        queryset = queryset.filter(q)
+
+        return queryset
 
     def filter_list_queryset(self, request, queryset):
         """
