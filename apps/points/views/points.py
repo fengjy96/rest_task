@@ -7,12 +7,27 @@ from configuration.models import TaskQuality
 from utils.basic import MykeyResponse
 from rbac.models import UserProfile, Role
 from rest_framework.generics import ListAPIView
-from points.serializers import ProjectPointsSerializer
-from rest_framework.filters import OrderingFilter
+from points.serializers import ProjectPointsSerializer, PointsSerializer
+from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from common.custom import CommonPagination
+from rest_framework.viewsets import ModelViewSet
+from points.models.points import Points
+
+
+class UserPointsViewSet(ModelViewSet):
+    """
+    消息：增删改查
+    """
+    queryset = Points.objects.all()
+    serializer_class = PointsSerializer
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filter_fields = ('user_id',)
+    ordering_fields = ('id',)
+    authentication_classes = (JSONWebTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
 
 
 class PointsAssignmentView(ListAPIView):
