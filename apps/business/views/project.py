@@ -514,21 +514,25 @@ class ProjectCheckPassView(APIView):
                 project.save()
 
                 # 积分及米值分配
-                projectpoints = ProjectPoints.objects.filter(project_id=project_id)
+                projectpoints = ProjectPoints.objects.filter(project_id=project_id, is_created = 0)
                 if projectpoints:
                     for projectpoint in projectpoints:
                          if projectpoint:
-                             if projectpoints.task:
-                                 self.create_user_points(projectpoint.project.id, projectpoint.task.id, projectpoint.user, projectpoint.points, 1, 1,
+                             if projectpoint.task:
+                                 self.create_user_points(projectpoint.project.id, projectpoint.task.id, projectpoint.user.id, projectpoint.points, 1, 1,
                                                          projectpoint.type, projectpoint.task.task_assessment.id)
                              else:
-                                 self.create_user_points(projectpoint.project.id, projectpoint.task.id, projectpoint.user, projectpoint.points, 1, 1,
+                                 self.create_user_points(projectpoint.project.id, None, projectpoint.user.id, projectpoint.points, 1, 1,
                                                          projectpoint.type)
+
+                             project_points = ProjectPoints.objects.get(id=projectpoint.id)
+                             project_points.is_created = 1
+                             project_points.save()
 
                 BusinessPublic.create_message(project.auditor_id, project.receiver_id, menu_id=2,
                                               messages='恭喜,你的项目已验收通过!')
 
-    def create_user_points(self, project_id, task_id, user_id, points, operation_type, points_status, points_type, task_assessment_id=None):
+    def create_user_points(self, project_id, task_id, user_id, point, operation_type, points_status, points_type, task_assessment_id=None):
         """
         创建或更新用户积分以及米值,如果用户积分表中存在记录则更新,如果没有则新增
         :param user_id:用户标识
@@ -539,31 +543,33 @@ class ProjectCheckPassView(APIView):
         :return:
         """
 
-        if task_assessment_id:
-            task_assessment = TaskAssessment.objects.get(id=task_assessment_id)
-            weight = task_assessment.weight
+        total_points = point
+        available_points = point
+        total_coins = round(total_points / 1000, 3)
+
+        # 任务最终积分
+        if task_id is not None:
+            total_points = self.user_total_points(task_id, point)
+
         if user_id is not None:
             user = UserProfile.objects.get(id=user_id)
 
             user_points = Points.objects.filter(user_id=user_id)
             if user_points.exists():
-                point = Points.objects.get(user_id=user_id)
-                point.user = user
+                user_point = Points.objects.get(user_id=user_id)
+                user_point.user = user
 
-                # 最终积分
-                total_points = self.user_total_points(project_id, task_id, points)
-
-                total_points = point.total_points + total_points
-                point.total_points = total_points
-                available_points = point.available_points + total_points
-                point.available_points = available_points
+                user_point.total_points = user_point.total_points + total_points
+                user_point.available_points = user_point.available_points + total_points
                 total_coins = round(total_points / 1000,3)
-                point.total_coins = total_coins
-                point.save()
-                self.create_user_pointsdetail(user_id,points,operation_type,points_status,points_type)
+                user_total_coins = round(user_point.total_coins,3)
+                user_point.total_coins = user_total_coins + total_coins
+                user_point.save()
+
+                self.create_user_pointsdetail(user_id,total_points,operation_type,points_status,points_type)
             else:
-                Points.objects.create(user=user, points=points,available_points=points)
-                self.create_user_pointsdetail(user_id,points,operation_type,points_status,points_type)
+                Points.objects.create(user=user, total_points=total_points,available_points=available_points, total_coins=total_coins)
+                self.create_user_pointsdetail(user_id,point,operation_type,points_status,points_type)
 
     def create_user_pointsdetail(self, user_id, points,operation_type, points_type, points_status, points_source=0):
         """
@@ -588,31 +594,18 @@ class ProjectCheckPassView(APIView):
                                         points_source=points_source)
 
 
-    def user_total_points(self, project_id, task_id, points):
-        final_total_value = 0
-        original_total_value = 0
-        weights_total_value = 0
-        if task_id is not None:
-            tasks = Task.objects.filter(project_id=project_id, is_active=1)
-            for task in tasks:
-                if task is not None:
-                    # 取任务的评级
-                    if task.task_assessment:
-                        task_assessment = TaskAssessment.objects.get(id=task.task_assessment.id)
-                        if task_assessment:
-                            assessment_weight = task_assessment.weight * points
-                            assessment_weight = round(assessment_weight, 2)
-                            weights_total_value = weights_total_value + int(assessment_weight)
-                            original_total_value = original_total_value + points
-
+    def user_total_points(self, task_id, points):
+        assessment_weight = 0
+        if  task_id is not None:
             task = Task.objects.get(id=task_id)
             if task:
-                final_total_value = task.points * original_total_value
-                final_total_value = int(final_total_value / weights_total_value)
-        else:
-            final_total_value = points
+                # 取任务的评级
+                if task.task_assessment:
+                    task_assessment = TaskAssessment.objects.get(id=task.task_assessment.id)
+                    if task_assessment:
+                        assessment_weight = int(task_assessment.weight * points)
 
-        return final_total_value
+        return assessment_weight
 
 
 class ProjectCostAnalysisView(APIView):

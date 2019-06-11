@@ -15,6 +15,7 @@ class ProjectPoints(models.Model):
     points = models.IntegerField(default=0, verbose_name='积分')
     type = models.IntegerField(default=0, verbose_name='积分类型')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
+    is_created = models.IntegerField(default=0, verbose_name='是否已生成积分')
 
     def __str__(self):
         return self.points
