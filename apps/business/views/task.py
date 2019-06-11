@@ -589,9 +589,8 @@ class TaskPublishView(APIView):
 
     def update_task(self, task_id):
         if task_id is not None:
-            task = Task.objects.get(id=task_id)
+            task = Task.objects.filter(id=task_id, is_published=0).first()
             if task:
                 task.is_published = 1
-                if task.receiver is not None:
-                    task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
+                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
                 task.save()
