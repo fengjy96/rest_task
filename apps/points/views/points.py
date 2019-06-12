@@ -2,8 +2,8 @@ from rest_framework import status
 from points.models.projectpoints import ProjectPoints
 from business.models.project import Project
 from business.models.task import Task
-from configuration.models import TaskPriority
-from configuration.models import TaskQuality
+from configuration.models.task_conf import TaskPriority
+from configuration.models.task_conf import TaskQuality
 from utils.basic import MykeyResponse
 from rbac.models import UserProfile, Role
 from rest_framework.generics import ListAPIView
@@ -11,22 +11,26 @@ from points.serializers import ProjectPointsSerializer, PointsSerializer
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
-from rest_framework.permissions import IsAuthenticated
 from common.custom import CommonPagination
 from points.models.points import Points
 from rest_framework.views import APIView
-from rest_framework.response import Response
+
 
 class UserPointsViewSet(APIView):
     """
     积分：查积分以及米值
     """
+
     def get(self, request):
-        # 获取当前用户 id
-        user_id = request.user.id
-        points = Points.objects.filter(user_id=user_id)
-        serializer = PointsSerializer(points, many=True)
-        return Response(serializer.data)
+        try:
+            # 获取当前用户 id
+            user_id = request.user.id
+            points = Points.objects.get(user_id=user_id)
+            serializer = PointsSerializer(points)
+        except Exception as e:
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
+        return MykeyResponse(serializer.data, status=status.HTTP_200_OK, msg='请求成功')
 
 
 class PointsAssignmentView(ListAPIView):
@@ -41,7 +45,8 @@ class PointsAssignmentView(ListAPIView):
     filter_fields = ('project_id',)
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
-    #permission_classes = (IsAuthenticated,)
+
+    # permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         try:

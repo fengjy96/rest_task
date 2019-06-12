@@ -14,6 +14,7 @@ class PointsSerializer(serializers.ModelSerializer):
         model = Points
         fields = '__all__'
 
+
 class ProjectPointsSerializer(serializers.ModelSerializer):
     """
     项目积分：增删改查
@@ -39,6 +40,7 @@ class ProjectPointsSerializer(serializers.ModelSerializer):
         model = ProjectPoints
         fields = '__all__'
         depth = 1
+
 
 class PointsDetailSerializer(serializers.ModelSerializer):
     """

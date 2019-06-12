@@ -19,7 +19,7 @@ from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
 from business.models.files import Files, ProgressTexts
-from configuration.models import TaskStatus, TaskDesignType, TaskAssessment
+from configuration.models.task_conf import TaskStatus, TaskDesignType, TaskAssessment
 from business.models.steplog import TaskLog
 
 
@@ -145,7 +145,7 @@ class TaskViewSet(ModelViewSet):
         return Response(serializer.data)
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset()).order_by('-add_time').order_by('-task_priority_id')
 
         queryset = self.filter_list_queryset(request, queryset)
 

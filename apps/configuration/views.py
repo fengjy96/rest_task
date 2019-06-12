@@ -4,12 +4,12 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
-from configuration.models import (
-    TaskStep, TaskAssessment, TaskPriority, TaskQuality,
-    TaskDesignType, TaskType, Skill, Salary, ProjectStatus, TaskStatus, ReasonType)
+from configuration.models.project_conf import ProjectStatus
+from configuration.models.task_conf import TaskStep, TaskAssessment, TaskPriority, TaskQuality, TaskDesignType, TaskType, TaskStatus
+from configuration.models.reason_conf import ReasonType
 from .serializers import (
     TaskTypeSerializer, TaskStepSerializer, TaskAssessmentSerializer,
-    TaskPrioritySerializer, TaskQualitySerializer, TaskDesignTypeSerializer, SkillSerializer, SalarySerializer,
+    TaskPrioritySerializer, TaskQualitySerializer, TaskDesignTypeSerializer,
     ProjectStatusSerializer, TaskStatusSerializer, ReasonTypeSerializer)
 
 
@@ -113,22 +113,4 @@ class TaskDesignTypeViewSet(ModelViewSet):
     serializer_class = TaskDesignTypeSerializer
     filter_backends = (DjangoFilterBackend,)
     filter_fields = ('task_type_id',)
-    permission_classes = (IsAuthenticated,)
-
-
-class SalaryViewSet(ModelViewSet):
-    """
-    用户薪水：增删改查
-    """
-    queryset = Salary.objects.all()
-    serializer_class = SalarySerializer
-    permission_classes = (IsAuthenticated,)
-
-
-class SkillViewSet(ModelViewSet):
-    """
-    用户技能：增删改查
-    """
-    queryset = Skill.objects.all()
-    serializer_class = SkillSerializer
     permission_classes = (IsAuthenticated,)

@@ -22,7 +22,8 @@ from business.models.task import Task
 from points.models.projectpoints import ProjectPoints
 from points.models.points import Points
 from points.models.pointsdetail import PointsDetail
-from configuration.models import ProjectStatus, Fee, TaskType, TaskAssessment
+from configuration.models.project_conf import ProjectStatus, Fee
+from configuration.models.task_conf import TaskType, TaskAssessment
 
 # 项目人员成本
 list_project_person_objects = []
@@ -98,7 +99,7 @@ class ProjectViewSet(ModelViewSet):
         return Response(serializer.data)
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset()).order_by('-add_time')
 
         queryset = self.filter_list_queryset(request, queryset)
 

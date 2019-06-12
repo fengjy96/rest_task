@@ -1,7 +1,8 @@
 from django.db import models
 
 from rbac.models import Company, UserProfile
-from configuration.models import TaskType, ProjectStatus
+from configuration.models.project_conf import ProjectStatus
+from configuration.models.task_conf import TaskType
 
 
 class Project(models.Model):

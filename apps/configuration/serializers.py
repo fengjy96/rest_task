@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from configuration.models import TaskDesignType, TaskType, TaskQuality, TaskPriority, TaskAssessment, TaskStep, Skill, \
-    Salary, ProjectStatus, TaskStatus, ReasonType, Fee
+from configuration.models.task_conf import TaskDesignType, TaskType, TaskQuality, TaskPriority, TaskAssessment, \
+    TaskStep, TaskStatus
+from configuration.models.project_conf import ProjectStatus, Fee
+from configuration.models.reason_conf import ReasonType
 
 
 class ReasonTypeSerializer(serializers.ModelSerializer):
@@ -11,6 +13,7 @@ class ReasonTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = ReasonType
         fields = '__all__'
+
 
 class ProjectStatusSerializer(serializers.ModelSerializer):
     """
@@ -91,25 +94,6 @@ class TaskStepSerializer(serializers.ModelSerializer):
         model = TaskStep
         fields = '__all__'
 
-
-class SalarySerializer(serializers.ModelSerializer):
-    """
-    薪水序列化
-    """
-
-    class Meta:
-        model = Salary
-        fields = '__all__'
-
-
-class SkillSerializer(serializers.ModelSerializer):
-    """
-    用户技能序列化
-    """
-
-    class Meta:
-        model = Skill
-        fields = '__all__'
 
 class FeeSerializer(serializers.ModelSerializer):
     """
