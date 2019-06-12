@@ -4,7 +4,8 @@ from rest_framework.serializers import Serializer
 
 
 class MykeyResponse(Response):
-    def __init__(self, data=None, status=None, msg=None, template_name=None, headers=None, exception=False, content_type=None):
+    def __init__(self, data=None, status=None, msg=None, template_name=None, headers=None, exception=False,
+                 content_type=None):
         super().__init__(None, status=status)
 
         if isinstance(data, Serializer):
