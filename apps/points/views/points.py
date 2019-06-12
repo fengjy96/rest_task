@@ -2,8 +2,8 @@ from rest_framework import status
 from points.models.projectpoints import ProjectPoints
 from business.models.project import Project
 from business.models.task import Task
-from configuration.models import TaskPriority
-from configuration.models import TaskQuality
+from configuration.models.task_conf import TaskPriority
+from configuration.models.task_conf import TaskQuality
 from utils.basic import MykeyResponse
 from rbac.models import UserProfile, Role
 from rest_framework.generics import ListAPIView

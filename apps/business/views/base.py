@@ -7,7 +7,9 @@ from business.models.step import Step
 from rbac.models import UserProfile
 from business.models.message import Menu
 from business.models.reason import Reason
-from configuration.models import ProjectStatus, TaskStatus, ReasonType
+from configuration.models.project_conf import ProjectStatus
+from configuration.models.task_conf import TaskStatus
+from configuration.models.reason_conf import ReasonType
 from business.models.steplog import TaskLog
 from business.models.files import Files, ProgressTexts
 from django.db.models import Sum

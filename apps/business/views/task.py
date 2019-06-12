@@ -19,7 +19,7 @@ from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
 from business.models.files import Files, ProgressTexts
-from configuration.models import TaskStatus, TaskDesignType, TaskAssessment
+from configuration.models.task_conf import TaskStatus, TaskDesignType, TaskAssessment
 from business.models.steplog import TaskLog
 
 

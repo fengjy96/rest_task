@@ -1,6 +1,6 @@
 from django.db import models
 
-from configuration.models import TaskType, TaskPriority, TaskQuality, TaskAssessment, TaskDesignType, TaskStatus
+from configuration.models.task_conf import TaskType, TaskPriority, TaskQuality, TaskAssessment, TaskDesignType, TaskStatus
 from business.models.project import Project
 from rbac.models import Company, UserProfile
 
