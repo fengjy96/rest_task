@@ -8,26 +8,25 @@ from utils.basic import MykeyResponse
 from rbac.models import UserProfile, Role
 from rest_framework.generics import ListAPIView
 from points.serializers import ProjectPointsSerializer, PointsSerializer
-from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 from common.custom import CommonPagination
-from rest_framework.viewsets import ModelViewSet
 from points.models.points import Points
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
-
-class UserPointsViewSet(ModelViewSet):
+class UserPointsViewSet(APIView):
     """
-    消息：增删改查
+    积分：查积分以及米值
     """
-    queryset = Points.objects.all()
-    serializer_class = PointsSerializer
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('user_id',)
-    ordering_fields = ('id',)
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (IsAuthenticated,)
+    def get(self, request):
+        # 获取当前用户 id
+        user_id = request.user.id
+        points = Points.objects.filter(user_id=user_id)
+        serializer = PointsSerializer(points, many=True)
+        return Response(serializer.data)
 
 
 class PointsAssignmentView(ListAPIView):
