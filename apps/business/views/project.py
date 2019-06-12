@@ -98,7 +98,7 @@ class ProjectViewSet(ModelViewSet):
         return Response(serializer.data)
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset()).order_by('-add_time')
 
         queryset = self.filter_list_queryset(request, queryset)
 
