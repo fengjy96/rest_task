@@ -246,10 +246,9 @@ class TaskReceiverView(APIView):
     """
 
     def get(self, request, format=None):
-        # 设计方式
-        # task_type_id = request.data.get('task_type_id')
+        user_id = request.user.id
 
-        users = UserProfile.objects.filter(roles__id=6)
+        users = UserProfile.objects.filter(superior_id=user_id)
 
         list_objects = []
 
