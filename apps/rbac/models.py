@@ -91,7 +91,7 @@ class UserProfile(AbstractUser):
     position = models.CharField(max_length=50, null=True, blank=True, verbose_name="职位")
     superior = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, verbose_name="上级主管")
     roles = models.ManyToManyField("Role", verbose_name="角色", blank=True)
-    base_salary = models.IntegerField(null=True, blank=True, verbose_name="工资")
+    base_salary = models.IntegerField(null=True, blank=True, verbose_name="基本工资")
 
     skills = models.ManyToManyField(TaskType, verbose_name="技能", blank=True)
 

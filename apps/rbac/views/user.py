@@ -77,10 +77,25 @@ class UserInfoView(APIView):
         except AttributeError:
             return None
 
+    @classmethod
+    def get_skills(self, request):
+        try:
+            if request.user:
+                # 存储权限列表
+                skill_list = []
+                for item in request.user.skills.values().distinct():
+                    skill_list.append(item)
+                return skill_list
+            else:
+                return []
+        except AttributeError:
+            return None
+
     def get(self, request):
         if request.user.id is not None:
             # 根据当前用户所拥有的角色，返回相应的权限列表
             perms = self.get_permission_from_role(request)
+            skills = self.get_skills(request)
             data = {
                 'id': request.user.id,
                 'username': request.user.username,
@@ -88,7 +103,8 @@ class UserInfoView(APIView):
                 'email': request.user.email,
                 'is_active': request.user.is_active,
                 'createTime': request.user.date_joined,
-                'roles': perms
+                'roles': perms,
+                'skills': skills,
             }
             # 如果存在用户 id 则返回当前用户的相关数据给前端（用户 id，用户名，头像，邮箱，...）
             return XopsResponse(data, status=OK)
