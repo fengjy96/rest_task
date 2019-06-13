@@ -246,46 +246,67 @@ class TaskReceiverView(APIView):
     """
 
     def get(self, request, format=None):
-        # 设计方式
-        # task_type_id = request.data.get('task_type_id')
+        user_id = request.user.id
 
-        users = UserProfile.objects.filter(roles__id=6)
+        user_roles = self.get_user_roles(user_id)
+        users = UserProfile.objects.filter(superior_id=user_id)
+
+        sign = True
+
+        for user_role in user_roles:
+            if user_role.name == '项目负责人':
+                sign = True
+            elif user_role.name == '任务负责人':
+                sign = False
 
         list_objects = []
 
-        for user in users:
-            # tasks = Task.objects.filter(receiver_id=user.id, is_active=1, receive_status__lte=3)
-            tasks = Task.objects.filter(~Q(receive_status=BusinessPublic.GetTaskStatusIdByKey('accepted')),
-                                        receiver_id=user.id, is_active=1)
+        if sign:
+            for user in users:
+                user_obj = {}
+                user_obj["id"] = user.id
+                user_obj["name"] = user.name
+                list_objects.append(user_obj)
+        else:
+            for user in users:
+                # tasks = Task.objects.filter(receiver_id=user.id, is_active=1, receive_status__lte=3)
+                tasks = Task.objects.filter(~Q(receive_status=BusinessPublic.GetTaskStatusIdByKey('accepted')),
+                                            receiver_id=user.id, is_active=1)
 
-            if len(tasks) > 0:
-                for task in tasks:
-                    if task is not None:
-                        dict_obj1 = {}
-                        dict_obj1["user_id"] = user.id
-                        dict_obj1["name"] = user.name
-                        dict_obj1["task_type"] = task.task_type.name
-                        dict_obj1["task_progress"] = task.progress
-                        dict_obj1["task_name"] = task.name
-                        dict_obj1["end_time"] = task.end_time
-                        dict_obj1["leftdays"] = 12
-                        # dict_obj1["leftdays"] = task.duration
-                        # FIXME:
-                        dict_obj1["receive_status"] = task.receive_status.index
-                        list_objects.append(dict_obj1)
-            else:
-                dict_obj2 = {}
-                dict_obj2["user_id"] = user.id
-                dict_obj2["name"] = user.name
-                dict_obj2["task_type"] = ''
-                dict_obj2["task_progress"] = ''
-                dict_obj2["task_name"] = ''
-                dict_obj2["end_time"] = ''
-                dict_obj2["leftdays"] = ''
-                dict_obj2["receive_status"] = ''
-                list_objects.append(dict_obj2)
+                if len(tasks) > 0:
+                    for task in tasks:
+                        if task is not None:
+                            dict_obj1 = {}
+                            dict_obj1["user_id"] = user.id
+                            dict_obj1["name"] = user.name
+                            dict_obj1["task_type"] = task.task_type.name
+                            dict_obj1["task_progress"] = task.progress
+                            dict_obj1["task_name"] = task.name
+                            dict_obj1["end_time"] = task.end_time
+                            dict_obj1["leftdays"] = 12
+                            # dict_obj1["leftdays"] = task.duration
+                            # FIXME:
+                            dict_obj1["receive_status"] = task.receive_status.index
+                            list_objects.append(dict_obj1)
+                else:
+                    dict_obj2 = {}
+                    dict_obj2["user_id"] = user.id
+                    dict_obj2["name"] = user.name
+                    dict_obj2["task_type"] = ''
+                    dict_obj2["task_progress"] = ''
+                    dict_obj2["task_name"] = ''
+                    dict_obj2["end_time"] = ''
+                    dict_obj2["leftdays"] = ''
+                    dict_obj2["receive_status"] = ''
+                    list_objects.append(dict_obj2)
 
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=list_objects)
+
+    def get_user_roles(self, user_id):
+        if user_id is not None:
+            user = UserProfile.objects.get(id=user_id)
+            user_roles = user.roles.all()
+            return user_roles
 
 
 class TaskAcceptView(APIView):
@@ -472,45 +493,30 @@ class TaskAllocateView(APIView):
     def post(self, request, format=None):
         try:
             # 任务标识
-            task_id = request.data.get('task_id')
+            task_ids = request.data.get('task_ids', [])
             # 接收者标识
             receiver_id = request.data.get('receiver_id')
-            # 转派原因
-            reason = request.data.get('reason')
 
-            self.update_task(task_id, receiver_id, reason)
-            self.update_step(task_id, receiver_id)
-
+            self.update_task(request, task_ids, receiver_id)
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def update_task(self, task_id, receiver_id, reason):
-        if task_id is not None:
-            from business.models.task import Task
-            task = Task.objects.get(id=task_id)
-            if task is not None:
-                receiver = UserProfile.objects.get(id=receiver_id)
-                task.receiver = receiver
-                task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
-                task.save()
+    def update_task(self, request, task_ids, receiver_id):
+        if len(task_ids) > 0:
+            for task_id in task_ids:
+                from business.models.task import Task
+                task = Task.objects.get(id=task_id)
+                if task is not None:
+                    receiver = UserProfile.objects.get(id=receiver_id)
+                    task.receiver = receiver
+                    task.superior_id = request.user.id
+                    task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
+                    task.save()
 
-                BusinessPublic.create_reason(task.id, task.sender.id, task.receiver.id,
-                                             BusinessPublic.GetReasonTypeIdByKey('task_allocate'),
-                                             reason)
-                BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
-                                              messages='已安排新的任务,请查看!')
-                self.update_step(task.id, task.sender.id)
-
-    def update_step(self, task_id, receiver_id):
-        if task_id is not None:
-            from business.models.step import Step
-            steps = Step.objects.filter(task_id=task_id)
-            for step in steps:
-                receiver = UserProfile.objects.get(id=receiver_id)
-                step.receiver = receiver
-                step.save()
+                    BusinessPublic.create_message(task.superior.id, task.receiver.id, menu_id=2,
+                                                  messages='已安排新的任务,请查看!')
 
 
 class TaskFileIsEmptyViewSet(ModelViewSet):
