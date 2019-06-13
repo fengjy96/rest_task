@@ -16,7 +16,7 @@ class UserListSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['id', 'username', 'name', 'mobile', 'email', 'image', 'department', 'position', 'superior',
-                  'is_active', 'roles']
+                  'is_active', 'roles', 'skills']
         depth = 1
 
 
@@ -30,7 +30,7 @@ class UserModifySerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['id', 'username', 'name', 'mobile', 'email', 'image', 'department', 'position', 'superior',
-                  'is_active', 'roles']
+                  'is_active', 'roles', 'skills']
 
     def validate_mobile(self, mobile):
         REGEX_MOBILE = "^1[358]\d{9}$|^147\d{8}$|^176\d{8}$"
@@ -50,7 +50,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['id', 'username', 'name', 'mobile', 'email', 'department', 'position', 'is_active', 'roles',
-                  'password']
+                  'password', 'skills']
 
     def validate_username(self, username):
         if UserProfile.objects.filter(username=username):
@@ -73,4 +73,4 @@ class UserInfoListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = UserProfile
-        fields = ('id', 'name', 'mobile', 'email', 'position')
+        fields = ('id', 'name', 'mobile', 'email', 'position', 'skills')
