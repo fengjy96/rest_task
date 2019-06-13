@@ -35,6 +35,8 @@ class Task(models.Model):
                                related_name='task_sender')
     receiver = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='接收者', on_delete=models.CASCADE,
                                  related_name='task_receiver')
+    superior = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='上级主管', on_delete=models.CASCADE,
+                                 related_name='task_superior')
     receive_status = models.ForeignKey(TaskStatus, null=True, blank=True, verbose_name='任务状态', on_delete=models.CASCADE,
                                        related_name='task_receive_status')
     auditor = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='审核员', on_delete=models.CASCADE,
