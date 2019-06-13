@@ -1,6 +1,6 @@
 from django.db import models
 
-from configuration.models import TaskType, TaskPriority, TaskQuality, TaskAssessment, TaskDesignType, TaskStatus
+from configuration.models.task_conf import TaskType, TaskPriority, TaskQuality, TaskAssessment, TaskDesignType, TaskStatus
 from business.models.project import Project
 from rbac.models import Company, UserProfile
 
@@ -46,7 +46,10 @@ class Task(models.Model):
 
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
     modify_time = models.DateTimeField(auto_now=True, verbose_name='更新时间')
-    
+
+    is_published = models.IntegerField(default=0, verbose_name='是否已发布')
+    publish_time = models.DateTimeField(null=True, blank=True, verbose_name='发布时间')
+
     def __str__(self):
         return self.name
 

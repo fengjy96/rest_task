@@ -1,9 +1,7 @@
-from datetime import datetime
-
 from django.db import models
 
 from business.models.task import Task
-from configuration.models import TaskDesignType
+from configuration.models.task_conf import TaskDesignType
 from rbac.models import Company, UserProfile
 
 

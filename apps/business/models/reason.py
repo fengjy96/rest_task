@@ -1,6 +1,6 @@
 from django.db import models
 from rbac.models import UserProfile
-from configuration.models import ReasonType
+from configuration.models.reason_conf import ReasonType
 
 class Reason(models.Model):
     """
