@@ -18,8 +18,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
+from business.models.step import Step
 from business.models.files import Files, ProgressTexts
-from configuration.models.task_conf import TaskStatus, TaskDesignType, TaskAssessment
+from configuration.models.task_conf import TaskStatus, TaskDesignType, TaskAssessment, TaskStep
 from business.models.steplog import TaskLog
 
 
@@ -315,9 +316,9 @@ class TaskAcceptView(APIView):
     def post(self, request, format=None):
         try:
             # 任务标识
-            task_id = request.data.get('task_id')
+            task_id = request.data.get('task_id', None)
             # 任务设计类型标识
-            task_design_type_id = request.data.get('task_design_type_id')
+            task_design_type_id = request.data.get('task_design_type_id', None)
 
             self.update_task(request, task_id, task_design_type_id)
         except Exception as e:
@@ -341,9 +342,6 @@ class TaskAcceptView(APIView):
 
     def create_step(self, task_id, task_design_type_id):
         if task_id is not None:
-            from business.models.step import Step
-            from configuration.models import TaskStep
-
             task = Task.objects.get(id=task_id)
             task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
 
