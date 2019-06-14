@@ -282,10 +282,8 @@ class TaskReceiverView(APIView):
                             dict_obj1["task_progress"] = task.progress
                             dict_obj1["task_name"] = task.name
                             dict_obj1["end_time"] = task.end_time
-                            dict_obj1["leftdays"] = 12
-                            # dict_obj1["leftdays"] = task.duration
-                            # FIXME:
-                            dict_obj1["receive_status"] = task.receive_status.index
+                            dict_obj1["leftdays"] = (task.end_time - datetime.datetime.now().date()).days + 1
+                            dict_obj1["receive_status"] = task.receive_status.text
                             list_objects.append(dict_obj1)
                 else:
                     dict_obj2 = {}
