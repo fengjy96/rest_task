@@ -36,7 +36,7 @@ class TaskFilter(django_filters.rest_framework.FilterSet):
 
     class Meta:
         model = Task
-        fields = ['name', 'receiver', 'sender', 'project', 'receive_status', 'audit_status', 'is_published']
+        fields = ['name', 'receiver', 'sender', 'project', 'receive_status', 'audit_status', 'is_published', 'superior']
 
 
 class StepFilter(django_filters.rest_framework.FilterSet):
