@@ -212,20 +212,20 @@ class TaskViewSet(ModelViewSet):
         # 获取当前用户 id
         user_id = request.user.id
         # 获取当前用户所属角色 id 列表
-        user_role_ids = self.get_user_roles(user_id)
+        user_role_list = self.get_user_roles(user_id)
 
         # 如果当前用户拥有管理员权限，则不做特殊处理
-        if 1 in user_role_ids:
+        if '系统管理员' in user_role_list:
             pass
         else:
             # 如果当前用户拥有任务负责人权限，则返回与该任务负责人关联的项目数据
-            if 6 in user_role_ids:
-                queryset_project_manager = queryset.filter(receiver_id=user_id)
+            if '任务负责人' in user_role_list:
+                queryset_project_manager = queryset.filter(Q(receiver_id=user_id) | Q(superior_id=user_id))
             # 如果当前用户拥有任务审核员（项目负责人）权限，则返回与该任务审核员（项目负责人）关联的项目数据
-            if 7 in user_role_ids:
+            if '项目负责人' in user_role_list:
                 queryset_task_auditor = queryset.filter(auditor_id=user_id)
             # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
-            if 8 in user_role_ids:
+            if '商务人员' in user_role_list:
                 queryset_business_manager = queryset.filter(sender_id=user_id)
 
             queryset = queryset_task_auditor | queryset_project_manager | queryset_business_manager
@@ -236,8 +236,8 @@ class TaskViewSet(ModelViewSet):
         if user_id is not None:
             user = UserProfile.objects.get(id=user_id)
             user_roles = user.roles.all()
-            user_role_ids = set(map(lambda user_role: user_role.id, user_roles))
-            return user_role_ids
+            user_role_list = [role.name for role in user_roles]
+            return user_role_list
 
 
 class TaskReceiverView(APIView):
@@ -248,16 +248,15 @@ class TaskReceiverView(APIView):
     def get(self, request, format=None):
         user_id = request.user.id
 
-        user_roles = self.get_user_roles(user_id)
+        user_role_list = self.get_user_roles(user_id)
         users = UserProfile.objects.filter(superior_id=user_id)
 
         sign = True
 
-        for user_role in user_roles:
-            if user_role.name == '项目负责人':
-                sign = True
-            elif user_role.name == '任务负责人':
-                sign = False
+        if '项目负责人' in user_role_list:
+            sign = True
+        elif '任务负责人' in user_role_list:
+            sign = False
 
         list_objects = []
 
@@ -306,7 +305,8 @@ class TaskReceiverView(APIView):
         if user_id is not None:
             user = UserProfile.objects.get(id=user_id)
             user_roles = user.roles.all()
-            return user_roles
+            user_role_list = [role.name for role in user_roles]
+            return user_role_list
 
 
 class TaskAcceptView(APIView):
