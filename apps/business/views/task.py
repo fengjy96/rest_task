@@ -18,8 +18,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
+from business.models.step import Step
 from business.models.files import Files, ProgressTexts
-from configuration.models.task_conf import TaskStatus, TaskDesignType, TaskAssessment
+from configuration.models.task_conf import TaskStatus, TaskDesignType, TaskAssessment, TaskStep
 from business.models.steplog import TaskLog
 
 
@@ -208,6 +209,7 @@ class TaskViewSet(ModelViewSet):
         queryset_task_auditor = emptyQuerySet
         queryset_project_manager = emptyQuerySet
         queryset_business_manager = emptyQuerySet
+        queryset_project_auditor = emptyQuerySet
 
         # 获取当前用户 id
         user_id = request.user.id
@@ -227,8 +229,10 @@ class TaskViewSet(ModelViewSet):
             # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
             if '商务人员' in user_role_list:
                 queryset_business_manager = queryset.filter(sender_id=user_id)
+            if '项目审核员' in user_role_list:
+                queryset_project_auditor = queryset
 
-            queryset = queryset_task_auditor | queryset_project_manager | queryset_business_manager
+            queryset = queryset_task_auditor | queryset_project_manager | queryset_business_manager | queryset_project_auditor
 
         return queryset
 
@@ -315,9 +319,9 @@ class TaskAcceptView(APIView):
     def post(self, request, format=None):
         try:
             # 任务标识
-            task_id = request.data.get('task_id')
+            task_id = request.data.get('task_id', None)
             # 任务设计类型标识
-            task_design_type_id = request.data.get('task_design_type_id')
+            task_design_type_id = request.data.get('task_design_type_id', None)
 
             self.update_task(request, task_id, task_design_type_id)
         except Exception as e:
@@ -341,9 +345,6 @@ class TaskAcceptView(APIView):
 
     def create_step(self, task_id, task_design_type_id):
         if task_id is not None:
-            from business.models.step import Step
-            from configuration.models import TaskStep
-
             task = Task.objects.get(id=task_id)
             task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
 
