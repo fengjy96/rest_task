@@ -58,6 +58,8 @@ class TaskViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         # 任务创建人
         request.data['sender'] = request.user.id
+        # 上级主管
+        request.data['superior'] = request.user.id
         # 获取该任务所属的项目 id
         project_id = request.data.get('project', None)
         # 富文本内容
@@ -118,6 +120,8 @@ class TaskViewSet(ModelViewSet):
     def update(self, request, *args, **kwargs):
         # 富文本内容
         content = request.data.get('content', None)
+        # 上级主管
+        request.data['superior'] = request.user.id
         # 文件
         files = request.data.get('files', None)
 
