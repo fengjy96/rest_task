@@ -3,32 +3,34 @@ from configuration.models.task_conf import TaskType, TaskQuality, TaskPriority, 
 from rbac.models import UserProfile
 from business.models.project import Project
 from business.views.base import BusinessPublic
-import xlrd #excel读工具
-import time
+# excel 读工具
+import xlrd
 from datetime import date
+
 
 class Excel:
     @classmethod
     def import_excel_data(cls, project_id, file_name):
+        obj = {}
         DataList = []
         try:
             with xlrd.open_workbook(file_name) as data:
-                table = data.sheet_by_index(0) #获取工作表
+                table = data.sheet_by_index(0)  # 获取工作表
                 project_receiver_id = 0
-                n=1
+                n = 1
                 x = y = z = 0
                 WorkList = []
-                # nrows = table.nrows #行数 ncols = table.ncols #列数 print sh.row_values(rownum)
-                for line in range(n,table.nrows):
+                # nrows = table.nrows # 行数 ncols = table.ncols # 列数 print sh.row_values(rownum)
+                for line in range(n, table.nrows):
                     n = n + 1
                     row = table.row_values(line)
                     # 查看行值是否为空
                     if row:
                         # 判断该行值是否在数据库中重复
-                        if Task.objects.filter(name = row[0],project_id=project_id).exists():
-                            x = x + 1 #重复值计数
+                        if Task.objects.filter(name=row[0], project_id=project_id).exists():
+                            x = x + 1  # 重复值计数
                             dict_obj = {}
-                            dict_obj["info"] = '第'+str(n)+'行任务名称重复'
+                            dict_obj["info"] = '第' + str(n) + '行任务名称重复'
                             DataList.append(dict_obj)
                             z = z + 1
                             continue
@@ -51,19 +53,19 @@ class Excel:
                                 DataList.append(dict_obj)
                                 z = z + 1
                                 continue
-                            if not UserProfile.objects.filter(name=row[7]).exists():
+                            if not UserProfile.objects.filter(name=row[7]).exists() and row[7] != '':
                                 dict_obj = {}
                                 dict_obj["info"] = '第' + str(n) + '行,第8列任务负责人不存在'
                                 DataList.append(dict_obj)
                                 z = z + 1
                                 continue
-                            if not cls.isVaildDate(row[5],data):
+                            if not cls.isVaildDate(row[5], data):
                                 dict_obj = {}
                                 dict_obj["info"] = '第' + str(n) + '行,第6列时间格式不正确'
                                 DataList.append(dict_obj)
                                 z = z + 1
                                 continue
-                            if not cls.isVaildDate(row[6],data):
+                            if not cls.isVaildDate(row[6], data):
                                 dict_obj = {}
                                 dict_obj["info"] = '第' + str(n) + '行,第7列时间格式不正确'
                                 DataList.append(dict_obj)
@@ -97,7 +99,7 @@ class Excel:
 
                             # 如果存在项目负责人则将该项目负责人作为任务审核员
                             if project_receiver_id is not None:
-                                 auditor = UserProfile.objects.get(id=project_receiver_id)
+                                auditor = UserProfile.objects.get(id=project_receiver_id)
 
                             project = Project.objects.get(id=project_id)
                             task_type = TaskType.objects.get(name=row[1])
@@ -123,35 +125,31 @@ class Excel:
 
                             y = y + 1  # 非重复计数
                     else:
-                         # 空行
-                         z = z + 1
-                         dict_obj = {}
-                         dict_obj["info"] = '第' + str(n) + '行为空行'
-                         DataList.append(dict_obj)
+                        # 空行
+                        z = z + 1
+                        dict_obj = {}
+                        dict_obj["info"] = '第' + str(n) + '行为空行'
+                        DataList.append(dict_obj)
 
-                    if (n-1) % 2 == 0:
+                    if (n - 1) % 2 == 0:
                         Task.objects.bulk_create(WorkList)
                         WorkList = []
 
                 if len(WorkList) > 0:
                     Task.objects.bulk_create(WorkList)
 
-                dict_obj_success = {}
-                dict_obj_success["info"] = '成功导入' + str(y) + '条数据'
-                DataList.append(dict_obj_success)
-
-                dict_obj_fail = {}
-                dict_obj_fail["info"] = '失败' + str(z) + '条数据'
-                DataList.append(dict_obj_fail)
-
-
+                obj["success"] = y
+                obj["fail"] = z
+                obj['infos'] = DataList
 
         except Exception as e:
             dict_obj = {}
             dict_obj["info"] = '数据异常'
             DataList.append(dict_obj)
-            return DataList
-        return DataList
+            obj['infos'] = DataList
+            obj["success"] = 0
+            return obj
+        return obj
 
     @classmethod
     def isVaildDate(cls, value, data):
