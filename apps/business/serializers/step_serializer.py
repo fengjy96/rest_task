@@ -11,7 +11,7 @@ class StepListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Step
         fields = '__all__'
-        depth = 1
+        depth = 2
 
 
 class StepSerializer(serializers.ModelSerializer):
