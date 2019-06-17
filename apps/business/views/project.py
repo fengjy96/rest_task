@@ -195,12 +195,12 @@ class ProjectFeeViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_fields = ('project_id',)
     ordering_fields = ('id',)
-    #permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     def list(self, request, *args, **kwargs):
         project_id = request.query_params.get('project_id', None)
         is_first = request.query_params.get('is_first', None)
-        if is_first:
+        if is_first == 'true':
             self.create_project_fee(project_id)
 
         queryset = self.filter_queryset(self.get_queryset())
