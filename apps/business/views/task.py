@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
-
 from common.custom import CommonPagination
 from rbac.models import UserProfile
 from business.models.task import Task, TaskAllocateReason
@@ -18,9 +17,14 @@ from django_filters.rest_framework import DjangoFilterBackend
 from business.filters import TaskFilter
 from business.views.base import BusinessPublic
 from business.models.project import Project
+from business.models.step import Step
 from business.models.files import Files, ProgressTexts
-from configuration.models.task_conf import TaskStatus, TaskDesignType, TaskAssessment
+from configuration.models.task_conf import TaskStatus, TaskDesignType, TaskAssessment, TaskStep
 from business.models.steplog import TaskLog
+from business.views.excel import Excel
+from django.conf import settings
+import uuid
+import os
 
 
 class TaskViewSet(ModelViewSet):
@@ -54,6 +58,8 @@ class TaskViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         # 任务创建人
         request.data['sender'] = request.user.id
+        # 上级主管
+        request.data['superior'] = request.user.id
         # 获取该任务所属的项目 id
         project_id = request.data.get('project', None)
         # 富文本内容
@@ -114,6 +120,8 @@ class TaskViewSet(ModelViewSet):
     def update(self, request, *args, **kwargs):
         # 富文本内容
         content = request.data.get('content', None)
+        # 上级主管
+        request.data['superior'] = request.user.id
         # 文件
         files = request.data.get('files', None)
 
@@ -208,27 +216,30 @@ class TaskViewSet(ModelViewSet):
         queryset_task_auditor = emptyQuerySet
         queryset_project_manager = emptyQuerySet
         queryset_business_manager = emptyQuerySet
+        queryset_project_auditor = emptyQuerySet
 
         # 获取当前用户 id
         user_id = request.user.id
         # 获取当前用户所属角色 id 列表
-        user_role_ids = self.get_user_roles(user_id)
+        user_role_list = self.get_user_roles(user_id)
 
         # 如果当前用户拥有管理员权限，则不做特殊处理
-        if 1 in user_role_ids:
+        if '系统管理员' in user_role_list:
             pass
         else:
             # 如果当前用户拥有任务负责人权限，则返回与该任务负责人关联的项目数据
-            if 6 in user_role_ids:
-                queryset_project_manager = queryset.filter(receiver_id=user_id)
+            if '任务负责人' in user_role_list:
+                queryset_project_manager = queryset.filter(Q(receiver_id=user_id) | Q(superior_id=user_id))
             # 如果当前用户拥有任务审核员（项目负责人）权限，则返回与该任务审核员（项目负责人）关联的项目数据
-            if 7 in user_role_ids:
+            if '项目负责人' in user_role_list:
                 queryset_task_auditor = queryset.filter(auditor_id=user_id)
             # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
-            if 8 in user_role_ids:
+            if '商务人员' in user_role_list:
                 queryset_business_manager = queryset.filter(sender_id=user_id)
+            if '项目审核员' in user_role_list:
+                queryset_project_auditor = queryset
 
-            queryset = queryset_task_auditor | queryset_project_manager | queryset_business_manager
+            queryset = queryset_task_auditor | queryset_project_manager | queryset_business_manager | queryset_project_auditor
 
         return queryset
 
@@ -236,8 +247,32 @@ class TaskViewSet(ModelViewSet):
         if user_id is not None:
             user = UserProfile.objects.get(id=user_id)
             user_roles = user.roles.all()
-            user_role_ids = set(map(lambda user_role: user_role.id, user_roles))
-            return user_role_ids
+            user_role_list = [role.name for role in user_roles]
+            return user_role_list
+
+
+class TaskImportView(APIView):
+    """
+    上传单个Excel文件
+    """
+
+    def post(self, request):
+        try:
+            # 获取项目标识
+            project_id = request.data.get('project_id', None)
+            # 获取用户上传的文件,保存到服务器,再添加到数据库
+            files = request.data.get('files', [])
+
+            for file in files:
+                path = '{}/{}'.format(settings.MEDIA_ROOT, file['name'])
+                if os.path.exists(path):
+                    datalist = Excel.import_excel_data(project_id, path)
+                    os.remove(path)
+                    return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=datalist)
+                else:
+                    return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='文件不存在')
+        except Exception as e:
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
 
 
 class TaskReceiverView(APIView):
@@ -248,16 +283,15 @@ class TaskReceiverView(APIView):
     def get(self, request, format=None):
         user_id = request.user.id
 
-        user_roles = self.get_user_roles(user_id)
+        user_role_list = self.get_user_roles(user_id)
         users = UserProfile.objects.filter(superior_id=user_id)
 
         sign = True
 
-        for user_role in user_roles:
-            if user_role.name == '项目负责人':
-                sign = True
-            elif user_role.name == '任务负责人':
-                sign = False
+        if '项目负责人' in user_role_list:
+            sign = True
+        elif '任务负责人' in user_role_list:
+            sign = False
 
         list_objects = []
 
@@ -283,10 +317,8 @@ class TaskReceiverView(APIView):
                             dict_obj1["task_progress"] = task.progress
                             dict_obj1["task_name"] = task.name
                             dict_obj1["end_time"] = task.end_time
-                            dict_obj1["leftdays"] = 12
-                            # dict_obj1["leftdays"] = task.duration
-                            # FIXME:
-                            dict_obj1["receive_status"] = task.receive_status.index
+                            dict_obj1["leftdays"] = (task.end_time - datetime.datetime.now().date()).days + 1
+                            dict_obj1["receive_status"] = task.receive_status.text
                             list_objects.append(dict_obj1)
                 else:
                     dict_obj2 = {}
@@ -306,7 +338,8 @@ class TaskReceiverView(APIView):
         if user_id is not None:
             user = UserProfile.objects.get(id=user_id)
             user_roles = user.roles.all()
-            return user_roles
+            user_role_list = [role.name for role in user_roles]
+            return user_role_list
 
 
 class TaskAcceptView(APIView):
@@ -317,9 +350,9 @@ class TaskAcceptView(APIView):
     def post(self, request, format=None):
         try:
             # 任务标识
-            task_id = request.data.get('task_id')
+            task_id = request.data.get('task_id', None)
             # 任务设计类型标识
-            task_design_type_id = request.data.get('task_design_type_id')
+            task_design_type_id = request.data.get('task_design_type_id', None)
 
             self.update_task(request, task_id, task_design_type_id)
         except Exception as e:
@@ -343,9 +376,6 @@ class TaskAcceptView(APIView):
 
     def create_step(self, task_id, task_design_type_id):
         if task_id is not None:
-            from business.models.step import Step
-            from configuration.models import TaskStep
-
             task = Task.objects.get(id=task_id)
             task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
 

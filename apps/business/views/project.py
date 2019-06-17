@@ -65,8 +65,11 @@ class ProjectViewSet(ModelViewSet):
     def create(self, request, *args, **kwargs):
         # 将当前登录用户作为项目创建人
         request.data['sender'] = request.user.id
+        receiver_id = request.data.get('receiver', None)
         # 如果存在项目负责人，则将项目接收状态置为 '已指派项目负责人'
-        if request.data.get('receiver') is not None:
+        if receiver_id is not None:
+            BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
+                                          messages='你有新的项目等待接手!')
             request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
         # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
         else:
@@ -78,10 +81,11 @@ class ProjectViewSet(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
-        # 如果存在项目负责人，则将项目接收状态置为 '已指派项目负责人'
-        if request.data.get('receiver') is not None:
+        receiver_id = request.data.get('receiver', None)
+        if receiver_id is not None:
+            BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
+                                          messages='你有新的项目等待接手!')
             request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
-        # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
         else:
             request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
 
@@ -191,12 +195,12 @@ class ProjectFeeViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     filter_fields = ('project_id',)
     ordering_fields = ('id',)
-    #permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     def list(self, request, *args, **kwargs):
         project_id = request.query_params.get('project_id', None)
         is_first = request.query_params.get('is_first', None)
-        if is_first:
+        if is_first == 'true':
             self.create_project_fee(project_id)
 
         queryset = self.filter_queryset(self.get_queryset())
@@ -377,7 +381,7 @@ class ProjectAcceptView(APIView):
                 project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('accepted')
                 project.save()
                 BusinessPublic.create_message(project.receiver_id, project.sender_id, menu_id=2,
-                                              messages='项目负责人已接手，项目正式开始!')
+                                              messages='项目负责人已接手!')
                 self.update_task(project_id)
 
     def update_task(self, project_id):
@@ -403,9 +407,9 @@ class ProjectRejectView(APIView):
     def post(self, request, format=None):
         try:
             # 项目标识
-            project_id = request.data.get('project_id')
+            project_id = request.data.get('project_id', None)
             # 驳回原因
-            reason = request.data.get('reason') or ''
+            reason = request.data.get('reason', '')
 
             self.update_project(project_id, reason)
 
@@ -422,11 +426,11 @@ class ProjectRejectView(APIView):
                 project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('rejected')
                 project.save()
 
-                BusinessPublic.create_reason(project.id, project.receiver.id, project.auditor.id,
-                                             BusinessPublic.GetReasonTypeIdByKey('project_reject'),
-                                             reason)
-                BusinessPublic.create_message(project.receiver.id, project.auditor.id, menu_id=2,
-                                              messages='你的项目已被驳回，请尽快处理!')
+                reason_type_id = BusinessPublic.GetReasonTypeIdByKey('project_reject')
+
+                BusinessPublic.create_reason(project.id, project.receiver.id, project.sender.id, reason_type_id, reason)
+                BusinessPublic.create_message(project.receiver.id, project.sender.id, menu_id=2,
+                                              messages='项目负责人拒接了你的项目，请尽快处理!')
 
 
 class ProjectCheckSubmitView(APIView):

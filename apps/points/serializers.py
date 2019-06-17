@@ -39,7 +39,7 @@ class ProjectPointsSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProjectPoints
         fields = '__all__'
-        depth = 1
+        depth = 2
 
 
 class PointsDetailSerializer(serializers.ModelSerializer):

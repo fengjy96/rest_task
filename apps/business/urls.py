@@ -75,6 +75,8 @@ urlpatterns = [
     path(r'api/v1/task/log', task.TaskLogsView.as_view(), name='task_log'),
     # 任务发布
     path(r'api/v1/task/publish', task.TaskPublishView.as_view(), name='task_publish'),
+    # 导入任务数据
+    path(r'api/v1/task/import', task.TaskImportView.as_view(), name='task_import'),
 
     ## 步骤相关
 
