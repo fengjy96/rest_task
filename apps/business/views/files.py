@@ -74,6 +74,7 @@ class UploadFilesView(views.APIView):
                     # 将上传的文件路径存储到upload_files中
                     # 注意这样要构建相对路径MEDIA_URL+filename,这里可以保存到数据库
                     dict_obj["name"] = filename
+                    dict_obj["raw_name"] = file.name
                     dict_obj["url"] = file_path
 
                     upload_files.append(dict_obj)
