@@ -378,14 +378,9 @@ class TaskAcceptView(APIView):
             tasksteps = TaskStep.objects.filter(task_design_type_id=task_design_type_id)
             for taskstep in tasksteps:
                 if taskstep:
-                    step = Step(
-                        name=taskstep.name,
-                        index=taskstep.index,
-                        task=task,
-                        task_design_type=task_design_type,
-                    )
-
-                    step.save()
+                    step = Step.objects.filter(task_id=task.id, name=taskstep.name, task_design_type_id=taskstep.task_design_type.id)
+                    if not step.exists():
+                        Step.objects.create(name=taskstep.name,index=taskstep.index,task=task,task_design_type=task_design_type)
 
 
 class TaskRejectView(APIView):
