@@ -235,7 +235,7 @@ class TaskViewSet(ModelViewSet):
                 queryset_task_auditor = queryset.filter(auditor_id=user_id)
             # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
             if '商务人员' in user_role_list:
-                queryset_business_manager = queryset.filter(sender_id=user_id)
+                queryset_business_manager = queryset
             if '项目审核员' in user_role_list:
                 queryset_project_auditor = queryset
 
