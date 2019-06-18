@@ -81,10 +81,21 @@ class ProjectViewSet(ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
+        project_id = str(kwargs['pk'])
         receiver_id = request.data.get('receiver', None)
         if receiver_id is not None:
-            BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
-                                          messages='你有新的项目等待接手!')
+            if project_id is not None:
+                project = Project.objects.get(id=project_id)
+                if receiver_id != project.receiver.id:
+                    # 更新任务表的项目负责人
+                    Task.objects.filter(project_id=project_id).update(sender_id=receiver_id)
+                    # 更新任务表的上级主管
+                    Task.objects.filter(project_id=project_id, superior=project.receiver.id).update(superior=receiver_id)
+                    # 更新项目积分表
+                    ProjectPoints.objects.filter(user_id=project.receiver.id, is_created=0, project_id=project_id).update(user_id=receiver_id)
+                    # 新增消息
+                    BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
+                                              messages='你有新的项目等待接手!')
             request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
         else:
             request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
