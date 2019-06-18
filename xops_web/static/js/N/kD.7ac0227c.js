@@ -1,0 +1,1 @@
+(window.webpackJsonp=window.webpackJsonp||[]).push([["N/kD"],{"N/kD":function(e,l,n){"use strict";n.r(l);var t={components:{publish_hall:n("xoKi").default}},i=n("KHd+"),s=Object(i.a)(t,function(){var e=this.$createElement,l=this._self._c||e;return l("div",[l("publish_hall")],1)},[],!1,null,null,null);s.options.__file="index.vue";l.default=s.exports}}]);
