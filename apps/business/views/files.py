@@ -1,4 +1,6 @@
 from rest_framework import views
+from rest_framework.response import Response
+
 from utils.basic import MykeyResponse
 from rest_framework import status
 from django.http import FileResponse
@@ -74,6 +76,7 @@ class UploadFilesView(views.APIView):
                     # 将上传的文件路径存储到upload_files中
                     # 注意这样要构建相对路径MEDIA_URL+filename,这里可以保存到数据库
                     dict_obj["name"] = filename
+                    dict_obj["raw_name"] = file.name
                     dict_obj["url"] = file_path
 
                     upload_files.append(dict_obj)
@@ -87,6 +90,53 @@ class UploadFilesView(views.APIView):
 
                 return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=data)
 
+        except Exception as e:
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+
+
+class UploadRteFilesView(views.APIView):
+    """
+    用于兼容 froala 富文本编辑器的文件上传
+    """
+
+    def post(self, request):
+        try:
+            # 获取用户上传的文件,保存到服务器,再添加到数据库
+            files = request.FILES.getlist('file', [])
+            # 判断文件列表是否存在文件
+            if len(files) > 0:
+                # 判断上传路径是否存在，不存在则创建
+                if not os.path.exists(settings.MEDIA_ROOT):
+                    os.makedirs(settings.MEDIA_ROOT)
+
+                # 遍历用户上传的文件列表
+                upload_files = []
+                dict_obj = {}
+                file = files[0]
+                # 获取文件后缀名
+                extension = os.path.splitext(file.name)[1]
+                # 通过uuid重命名上传的文件
+                filename = '{}{}'.format(uuid.uuid4(), extension)
+                # 构建文件路径
+                file_path = '{}{}'.format(settings.MEDIA_URL, filename)
+                rte_file_path = '{}{}{}'.format(settings.HOST, settings.MEDIA_URL, filename)
+                file_path_server = '{}/{}'.format(settings.MEDIA_ROOT, filename)
+                # 将上传的文件路径存储到upload_files中
+                # 注意这样要构建相对路径MEDIA_URL+filename,这里可以保存到数据库
+                dict_obj["name"] = filename
+                dict_obj["raw_name"] = file.name
+                dict_obj["url"] = file_path
+
+                upload_files.append(dict_obj)
+                # 保存文件
+                with open(file_path_server, 'wb') as f:
+                    for c in file.chunks():
+                        f.write(c)
+                    f.close()
+
+                data = {'link': rte_file_path}
+                return Response(data=data)
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
 
