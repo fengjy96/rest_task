@@ -108,7 +108,8 @@ class StepProgressUpdateView(APIView):
                 if files:
                     for file in files:
                         # 增加文件表记录
-                        step_log_file = Files(steplog=step_log, name=file['name'], path=file['url'])
+                        step_log_file = Files(steplog=step_log, name=file['name'], path=file['url'],
+                                              path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
                         step_log_file.save()
 
                 # 如果存在富文本，则先添加富文本
@@ -180,6 +181,8 @@ class StepProgressUpdateLogsView(APIView):
             log_file_obj['id'] = file.id
             log_file_obj['name'] = file.name
             log_file_obj['path'] = file.path
+            log_file_obj['path_thumb_w200'] = file.path_thumb_w200
+            log_file_obj['path_thumb_w900'] = file.path_thumb_w900
             log_file_obj['type'] = 1
             log_file_obj['add_time'] = file.add_time
             log_file_obj["feedbacks"] = self.get_feedback_logs(file.id, 1)
@@ -227,6 +230,8 @@ class StepProgressUpdateLogsView(APIView):
             log_file_obj['id'] = log_file.id
             log_file_obj['name'] = log_file.name
             log_file_obj['path'] = log_file.path
+            log_file_obj['path_thumb_w200'] = log_file.path_thumb_w200
+            log_file_obj['path_thumb_w900'] = log_file.path_thumb_w900
             log_file_obj['type'] = 1
             log_file_obj['add_time'] = log_file.add_time
             feedback_log_file_list.append(log_file_obj)
@@ -272,7 +277,8 @@ class StepLogFileFeedBackUpdateView(APIView):
                 if files:
                     for file in files:
                         # 增加文件表记录
-                        feedback_file = FeedBacks(feedbacklog=feedback_log, name=file['name'], path=file['url'])
+                        feedback_file = FeedBacks(feedbacklog=feedback_log, name=file['name'], path=file['url'],
+                                                  path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
                         feedback_file.save()
 
                 # 如果存在反馈富文本,则先添加反馈富文本
@@ -364,6 +370,8 @@ class StepLogFileFeedBackLogView(APIView):
             file_obj['id'] = file.id
             file_obj['name'] = file.name
             file_obj['path'] = file.path
+            file_obj['path_thumb_w200'] = file.path_thumb_w200
+            file_obj['path_thumb_w900'] = file.path_thumb_w900
             file_obj['type'] = 1
             file_obj['add_time'] = file.add_time
             feedback_log_file_list.append(file_obj)
