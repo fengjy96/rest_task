@@ -1,13 +1,18 @@
 """
 基于 RBAC 的用户权限管理：用户视图
 """
+import os
+import time
 
+from PIL import Image
 from django.contrib.auth.hashers import check_password
 from rest_framework.generics import ListAPIView
 from common.custom import CommonPagination, RbacPermission
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
 from rest_framework.views import APIView
+
+from rest_xops import settings
 from rest_xops.basic import XopsResponse
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -29,8 +34,7 @@ import jwt
 
 from ..models import UserProfile, Menu
 from ..serializers.user_serializer import (
-    UserListSerializer, UserCreateSerializer, UserModifySerializer, UserInfoListSerializer
-)
+    UserListSerializer, UserCreateSerializer, UserModifySerializer, UserInfoListSerializer)
 from ..serializers.menu_serializer import MenuSerializer
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
@@ -473,3 +477,48 @@ class UserListView(ListAPIView):
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
+
+
+class UserAvatarUploadView(APIView):
+    """
+    修改用户头像
+    """
+    authentication_classes = (JSONWebTokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        try:
+            # 原始文件名
+            raw_file_name = request.FILES['file'].name
+            # 文件的后缀
+            suffix = os.path.splitext(raw_file_name)[-1][1:]
+            # 时间戳作为头像的名称
+            name = str(time.time()).split('.')[0].strip()
+            # 图片名称
+            avatar_name = 'avatar/{}/{}.{}'.format(request.user.username, name, suffix)
+            # pillow 打开图片，保存副本
+            avatar = Image.open(request.data['file'])
+            # 生成缩略图
+            thumb = self.make_thumb(avatar)
+            # 判断文件的父文件是否存在，不存在则创建
+            if not os.path.exists('media/avatar/' + request.user.username):
+                os.makedirs('media/avatar/' + request.user.username)
+
+            # 文件保存的具体路径（只保存缩略图）
+            avatar_file_path = os.path.join(settings.MEDIA_ROOT, avatar_name).replace('\\', '/')
+            thumb.save(avatar_file_path)
+            # 将保存的路径更新到数据库
+            request.user.image = avatar_name.replace('\\', '/')
+            request.user.save()
+            # 返回结果
+            return XopsResponse(status=OK, data={'avatar': avatar_name})
+        except Exception as e:
+            return XopsResponse(status=BAD)
+
+    def make_thumb(self, img, size=150):
+        width, height = img.size
+        if height > size:
+            delta = height / size
+            width = int(width / delta)
+            img.thumbnail((width, height), Image.ANTIALIAS)
+        return img

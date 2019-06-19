@@ -235,7 +235,7 @@ class TaskViewSet(ModelViewSet):
                 queryset_task_auditor = queryset.filter(auditor_id=user_id)
             # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
             if '商务人员' in user_role_list:
-                queryset_business_manager = queryset.filter(sender_id=user_id)
+                queryset_business_manager = queryset
             if '项目审核员' in user_role_list:
                 queryset_project_auditor = queryset
 
@@ -628,6 +628,8 @@ class TaskLogsView(APIView):
             log_file_obj['id'] = file.id
             log_file_obj['name'] = file.name
             log_file_obj['path'] = file.path
+            log_file_obj['path_thumb_w200'] = file.path_thumb_w200
+            log_file_obj['path_thumb_w900'] = file.path_thumb_w900
             log_file_obj['type'] = 1
             log_file_obj['add_time'] = file.add_time
             task_log_file_list.append(log_file_obj)

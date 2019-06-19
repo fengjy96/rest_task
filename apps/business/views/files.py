@@ -1,49 +1,15 @@
+import os
+import uuid
+import time
+
+from PIL import Image
 from rest_framework import views
 from rest_framework.response import Response
 
 from utils.basic import MykeyResponse
 from rest_framework import status
 from django.http import FileResponse
-from business.models.files import Files, ProgressTexts, FeedBacks, FeedBackTexts
-from rest_framework.viewsets import ModelViewSet
-from business.serializers.file_serializer import FilesSerializer, FilesListSerializer
-from rest_framework.filters import OrderingFilter
-from django_filters.rest_framework import DjangoFilterBackend
-from business.filters import FilesFilter
-# from business.views.forms import UploadFileForm
-from rest_framework.generics import ListAPIView
 from django.conf import settings
-from business.models.steplog import StepLog, FeedBackLog, TaskLog
-import os
-import uuid
-
-
-class FilesViewSet(ModelViewSet):
-    """
-    文件：增删改查
-    """
-    queryset = Files.objects.all()
-    serializer_class = FilesSerializer
-    # permission_classes = (IsAuthenticated,)
-
-
-class FilesListViewSet(ListAPIView):
-    """
-    文件：增删改查
-    """
-    queryset = Files.objects.all()
-    serializer_class = FilesListSerializer
-    # permission_classes = (IsAuthenticated,)
-    filter_backends = (DjangoFilterBackend, OrderingFilter)
-    # 指定筛选类
-    filter_class = FilesFilter
-    ordering_fields = ('id',)
-
-    def get_queryset(self):
-        # 文件状态为激活
-        is_active = 1
-
-        return Files.objects.filter(is_active=is_active)
 
 
 class UploadFilesView(views.APIView):
@@ -57,24 +23,44 @@ class UploadFilesView(views.APIView):
             files = request.FILES.getlist('file')
             # 判断文件列表是否存在文件
             if len(files) > 0:
-                # 判断上传路径是否存在，不存在则创建
-                if not os.path.exists(settings.MEDIA_ROOT):
-                    os.makedirs(settings.MEDIA_ROOT)
-
                 # 遍历用户上传的文件列表
                 upload_files = []
                 dict_obj = {}
                 for file in files:
-
                     # 获取文件后缀名
-                    extension = os.path.splitext(file.name)[1]
-                    # 通过uuid重命名上传的文件
-                    filename = '{}{}'.format(uuid.uuid4(), extension)
+                    extension = os.path.splitext(file.name)[1][1:]
+                    # 根据文件类型生成相对应的文件夹-时间+类型
+                    path_year = time.strftime('%Y', time.localtime())
+                    path_month = time.strftime('%m', time.localtime())
+                    path_day = time.strftime('%d', time.localtime())
+
+                    path = '{}/{}/{}/{}/{}/{}'.format(settings.MEDIA_ROOT, 'project', path_year, path_month, path_day,
+                                                      extension)
+                    # 判断上传路径是否存在，不存在则创建
+                    if not os.path.exists(path):
+                        os.makedirs(path)
+
+                    # 通过 uuid 重命名上传的文件
+                    filename = '{}.{}'.format(uuid.uuid4(), extension)
                     # 构建文件路径
-                    file_path = '{}{}'.format(settings.MEDIA_URL, filename)
-                    file_path_server = '{}/{}'.format(settings.MEDIA_ROOT, filename)
-                    # 将上传的文件路径存储到upload_files中
-                    # 注意这样要构建相对路径MEDIA_URL+filename,这里可以保存到数据库
+                    file_path = '{}{}/{}/{}/{}/{}/{}'.format(settings.MEDIA_URL, 'project', path_year, path_month,
+                                                             path_day, extension, filename)
+                    file_path_server = '{}/{}/{}/{}/{}/{}/{}'.format(settings.MEDIA_ROOT, 'project', path_year,
+                                                                     path_month, path_day, extension, filename)
+
+                    # 如果上传的文件是图片类型，则生成相应尺寸的缩略图
+                    img_formats = ['jpg', 'jpeg', 'png', 'bmp']
+                    if extension in img_formats:
+                        img = Image.open(file)
+                        img_w900 = self.make_thumb(img, 900)
+                        img_w900.save(file_path_server + '_w900.' + extension)
+                        img_w200 = self.make_thumb(img, 200)
+                        img_w200.save(file_path_server + '_w200.' + extension)
+                        dict_obj["path_thumb_w200"] = file_path + '_w200.' + extension
+                        dict_obj["path_thumb_w900"]  = file_path + '_w900.' + extension
+
+                    # 将上传的文件路径存储到 upload_files 中
+                    # 注意这样要构建相对路径 MEDIA_URL + filename，这里可以保存到数据库
                     dict_obj["name"] = filename
                     dict_obj["raw_name"] = file.name
                     dict_obj["url"] = file_path
@@ -92,6 +78,14 @@ class UploadFilesView(views.APIView):
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
+
+    def make_thumb(self, img, size=150):
+        width, height = img.size
+        if width > size:
+            delta = width / size
+            height = int(height / delta)
+            img.thumbnail((width, height), Image.ANTIALIAS)
+        return img
 
 
 class UploadRteFilesView(views.APIView):
@@ -144,197 +138,13 @@ class DeleteFileView(views.APIView):
             if len(urls) > 0:
                 # 判断文件径是否存在，存在则删除
                 for url in urls:
-                     if os.path.exists(url):
+                    if os.path.exists(url):
                         os.remove(url)
 
                 return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-
-
-class AddTaskLogFiles(views.APIView):
-    """
-    上传多个文件
-    """
-
-    def post(self, request):
-        try:
-            # 任务标识
-            task_id = request.data.get('task_id')
-            # 标题
-            title = request.data.get('title')
-            # 备注
-            memo = request.data.get('memo')
-
-            # 增加步骤日志
-            if task_id is not None and title is not None and memo is not None:
-                tasklog = TaskLog(task_id=task_id, title=title, memo=memo)
-                tasklog.save()
-
-                # 获取用户上传的文件,保存到服务器,再添加到数据库
-                files = request.FILES.getlist('file')
-                # 判断文件列表是否存在文件
-                if len(files) > 0:
-                    # 判断上传路径是否存在，不存在则创建
-                    if not os.path.exists(settings.MEDIA_ROOT):
-                        os.makedirs(settings.MEDIA_ROOT)
-                    # 遍历用户上传的文件列表
-                    upload_files = []
-                    for file in files:
-                        # 获取文件反缀名
-                        extension = os.path.splitext(file.name)[1]
-                        # 通过uuid重命名上传的文件
-                        filename = '{}{}'.format(uuid.uuid4(), extension)
-                        # 构建文件路径
-                        file_path = '{}/{}'.format(settings.MEDIA_ROOT, filename)
-                        # 将上传的文件路径存储到upload_files中
-                        # 注意这样要构建相对路径MEDIA_URL+filename,这里可以保存到数据库
-                        upload_files.append('{}{}'.format(settings.MEDIA_URL, filename))
-                        # 保存文件
-                        with open(file_path, 'wb') as f:
-                            for c in file.chunks():
-                                f.write(c)
-                            f.close()
-
-                        # 增加文件
-                        file_ = Files(tasklog_id=tasklog.id, name=filename, path=file_path)
-                        file_.save()
-
-        except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
-
-
-class AddStepLogFiles(views.APIView):
-    """
-    上传多个文件
-    """
-
-    def post(self, request):
-        try:
-            # 步骤标识
-            step_id = request.data.get('step_id')
-            # 标题
-            title = request.data.get('title')
-            # 进度
-            progress = request.data.get('progress')
-            # 备注
-            memo = request.data.get('memo')
-            # 类型
-            type = request.data.get('type')
-            # 内容
-            content = request.data.get('content')
-
-            # 增加步骤日志
-            if step_id is not None and title is not None and progress is not None and memo is not None:
-                steplog = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
-                steplog.save()
-
-                # 如果存在富文本,则先添加富文本
-                if type is not None and content is not None:
-                    if type == 0:
-                        progresstexts = ProgressTexts(steplog_id=steplog.id, content=content)
-                        progresstexts.save()
-
-                # 获取用户上传的文件,保存到服务器,再添加到数据库
-                files = request.FILES.getlist('file')
-                # 判断文件列表是否存在文件
-                if len(files) > 0:
-                    # 判断上传路径是否存在，不存在则创建
-                    if not os.path.exists(settings.MEDIA_ROOT):
-                        os.makedirs(settings.MEDIA_ROOT)
-                    # 遍历用户上传的文件列表
-                    upload_files = []
-                    for file in files:
-                        # 获取文件反缀名
-                        extension = os.path.splitext(file.name)[1]
-                        # 通过uuid重命名上传的文件
-                        filename = '{}{}'.format(uuid.uuid4(), extension)
-                        # 构建文件路径
-                        file_path = '{}/{}'.format(settings.MEDIA_ROOT, filename)
-                        # 将上传的文件路径存储到upload_files中
-                        # 注意这样要构建相对路径MEDIA_URL+filename,这里可以保存到数据库
-                        upload_files.append('{}{}'.format(settings.MEDIA_URL, filename))
-                        # 保存文件
-                        with open(file_path, 'wb') as f:
-                            for c in file.chunks():
-                                f.write(c)
-                            f.close()
-
-                        # 增加文件
-                        file_ = Files(steplog_id=steplog.id, name=filename, path=file_path)
-                        file_.save()
-
-        except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
-
-
-class AddFeedBackLogFiles(views.APIView):
-    """
-    上传多个文件
-    """
-
-    def post(self, request):
-        try:
-            # 步骤标识
-            file_id = request.data.get('file_id')
-            # 标题
-            title = request.data.get('title')
-            # 备注
-            memo = request.data.get('memo')
-            # 类型
-            type = request.data.get('type')
-            # 内容
-            content = request.data.get('content')
-
-            # 增加反馈日志
-            if file_id is not None and title is not None and memo is not None:
-                feedbacklog = FeedBackLog(file_id=file_id, title=title, memo=memo)
-                feedbacklog.save()
-
-                # 如果存在富文本,则先添加富文本
-                if type is not None and content is not None:
-                    if type == 0:
-                        feedbacktexts = FeedBackTexts(feedbacklog_id=feedbacklog.id, content=content)
-                        feedbacktexts.save()
-
-                # 获取用户上传的文件,保存到服务器,再添加到数据库
-                files = request.FILES.getlist('file')
-                # 判断文件列表是否存在文件
-                if len(files) > 0:
-                    # 判断上传路径是否存在，不存在则创建
-                    if not os.path.exists(settings.MEDIA_ROOT):
-                        os.makedirs(settings.MEDIA_ROOT)
-                    # 遍历用户上传的文件列表
-                    upload_files = []
-                    for file in files:
-                        # 获取文件反缀名
-                        extension = os.path.splitext(file.name)[1]
-                        # 通过uuid重命名上传的文件
-                        filename = '{}{}'.format(uuid.uuid4(), extension)
-                        # 构建文件路径
-                        file_path = '{}/{}'.format(settings.MEDIA_ROOT, filename)
-                        # 将上传的文件路径存储到upload_files中
-                        # 注意这样要构建相对路径MEDIA_URL+filename,这里可以保存到数据库
-                        upload_files.append('{}{}'.format(settings.MEDIA_URL, filename))
-                        # 保存文件
-                        with open(file_path, 'wb') as f:
-                            for c in file.chunks():
-                                f.write(c)
-                            f.close()
-
-                        # 增加反馈文件
-                        feedbacks_ = FeedBacks(feedbacklog_id=feedbacklog.id, name=filename, path=file_path)
-                        feedbacks_.save()
-
-        except Exception as e:
-            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
 
 class FileDownloadView(views.APIView):
