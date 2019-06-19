@@ -36,4 +36,6 @@ urlpatterns = [
     path(r'api/permission/tree/', permission.PermissionTreeView.as_view(), name='permissions_tree'),
     # 获取用户列表
     path(r'api/user/list/', user.UserListView.as_view(), name='user_list'),
+    # 修改用户头像
+    path(r'api/user/avatar/upload', user.UserAvatarUploadView.as_view(), name='user_avatar_upload'),
 ]

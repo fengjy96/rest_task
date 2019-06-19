@@ -93,12 +93,12 @@ urlpatterns = [
 
     # 文件上传
     path(r'api/v1/files/upload', files.UploadFilesView.as_view(),name='files_upload'),
+    # 富文件上传
+    path(r'api/v1/rte/files/upload', files.UploadRteFilesView.as_view(),name='rte_files_upload'),
     # 文件删除
     path(r'api/v1/files/delete', files.DeleteFileView.as_view(), name='files_delete'),
     # 下载文件
     path(r'api/v1/imageDown', files.FileDownloadView.as_view(),name='file_download'),
-    # 文件查询
-    path(r'api/v1/files', files.FilesListViewSet.as_view(),name='files'),
 
     ## 消息相关
 

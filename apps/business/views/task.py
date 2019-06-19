@@ -235,7 +235,7 @@ class TaskViewSet(ModelViewSet):
                 queryset_task_auditor = queryset.filter(auditor_id=user_id)
             # 如果当前用户拥有商务人员权限，则返回与该商务人员关联的项目数据
             if '商务人员' in user_role_list:
-                queryset_business_manager = queryset.filter(sender_id=user_id)
+                queryset_business_manager = queryset
             if '项目审核员' in user_role_list:
                 queryset_project_auditor = queryset
 
@@ -382,14 +382,9 @@ class TaskAcceptView(APIView):
             tasksteps = TaskStep.objects.filter(task_design_type_id=task_design_type_id)
             for taskstep in tasksteps:
                 if taskstep:
-                    step = Step(
-                        name=taskstep.name,
-                        index=taskstep.index,
-                        task=task,
-                        task_design_type=task_design_type,
-                    )
-
-                    step.save()
+                    step = Step.objects.filter(task_id=task.id, name=taskstep.name, task_design_type_id=taskstep.task_design_type.id)
+                    if not step.exists():
+                        Step.objects.create(name=taskstep.name,index=taskstep.index,task=task,task_design_type=task_design_type)
 
 
 class TaskRejectView(APIView):

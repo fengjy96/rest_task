@@ -30,7 +30,7 @@ class Excel:
                         if Task.objects.filter(name=row[0], project_id=project_id).exists():
                             x = x + 1  # 重复值计数
                             dict_obj = {}
-                            dict_obj["info"] = '第' + str(n) + '行任务名称重复'
+                            dict_obj["info"] = '第' + str(n) + '行,第1列任务名称重复'
                             DataList.append(dict_obj)
                             z = z + 1
                             continue
@@ -68,6 +68,17 @@ class Excel:
                             if not cls.isVaildDate(row[6], data):
                                 dict_obj = {}
                                 dict_obj["info"] = '第' + str(n) + '行,第7列时间格式不正确'
+                                DataList.append(dict_obj)
+                                z = z + 1
+                                continue
+
+                            task_type = TaskType.objects.get(name=row[1])
+                            receiver = UserProfile.objects.get(name=row[7])
+                            user_skill_ids = cls.get_user_skills(receiver.id)
+
+                            if task_type.id not in user_skill_ids:
+                                dict_obj = {}
+                                dict_obj["info"] = '第' + str(n) + '行,第2列的技能不在任务负责人的技能列表'
                                 DataList.append(dict_obj)
                                 z = z + 1
                                 continue
@@ -121,6 +132,7 @@ class Excel:
                                                  sender=sender,
                                                  auditor=auditor,
                                                  receive_status=receive_status,
+                                                 superior=sender,
                                                  ))
 
                             y = y + 1  # 非重复计数
@@ -164,3 +176,11 @@ class Excel:
     def getDate(cls, value, data):
         value = xlrd.xldate_as_tuple(value, data.datemode)
         return date(*value[:3]).strftime('%Y-%m-%d')
+
+    @classmethod
+    def get_user_skills(self, user_id):
+        if user_id is not None:
+            user = UserProfile.objects.get(id=user_id)
+            user_skills = user.skills.all()
+            user_skill_ids = set(map(lambda user_skill: user_skill.id, user_skills))
+            return user_skill_ids
