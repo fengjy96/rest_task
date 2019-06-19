@@ -169,7 +169,8 @@ class BusinessPublic:
                 if files:
                     for file in files:
                         # 增加文件表记录
-                        step_log_file = Files(tasklog=task_log, name=file['name'], path=file['url'])
+                        step_log_file = Files(tasklog=task_log, name=file['name'], path=file['url'],
+                                              path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
                         step_log_file.save()
 
                 # 如果存在富文本，则先添加富文本

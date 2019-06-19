@@ -628,6 +628,8 @@ class TaskLogsView(APIView):
             log_file_obj['id'] = file.id
             log_file_obj['name'] = file.name
             log_file_obj['path'] = file.path
+            log_file_obj['path_thumb_w200'] = file.path_thumb_w200
+            log_file_obj['path_thumb_w900'] = file.path_thumb_w900
             log_file_obj['type'] = 1
             log_file_obj['add_time'] = file.add_time
             task_log_file_list.append(log_file_obj)
