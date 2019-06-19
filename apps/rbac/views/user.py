@@ -498,12 +498,15 @@ class UserAvatarUploadView(APIView):
             avatar_name = 'avatar/{}/{}.{}'.format(request.user.username, name, suffix)
             # pillow 打开图片，保存副本
             avatar = Image.open(request.data['file'])
+            # 生成缩略图
+            thumb = self.make_thumb(avatar)
             # 判断文件的父文件是否存在，不存在则创建
             if not os.path.exists('media/avatar/' + request.user.username):
                 os.makedirs('media/avatar/' + request.user.username)
-            # 文件保存的具体路径
+
+            # 文件保存的具体路径（只保存缩略图）
             avatar_file_path = os.path.join(settings.MEDIA_ROOT, avatar_name).replace('\\', '/')
-            avatar.save(avatar_file_path)
+            thumb.save(avatar_file_path)
             # 将保存的路径更新到数据库
             request.user.image = avatar_name.replace('\\', '/')
             request.user.save()
@@ -511,3 +514,11 @@ class UserAvatarUploadView(APIView):
             return XopsResponse(status=OK, data={'avatar': avatar_name})
         except Exception as e:
             return XopsResponse(status=BAD)
+
+    def make_thumb(self, img, size=150):
+        width, height = img.size
+        if height > size:
+            delta = height / size
+            width = int(width / delta)
+            img.thumbnail((width, height), Image.ANTIALIAS)
+        return img
