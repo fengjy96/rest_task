@@ -99,8 +99,6 @@ urlpatterns = [
     path(r'api/v1/files/delete', files.DeleteFileView.as_view(), name='files_delete'),
     # 下载文件
     path(r'api/v1/imageDown', files.FileDownloadView.as_view(),name='file_download'),
-    # 文件查询
-    path(r'api/v1/files', files.FilesListViewSet.as_view(),name='files'),
 
     ## 消息相关
 
