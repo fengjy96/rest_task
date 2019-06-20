@@ -273,7 +273,7 @@ class TaskImportView(APIView):
             files = request.data.get('files', [])
 
             for file in files:
-                path = '{}/{}'.format(settings.MEDIA_ROOT, file['name'])
+                path = '{}{}'.format(settings.BASE_DIR, file['url'])
                 if os.path.exists(path):
                     datalist = Excel.import_excel_data(project_id, path)
                     os.remove(path)
