@@ -109,7 +109,7 @@ class StepProgressUpdateView(APIView):
                     for file in files:
                         # 增加文件表记录
                         step_log_file = Files(steplog=step_log, name=file['name'], path=file['url'],
-                                              path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
+                                              path_thumb_w200=file.get('path_thumb_w200', ''), path_thumb_w900=file.get('path_thumb_w900', ''))
                         step_log_file.save()
 
                 # 如果存在富文本，则先添加富文本
@@ -278,7 +278,7 @@ class StepLogFileFeedBackUpdateView(APIView):
                     for file in files:
                         # 增加文件表记录
                         feedback_file = FeedBacks(feedbacklog=feedback_log, name=file['name'], path=file['url'],
-                                                  path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
+                                                  path_thumb_w200=file.get('path_thumb_w200', ''), path_thumb_w900=file.get('path_thumb_w900', ''))
                         feedback_file.save()
 
                 # 如果存在反馈富文本,则先添加反馈富文本
