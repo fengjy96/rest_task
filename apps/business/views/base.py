@@ -118,7 +118,8 @@ class BusinessPublic:
         progress = 0
         tasks = Task.objects.filter(project_id=project_id, is_active=1)
         task_nums = tasks.count()
-        checked_tasks = tasks.filter(receive_status_id=cls.GetTaskStatusIdByKey('checked')).aggregate(nums=Sum('progress'))
+        checked_tasks = tasks.filter(receive_status_id=cls.GetTaskStatusIdByKey('checked')).aggregate(
+            nums=Sum('progress'))
         if checked_tasks['nums'] is not None:
             progress = checked_tasks['nums']
 
@@ -170,7 +171,8 @@ class BusinessPublic:
                     for file in files:
                         # 增加文件表记录
                         step_log_file = Files(tasklog=task_log, name=file['name'], path=file['url'],
-                                              path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
+                                              path_thumb_w200=file.get('path_thumb_w200', ''),
+                                              path_thumb_w900=file.get('path_thumb_w900', ''))
                         step_log_file.save()
 
                 # 如果存在富文本，则先添加富文本
