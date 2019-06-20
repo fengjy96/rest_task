@@ -529,28 +529,30 @@ class ProjectCheckPassView(APIView):
                 project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('checked')
                 project.save()
 
-                # 积分及米值分配
-                projectpoints = ProjectPoints.objects.filter(project_id=project_id, is_created = 0)
+                # 商务人员以及项目经理积分及米值分配
+                projectpoints = ProjectPoints.objects.filter(project_id=project_id, task__isnull=True, is_created = 0)
                 if projectpoints:
                     for projectpoint in projectpoints:
                          if projectpoint:
-                             if projectpoint.task:
-                                 self.create_user_points(projectpoint.project.id, projectpoint.task.id, projectpoint.user.id, projectpoint.points, 1, 1,
-                                                         projectpoint.type, projectpoint.task.task_assessment.id)
-                             else:
-                                 self.create_user_points(projectpoint.project.id, None, projectpoint.user.id, projectpoint.points, 1, 1,
-                                                         projectpoint.type)
-
+                             self.create_user_points(None, projectpoint.user.id, projectpoint.points, 1, 1,projectpoint.type)
                              project_points = ProjectPoints.objects.get(id=projectpoint.id)
                              project_points.is_created = 1
                              project_points.save()
 
+                # 任务负责人积分及米值分配
+                taskpoints = Task.objects.filter(project_id=project_id, is_active=1)
+                if taskpoints:
+                    for taskpoint in taskpoints:
+                         if taskpoint:
+                             self.create_user_points(taskpoint.task.id,taskpoint.receiver.id, taskpoint.points, 1, 1,1)
+
                 BusinessPublic.create_message(project.auditor_id, project.receiver_id, menu_id=2,
                                               messages='恭喜,你的项目已验收通过!')
 
-    def create_user_points(self, project_id, task_id, user_id, point, operation_type, points_status, points_type, task_assessment_id=None):
+    def create_user_points(self, task_id, user_id, point, operation_type, points_status, points_type):
         """
         创建或更新用户积分以及米值,如果用户积分表中存在记录则更新,如果没有则新增
+        :param task_id:用户标识
         :param user_id:用户标识
         :param points:积分
         :param operation_type:操作类型：（1：增加积分或0：减少积分）

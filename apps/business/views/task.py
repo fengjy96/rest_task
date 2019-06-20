@@ -21,6 +21,7 @@ from business.models.step import Step
 from business.models.files import Files, ProgressTexts
 from configuration.models.task_conf import TaskStatus, TaskDesignType, TaskAssessment, TaskStep
 from business.models.steplog import TaskLog
+from points.models.projectpoints import ProjectPoints
 from business.views.excel import Excel
 from django.conf import settings
 import uuid
@@ -124,9 +125,17 @@ class TaskViewSet(ModelViewSet):
         request.data['superior'] = request.user.id
         # 文件
         files = request.data.get('files', None)
+        receiver_id = request.data.get('receiver', None)
+        project_id = request.data.get('project', None)
 
-        if request.data.get('receiver', None):
-            project_id = request.data.get('project', None)
+        if receiver_id:
+            task_id = str(kwargs['pk'])
+            task = Task.objects.get(id=task_id)
+            if receiver_id != task.receiver.id and project_id is not None:
+                # 更新项目积分表
+                ProjectPoints.objects.filter(user_id=task.receiver.id, is_created=0, project_id=project_id).update(
+                    user_id=receiver_id)
+
             if project_id is not None:
                 # 根据项目 id 查项目审核状态
                 project = Project.objects.get(id=project_id)
@@ -534,12 +543,16 @@ class TaskAllocateView(APIView):
                 from business.models.task import Task
                 task = Task.objects.get(id=task_id)
                 if task is not None:
+                    old_receiver_id = task.receiver.id
                     receiver = UserProfile.objects.get(id=receiver_id)
                     task.receiver = receiver
                     task.superior_id = request.user.id
                     task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
                     task.save()
-
+                    if old_receiver_id != receiver_id:
+                        # 转移积分
+                        ProjectPoints.objects.filter(user_id=task.receiver.id, is_created=0,
+                                                     project_id=task.project.id).update(user_id=receiver_id)
                     BusinessPublic.create_message(task.superior.id, task.receiver.id, menu_id=2,
                                                   messages='已安排新的任务,请查看!')
 
@@ -668,3 +681,8 @@ class TaskPublishView(APIView):
                 task.publish_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
                 task.save()
+
+                if task.receiver:
+                   #新增消息
+                   BusinessPublic.create_message(task.sender.id, task.receiver.id, menu_id=2,
+                                                 messages='已安排新的任务,请查看!')
