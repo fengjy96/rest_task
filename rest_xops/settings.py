@@ -114,7 +114,7 @@ DATABASES = {
         # 内网 centos mysql 密码
         'PASSWORD': 'mikai',
         'PORT': '3306',
-        'OPTIONS': {'init_command': 'SET storage_engine=INNODB;'}
+        'OPTIONS': {'init_command': 'SET storage_engine=INNODB; SET foreign_key_checks = 0;'}
     }
 }
 

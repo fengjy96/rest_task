@@ -56,8 +56,8 @@ class UploadFilesView(views.APIView):
                         img_w900.save(file_path_server + '_w900.' + extension)
                         img_w200 = self.make_thumb(img, 200)
                         img_w200.save(file_path_server + '_w200.' + extension)
-                        dict_obj["url_thumb_w200"] = file_path + '_w200.' + extension
-                        dict_obj["url_thumb_w900"]  = file_path + '_w900.' + extension
+                        dict_obj["path_thumb_w200"] = file_path + '_w200.' + extension
+                        dict_obj["path_thumb_w900"]  = file_path + '_w900.' + extension
 
                     # 将上传的文件路径存储到 upload_files 中
                     # 注意这样要构建相对路径 MEDIA_URL + filename，这里可以保存到数据库
