@@ -102,29 +102,30 @@ class StepProgressUpdateView(APIView):
 
             # 增加步骤日志
             if step_id is not None and title is not None and progress is not None:
-                step_log = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
-                step_log.save()
+                if content or files:
+                    step_log = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
+                    step_log.save()
 
-                if files:
-                    for file in files:
-                        # 增加文件表记录
-                        step_log_file = Files(steplog=step_log, name=file['name'], path=file['url'],
-                                              path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
-                        step_log_file.save()
+                    if files:
+                        for file in files:
+                            # 增加文件表记录
+                            step_log_file = Files(steplog=step_log, name=file['name'], path=file['url'],
+                                                  path_thumb_w200=file.get('path_thumb_w200', ''), path_thumb_w900=file.get('path_thumb_w900', ''))
+                            step_log_file.save()
 
-                # 如果存在富文本，则先添加富文本
-                if content:
-                    progresstexts = ProgressTexts(steplog=step_log, content=content)
-                    progresstexts.save()
+                    # 如果存在富文本，则先添加富文本
+                    if content:
+                        progresstexts = ProgressTexts(steplog=step_log, content=content)
+                        progresstexts.save()
 
-                # 更新步骤进度
-                step = Step.objects.get(id=step_id)
-                if step:
-                    step.progress = progress
-                    step.save()
+                    # 更新步骤进度
+                    step = Step.objects.get(id=step_id)
+                    if step:
+                        step.progress = progress
+                        step.save()
 
-                    task_id = step.task_id
-                    BusinessPublic.update_progress_by_task_id(task_id)
+                        task_id = step.task_id
+                        BusinessPublic.update_progress_by_task_id(task_id)
 
         except Exception as e:
             msg = e.args if e else '请求失败'
@@ -271,20 +272,21 @@ class StepLogFileFeedBackUpdateView(APIView):
 
             # 增加日志
             if step_log_file_id is not None and type is not None and title is not None:
-                feedback_log = FeedBackLog(step_log_file_id=step_log_file_id, type=type, title=title, memo=memo)
-                feedback_log.save()
+                if content or files:
+                    feedback_log = FeedBackLog(step_log_file_id=step_log_file_id, type=type, title=title, memo=memo)
+                    feedback_log.save()
 
-                if files:
-                    for file in files:
-                        # 增加文件表记录
-                        feedback_file = FeedBacks(feedbacklog=feedback_log, name=file['name'], path=file['url'],
-                                                  path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
-                        feedback_file.save()
+                    if files:
+                        for file in files:
+                            # 增加文件表记录
+                            feedback_file = FeedBacks(feedbacklog=feedback_log, name=file['name'], path=file['url'],
+                                                      path_thumb_w200=file.get('path_thumb_w200', ''), path_thumb_w900=file.get('path_thumb_w900', ''))
+                            feedback_file.save()
 
-                # 如果存在反馈富文本,则先添加反馈富文本
-                if content:
-                    feedback_log_contents = FeedBackTexts(feedbacklog=feedback_log, content=content)
-                    feedback_log_contents.save()
+                    # 如果存在反馈富文本,则先添加反馈富文本
+                    if content:
+                        feedback_log_contents = FeedBackTexts(feedbacklog=feedback_log, content=content)
+                        feedback_log_contents.save()
 
         except Exception as e:
             msg = e.args if e else '请求失败'
