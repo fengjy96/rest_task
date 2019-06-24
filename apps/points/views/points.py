@@ -25,7 +25,7 @@ class UserPointsViewSet(APIView):
         try:
             # 获取当前用户 id
             user_id = request.user.id
-            points = Points.objects.get(user_id=user_id)
+            points = Points.objects.filter(user_id=user_id).first() or {}
             serializer = PointsSerializer(points)
         except Exception as e:
             msg = e.args if e else '请求失败'
