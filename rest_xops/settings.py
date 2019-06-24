@@ -107,8 +107,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # 数据库名
         'NAME': 'rest_xops',
-        # 'HOST': '192.168.1.110',
-        'HOST': HOST,
+        'HOST': '120.79.225.3',
+        #'HOST': HOST,
         'USER': 'root',
         'PASSWORD': 'mysql',
         # 内网 centos mysql 密码

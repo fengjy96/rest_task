@@ -66,6 +66,7 @@ class ProjectViewSet(ModelViewSet):
         # 将当前登录用户作为项目创建人
         request.data['sender'] = request.user.id
         receiver_id = request.data.get('receiver', None)
+        name = request.data.get('name', None)
         # 如果存在项目负责人，则将项目接收状态置为 '已指派项目负责人'
         if receiver_id is not None:
             BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
@@ -74,6 +75,9 @@ class ProjectViewSet(ModelViewSet):
         # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
         else:
             request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
+
+        if Project.objects.filter(name=name, is_active=1).exists():
+            raise Exception('项目名称已存在,请重新输入!')
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -96,6 +100,12 @@ class ProjectViewSet(ModelViewSet):
                     # 新增消息
                     BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
                                               messages='你有新的项目等待接手!')
+                else:
+                    # 如何驳回,更新项目后会重新新增消息
+                    if ProjectStatus.objects.get(key='rejected').id == 5:
+                        # 新增消息
+                        BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
+                                                      messages='你有新的项目等待接手!')
             request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
         else:
             request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
@@ -330,8 +340,8 @@ class ProjectAuditPassView(APIView):
                 # project.points = points
                 project.save()
 
-                BusinessPublic.create_message(project.auditor.id, project.sender.id, menu_id=2,
-                                              messages='你有新的项目等待接手!')
+                #BusinessPublic.create_message(project.auditor.id, project.sender.id, menu_id=2,
+                #                              messages='你有新的项目等待接手!')
                 BusinessPublic.create_message(project.auditor.id, project.receiver.id, menu_id=2,
                                               messages='项目已通过审核!')
 
