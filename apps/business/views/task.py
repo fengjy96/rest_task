@@ -133,13 +133,6 @@ class TaskViewSet(ModelViewSet):
         project_id = request.data.get('project', None)
 
         if receiver_id:
-            task_id = str(kwargs['pk'])
-            task = Task.objects.get(id=task_id)
-            if receiver_id != task.receiver.id and project_id is not None:
-                # 更新项目积分表
-                ProjectPoints.objects.filter(user_id=task.receiver.id, is_created=0, project_id=project_id).update(
-                    user_id=receiver_id)
-
             if project_id is not None:
                 # 根据项目 id 查项目审核状态
                 project = Project.objects.get(id=project_id)
