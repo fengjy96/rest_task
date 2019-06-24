@@ -118,14 +118,14 @@ class StepProgressUpdateView(APIView):
                         progresstexts = ProgressTexts(steplog=step_log, content=content)
                         progresstexts.save()
 
-                    # 更新步骤进度
-                    step = Step.objects.get(id=step_id)
-                    if step:
-                        step.progress = progress
-                        step.save()
+            # 更新步骤进度
+            step = Step.objects.get(id=step_id)
+            if step:
+                step.progress = progress
+                step.save()
 
-                        task_id = step.task_id
-                        BusinessPublic.update_progress_by_task_id(task_id)
+                task_id = step.task_id
+                BusinessPublic.update_progress_by_task_id(task_id)
 
         except Exception as e:
             msg = e.args if e else '请求失败'

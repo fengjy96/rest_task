@@ -27,7 +27,7 @@ class Excel:
                     # 查看行值是否为空
                     if row:
                         # 判断该行值是否在数据库中重复
-                        if Task.objects.filter(name=row[0], project_id=project_id).exists():
+                        if Task.objects.filter(name=row[0], project_id=project_id, is_active=1).exists():
                             x = x + 1  # 重复值计数
                             dict_obj = {}
                             dict_obj["info"] = '第' + str(n) + '行,第1列任务名称重复'

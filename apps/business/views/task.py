@@ -67,7 +67,8 @@ class TaskViewSet(ModelViewSet):
         content = request.data.get('content', None)
         # 文件
         files = request.data.get('files', None)
-
+        # 任务名称
+        name = request.data.get('name', None)
         if project_id is not None:
             # 根据项目 id 查项目负责人
             project = Project.objects.get(id=project_id)
@@ -96,6 +97,9 @@ class TaskViewSet(ModelViewSet):
         # 如果创建任务时未指定任务负责人，则任务接收状态为 0 - 未安排任务负责人
         else:
             request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
+
+        if Task.objects.filter(name=name, is_active=1).exists():
+            raise Exception('任务名称已存在,请重新输入!')
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -313,7 +317,7 @@ class TaskReceiverView(APIView):
         else:
             for user in users:
                 # tasks = Task.objects.filter(receiver_id=user.id, is_active=1, receive_status__lte=3)
-                tasks = Task.objects.filter(~Q(receive_status=BusinessPublic.GetTaskStatusIdByKey('accepted')),
+                tasks = Task.objects.filter(~Q(receive_status=BusinessPublic.GetTaskStatusIdByKey('checked')),
                                             receiver_id=user.id, is_active=1)
 
                 if len(tasks) > 0:
