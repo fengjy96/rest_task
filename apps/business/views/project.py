@@ -49,7 +49,7 @@ class ProjectViewSet(ModelViewSet):
     # 指定筛选类
     filter_class = ProjectFilter
     # 指定授权类
-    #permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
