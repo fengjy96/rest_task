@@ -131,17 +131,32 @@ class TaskViewSet(ModelViewSet):
         files = request.data.get('files', None)
         receiver_id = request.data.get('receiver', None)
         project_id = request.data.get('project', None)
+        task_id = str(kwargs['pk'])
 
-        if receiver_id:
-            if project_id is not None:
-                # 根据项目 id 查项目审核状态
-                project = Project.objects.get(id=project_id)
-                if project.audit_status == 2:
-                    request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
-                else:
-                    request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
-        else:
-            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
+        if project_id is not None:
+            project = Project.objects.get(id=project_id)
+            if receiver_id is not None:
+                if task_id is not None:
+                    task = Task.objects.get(id=task_id)
+                    if task.receiver:
+                        if receiver_id != str(task.receiver.id):
+                            # 如果更换任务负责人,需要重新发布
+                            request.data['is_published'] = 0
+                            if project.audit_status == 2:
+                                request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
+                            else:
+                                request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
+                    else:
+                        request.data['is_published'] = 0
+                        if project.audit_status == 2:
+                            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
+                        else:
+                            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
+
+            else:
+                request.data['is_published'] = 0
+                request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
+
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -366,7 +381,7 @@ class TaskAcceptView(APIView):
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
     def update_task(self, request, task_id, task_design_type_id):
-        if task_id is not None:
+        if task_id is not None and task_design_type_id is not None:
             from business.models.task import Task
             task = Task.objects.get(id=task_id)
             if task is not None:
@@ -376,21 +391,21 @@ class TaskAcceptView(APIView):
                     task.receiver = request.user
                 task.task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
                 task.save()
-                self.create_step(task_id, task_design_type_id)
+                self.create_step(task_id, task_design_type_id, request.user)
                 BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='任务负责人已接手,任务执行中!')
 
-    def create_step(self, task_id, task_design_type_id):
-        if task_id is not None:
+    def create_step(self, task_id, task_design_type_id, receiver):
+        if task_id is not None and task_design_type_id is not None and receiver:
             task = Task.objects.get(id=task_id)
             task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
 
             tasksteps = TaskStep.objects.filter(task_design_type_id=task_design_type_id)
             for taskstep in tasksteps:
                 if taskstep:
-                    step = Step.objects.filter(task_id=task.id, name=taskstep.name, task_design_type_id=taskstep.task_design_type.id)
-                    if not step.exists():
-                        Step.objects.create(name=taskstep.name,index=taskstep.index,task=task,task_design_type=task_design_type)
+                    #step = Step.objects.filter(task_id=task.id, name=taskstep.name, task_design_type_id=taskstep.task_design_type.id)
+                    #if not step.exists():
+                    Step.objects.create(name=taskstep.name,index=taskstep.index,task=task,task_design_type=task_design_type, receiver=receiver)
 
 
 class TaskRejectView(APIView):
