@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -125,6 +126,8 @@ class ProjectViewSet(ModelViewSet):
 
         queryset = self.filter_list_queryset(request, queryset)
 
+        queryset = self.filter_project(request, queryset)
+
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -132,6 +135,29 @@ class ProjectViewSet(ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    def filter_project(self, request, queryset):
+        """
+        根据前端传递的查询参数过滤对应的项目
+        :param request:
+        :param queryset:
+        :return:
+        """
+        q = Q()
+
+        receive_status_ids = request.query_params.get('receive_status_ids', None)
+        if receive_status_ids:
+            receive_status_ids = receive_status_ids.split(',')
+            q.add(Q(receive_status__in=receive_status_ids), Q.AND)
+
+        audit_status_ids = request.query_params.get('audit_status_ids', None)
+        if audit_status_ids:
+            audit_status_ids = audit_status_ids.split(',')
+            q.add(Q(audit_status__in=audit_status_ids), Q.AND)
+
+        queryset = queryset.filter(q)
+
+        return queryset
 
     def filter_list_queryset(self, request, queryset):
         """
