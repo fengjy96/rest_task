@@ -178,7 +178,7 @@ class TaskViewSet(ModelViewSet):
 
         queryset = self.filter_list_queryset(request, queryset)
 
-        queryset = self.filter_task_hall(request, queryset)
+        queryset = self.filter_task(request, queryset)
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -188,9 +188,9 @@ class TaskViewSet(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    def filter_task_hall(self, request, queryset):
+    def filter_task(self, request, queryset):
         """
-        根据输入条件查询相应的任务
+        根据前端传递的查询参数过滤对应的任务
         :param request:
         :param queryset:
         :return:
@@ -211,6 +211,21 @@ class TaskViewSet(ModelViewSet):
         if task_quality_ids:
             task_quality_ids = task_quality_ids.split(',')
             q.add(Q(task_quality__in=task_quality_ids), Q.AND)
+
+        receive_status_ids = request.query_params.get('receive_status_ids', None)
+        if receive_status_ids:
+            receive_status_ids = receive_status_ids.split(',')
+            q.add(Q(receive_status__in=receive_status_ids), Q.AND)
+
+        audit_status_ids = request.query_params.get('audit_status_ids', None)
+        if audit_status_ids:
+            audit_status_ids = audit_status_ids.split(',')
+            q.add(Q(audit_status__in=audit_status_ids), Q.AND)
+
+        publish_status_ids = request.query_params.get('publish_status_ids', None)
+        if publish_status_ids:
+            publish_status_ids = publish_status_ids.split(',')
+            q.add(Q(is_published__in=publish_status_ids), Q.AND)
 
         queryset = queryset.filter(q)
 
