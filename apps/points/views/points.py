@@ -17,6 +17,7 @@ from points.models.points import Points
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 
 
 class UserPointsViewSet(APIView):
@@ -49,7 +50,7 @@ class ProjectPointsViewSet(ModelViewSet):
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
 
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     def update(self, request, *args, **kwargs):
         projectpoints_id = str(kwargs['pk'])
@@ -99,7 +100,7 @@ class PointsAssignmentViewSet(ListAPIView):
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
 
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         try:
