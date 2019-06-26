@@ -21,6 +21,7 @@ from business.filters import ProjectFilter
 from rbac.models import UserProfile
 from business.models.task import Task
 from points.models.projectpoints import ProjectPoints
+from points.models.projectpointsex import ProjectPointsEx
 from points.models.points import Points
 from points.models.pointsdetail import PointsDetail
 from configuration.models.project_conf import ProjectStatus, Fee
@@ -877,7 +878,7 @@ class ProjectFeeCostAnalysisView(APIView):
                     project_person_nums = tasks.count() + 2
 
                     # 公司总人数
-                    users = UserProfile.objects.all()
+                    users = UserProfile.objects.filter(base_salary__gt=0)
                     if users:
                         company_person_nums = users.count()
 
@@ -924,12 +925,39 @@ class ProjectCostAnalysisFinishedView(APIView):
     def post(self, request, format=None):
         try:
             project_id = request.data.get('project_id', None)
+            # 项目总积分
+            project_points = request.data.get('project_points', None)
+            # 项目负责人百分比
+            project_receiver_percentage = request.data.get('project_receiver_percentage', None)
+            # 商务人员百分比
+            project_sender_percentage = request.data.get('project_sender_percentage', None)
 
+            self.create_projectpointsex(project_id, project_points, project_receiver_percentage, project_sender_percentage)
+            self.update_project(project_id, project_points)
             self.update_task(project_id)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
+    def create_projectpointsex(self, project_id, project_points, project_receiver_percentage, project_sender_percentage):
+        projectpointsexs = ProjectPointsEx.objects.filter(project_id=project_id)
+        if projectpointsexs.exists():
+            projectpointsex = ProjectPointsEx.objects.get(project_id=project_id)
+            projectpointsex.points = project_points
+            projectpointsex.left_points = 0
+            projectpointsex.project_receiver_percentage = project_receiver_percentage
+            projectpointsex.project_sender_percentage = project_sender_percentage
+            projectpointsex.save()
+        else:
+            ProjectPointsEx.objects.create(project_id=project_id, points=project_points, left_points=0,
+                                           project_receiver_percentage=project_receiver_percentage,
+                                           project_sender_percentage=project_sender_percentage)
+
+    def update_project(self, project_id, project_points):
+        if project_id is not None and project_points is not None:
+            project = Project.objects.get(id=project_id)
+            project.points = project_points
+            project.save()
 
     def update_task(self, project_id):
         if project_id is not None:
