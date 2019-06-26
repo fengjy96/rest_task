@@ -1,5 +1,6 @@
 from rest_framework import status
 from points.models.projectpoints import ProjectPoints
+from points.models.projectpointsex import ProjectPointsEx
 from business.models.project import Project
 from business.models.task import Task
 from configuration.models.task_conf import TaskPriority
@@ -14,6 +15,8 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from common.custom import CommonPagination
 from points.models.points import Points
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.response import Response
 
 
 class UserPointsViewSet(APIView):
@@ -33,7 +36,57 @@ class UserPointsViewSet(APIView):
         return MykeyResponse(serializer.data, status=status.HTTP_200_OK, msg='请求成功')
 
 
-class PointsAssignmentView(ListAPIView):
+class ProjectPointsViewSet(ModelViewSet):
+    """
+    项目积分修改
+    """
+
+    queryset = ProjectPoints.objects.all()
+    serializer_class = ProjectPointsSerializer
+    pagination_class = CommonPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filter_fields = ('project_id',)
+    ordering_fields = ('id',)
+    authentication_classes = (JSONWebTokenAuthentication,)
+
+    # permission_classes = (IsAuthenticated,)
+
+    def update(self, request, *args, **kwargs):
+        projectpoints_id = str(kwargs['pk'])
+        # 修改后的积分
+        points_modified = request.data.get('points', None)
+
+        if projectpoints_id is not None and points_modified is not None:
+            projectpoint = ProjectPoints.objects.get(id=projectpoints_id)
+            project_id = projectpoint.project_id
+            points_original = projectpoint.points
+
+            projectpointsex = ProjectPointsEx.objects.get(project_id=project_id)
+            points_left = projectpointsex.left_points
+
+            points_final = points_left - (points_modified - points_original)
+            if points_final < 0:
+                raise Exception('剩余积分不够,请修改积分!')
+            else:
+               # 更新剩余积分
+               projectpointsex.left_points = points_final
+               projectpointsex.save()
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
+
+
+class PointsAssignmentViewSet(ListAPIView):
     """
     项目积分分配
     """
