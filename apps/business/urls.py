@@ -79,6 +79,8 @@ urlpatterns = [
     path(r'api/v1/task/publish', task.TaskPublishView.as_view(), name='task_publish'),
     # 导入任务数据
     path(r'api/v1/task/import', task.TaskImportView.as_view(), name='task_import'),
+    # 判断任务名是否已存在
+    path(r'api/v1/task/name', task.TaskNameView.as_view(), name='task_name_is_exist'),
 
     ## 步骤相关
 

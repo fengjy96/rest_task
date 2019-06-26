@@ -287,6 +287,22 @@ class TaskViewSet(ModelViewSet):
             return user_role_list
 
 
+class TaskNameView(APIView):
+    """
+    判断任务名是否存在
+    """
+    def post(self, request, format=None):
+        name = request.data.get('name', None)
+        project_id = request.data.get('project_id', None)
+        if name is not None and project_id is not None:
+            try:
+                Task.objects.get(name=name, project_id=project_id)
+                return MykeyResponse(status=status.HTTP_200_OK, data={'msg': '该任务名已存在，请重新输入'}, msg='请求成功')
+            except Exception as e:
+                return MykeyResponse(status=status.HTTP_200_OK, data={}, msg='请求成功')
+        return MykeyResponse(status=status.HTTP_200_OK, data={}, msg='请求成功')
+
+
 class TaskImportView(APIView):
     """
     上传单个Excel文件
