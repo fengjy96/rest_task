@@ -31,6 +31,7 @@ list_project_person_objects = []
 # 项目费用成本
 list_project_fee_objects = []
 
+
 class ProjectViewSet(ModelViewSet):
     """
     项目：增删改查
@@ -77,8 +78,6 @@ class ProjectViewSet(ModelViewSet):
         else:
             request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
 
-        if Project.objects.filter(name=name, is_active=1).exists():
-            raise Exception('项目名称已存在,请重新输入!')
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -204,6 +203,21 @@ class ProjectViewSet(ModelViewSet):
             user_roles = user.roles.all()
             user_role_ids = set(map(lambda user_role: user_role.id, user_roles))
             return user_role_ids
+
+
+class ProjectNameView(APIView):
+    """
+    判断项目名是否已存在
+    """
+    def post(self, request, format=None):
+        name = request.data.get('name', None)
+        if name is not None:
+            try:
+                Project.objects.get(name=name)
+                return MykeyResponse(status=status.HTTP_200_OK, data={'msg': '该项目名已存在，请重新输入'}, msg='请求成功')
+            except Exception as e:
+                return MykeyResponse(status=status.HTTP_200_OK, data={}, msg='请求成功')
+        return MykeyResponse(status=status.HTTP_200_OK, data={}, msg='请求成功')
 
 
 class ProjectReceiverListView(ListAPIView):

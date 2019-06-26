@@ -52,6 +52,8 @@ urlpatterns = [
     path(r'api/v1/project/check/pass', project.ProjectCheckPassView.as_view(), name='project_check_pass'),
     # 项目验收不通过
     path(r'api/v1/project/check/reject', project.ProjectCheckRejectView.as_view(), name='project_check_reject'),
+    # 判断项目名是否已存在
+    path(r'api/v1/project/name', project.ProjectNameView.as_view(), name='project_name_is_exist'),
 
     ## 任务相关
 
