@@ -98,8 +98,10 @@ class TaskViewSet(ModelViewSet):
         else:
             request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
 
-        if Task.objects.filter(name=name, is_active=1).exists():
-            raise Exception('任务名称已存在,请重新输入!')
+        if project_id is not None:
+            if Task.objects.filter(project_id = project_id, name=name, is_active=1).exists():
+                raise Exception('任务名称已存在,请重新输入!')
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
