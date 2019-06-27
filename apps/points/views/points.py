@@ -45,7 +45,7 @@ class ProjectPointsExViewSet(APIView):
 
     def get(self, request):
         try:
-            project_id = request.data.get('project_id', None)
+            project_id = request.query_params.get('project_id', None)
             projectpointsex = ProjectPointsEx.objects.filter(project_id=project_id).first() or {}
             serializer = ProjectPointsExSerializer(projectpointsex)
         except Exception as e:

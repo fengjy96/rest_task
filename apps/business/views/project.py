@@ -696,23 +696,9 @@ class ProjectCostAnalysisView(APIView):
         计算所有成本
         """
 
-        project_manager_cost = self.get_project_manager_cost(project_id)
-        market_manager_cost = self.get_market_manager_cost(project_id)
-        task_manager_cost = self.get_task_manager_cost(project_id)
-        total_cost = project_manager_cost + market_manager_cost + task_manager_cost
-
-        total_obj = {}
-        total_obj["person_nums"] = ''
-        total_obj["user"] = ''
-        total_obj["duration"] = ''
-        total_obj["name"] = '合计'
-        total_obj["fee"] = ''
-        total_obj["total_fee"] = int(total_cost)
-        total_obj["task"] = {}
-        total_obj["type"] = 2
-        total_obj["role"] = ''
-
-        list_project_person_objects.append(total_obj)
+        self.get_project_manager_cost(project_id)
+        self.get_market_manager_cost(project_id)
+        self.get_task_manager_cost(project_id)
 
     def get_project_manager_cost(self, project_id):
         """
@@ -903,16 +889,6 @@ class ProjectFeeCostAnalysisView(APIView):
                                  list_project_fee_objects.append(fee_obj)
 
                                  all_total_fee = all_total_fee + int(total_fee)
-
-                        total_fee_obj = {}
-                        total_fee_obj["id"] = ''
-                        total_fee_obj["person_nums"] = ''
-                        total_fee_obj["duration"] = ''
-                        total_fee_obj["name"] = '合计'
-                        total_fee_obj["fee"] = ''
-                        total_fee_obj["total_fee"] = all_total_fee
-                        total_fee_obj["type"] = 2
-                        list_project_fee_objects.append(total_fee_obj)
 
                 return all_total_fee
 

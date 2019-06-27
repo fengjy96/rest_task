@@ -15,6 +15,6 @@ urlpatterns = [
     # 查积分
     path(r'api/v1/points', points.UserPointsViewSet.as_view(), name='points'),
     # 查剩余积分
-    path(r'api/v1/projectpointsex', points.ProjectPointsExViewSet.as_view(), name='project_points_ex'),
+    path(r'api/v1/project/leftpoints', points.ProjectPointsExViewSet.as_view(), name='project_points_ex'),
 
 ]
