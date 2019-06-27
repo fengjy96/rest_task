@@ -8,7 +8,7 @@ from configuration.models.task_conf import TaskQuality
 from utils.basic import MykeyResponse
 from rbac.models import UserProfile, Role
 from rest_framework.generics import ListAPIView
-from points.serializers import ProjectPointsSerializer, PointsSerializer
+from points.serializers import ProjectPointsSerializer, PointsSerializer, ProjectPointsExSerializer
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
@@ -18,6 +18,7 @@ from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
+from django.db.models import Sum
 
 
 class UserPointsViewSet(APIView):
@@ -31,6 +32,22 @@ class UserPointsViewSet(APIView):
             user_id = request.user.id
             points = Points.objects.filter(user_id=user_id).first() or {}
             serializer = PointsSerializer(points)
+        except Exception as e:
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
+        return MykeyResponse(serializer.data, status=status.HTTP_200_OK, msg='请求成功')
+
+
+class ProjectPointsExViewSet(APIView):
+    """
+    查剩余积分
+    """
+
+    def get(self, request):
+        try:
+            project_id = request.data.get('project_id', None)
+            projectpointsex = ProjectPointsEx.objects.filter(project_id=project_id).first() or {}
+            serializer = ProjectPointsExSerializer(projectpointsex)
         except Exception as e:
             msg = e.args if e else '请求失败'
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
@@ -100,7 +117,7 @@ class PointsAssignmentViewSet(ListAPIView):
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
 
-    permission_classes = (IsAuthenticated,)
+    #permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         try:
@@ -117,10 +134,34 @@ class PointsAssignmentViewSet(ListAPIView):
             self.create_project_sender_points(project_id, project_points, project_sender_percentage)
             self.create_task_receiver_points(project_id, project_points, project_receiver_percentage,
                                              project_sender_percentage)
+            self.create_projectpointsex(project_id, project_points, project_receiver_percentage,
+                                        project_sender_percentage)
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+
+    def create_projectpointsex(self, project_id, project_points, project_receiver_percentage, project_sender_percentage):
+        # 计算剩余积分
+        total_points = 0
+        projectpoints = ProjectPoints.objects.filter(project_id=project_id).aggregate(nums=Sum('points'))
+        if projectpoints['nums'] is not None:
+            total_points = projectpoints['nums']
+
+        left_points = int(project_points) - total_points
+
+        projectpointsexs = ProjectPointsEx.objects.filter(project_id=project_id)
+        if projectpointsexs.exists():
+            projectpointsex = ProjectPointsEx.objects.get(project_id=project_id)
+            projectpointsex.points = project_points
+            projectpointsex.left_points = left_points
+            projectpointsex.project_receiver_percentage = project_receiver_percentage
+            projectpointsex.project_sender_percentage = project_sender_percentage
+            projectpointsex.save()
+        else:
+            ProjectPointsEx.objects.create(project_id=project_id, points=project_points, left_points=left_points,
+                                           project_receiver_percentage=project_receiver_percentage,
+                                           project_sender_percentage=project_sender_percentage)
 
     def create_project_receiver_points(self, project_id, project_points, project_receiver_percentage):
         """
@@ -153,7 +194,7 @@ class PointsAssignmentViewSet(ListAPIView):
             project_receiver_points = (int(project_points) * int(project_receiver_percentage)) / 100
             project_receiver_points = int(project_receiver_points)
             # 商务人员积分
-            project_sender_points = (int(project_points) * int(project_receiver_percentage)) / 100
+            project_sender_points = (int(project_points) * int(project_sender_percentage)) / 100
             project_sender_points = int(project_sender_points)
 
             # 剩余积分=总积分-项目负责人积分-商务人员积分
