@@ -1,8 +1,8 @@
 from rest_framework import serializers
-
 from points.models.points import Points
 from points.models.projectpoints import ProjectPoints
 from points.models.pointsdetail import PointsDetail
+from points.models.projectpointsex import ProjectPointsEx
 
 
 class PointsSerializer(serializers.ModelSerializer):
@@ -49,4 +49,13 @@ class PointsDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PointsDetail
+        fields = '__all__'
+
+class ProjectPointsExSerializer(serializers.ModelSerializer):
+    """
+    积分明细：增删改查
+    """
+
+    class Meta:
+        model = ProjectPointsEx
         fields = '__all__'
