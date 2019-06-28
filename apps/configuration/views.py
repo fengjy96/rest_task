@@ -19,11 +19,12 @@ class ReasonTypeViewSet(ModelViewSet):
     原因类型：增删改查
     """
 
+    pagination_class = CommonPagination
     # 获取查询集
     queryset = ReasonType.objects.all()
     serializer_class = ReasonTypeSerializer
     # 指定授权类
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
@@ -33,6 +34,7 @@ class ProjectStatusViewSet(ModelViewSet):
     项目状态：增删改查
     """
 
+    pagination_class = CommonPagination
     # 获取查询集
     queryset = ProjectStatus.objects.all()
     serializer_class = ProjectStatusSerializer
@@ -50,13 +52,14 @@ class TaskStatusViewSet(ModelViewSet):
     任务状态：增删改查
     """
 
+    pagination_class = CommonPagination
     queryset = TaskStatus.objects.all()
     serializer_class = TaskStatusSerializer
     # 指定过滤 backends
     filter_backends = (DjangoFilterBackend, OrderingFilter,)
     ordering_fields = ('index',)
     # 指定授权类
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
     # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
@@ -65,6 +68,8 @@ class TaskTypeViewSet(ModelViewSet):
     """
     任务类型：增删改查
     """
+
+    pagination_class = CommonPagination
     queryset = TaskType.objects.all()
     serializer_class = TaskTypeSerializer
     permission_classes = (IsAuthenticated,)
@@ -74,6 +79,8 @@ class TaskStepViewSet(ModelViewSet):
     """
     任务步骤：增删改查
     """
+
+    pagination_class = CommonPagination
     queryset = TaskStep.objects.all()
     serializer_class = TaskStepSerializer
     permission_classes = (IsAuthenticated,)
@@ -116,6 +123,8 @@ class TaskDesignTypeViewSet(ModelViewSet):
     """
     任务设计类型：增删改查
     """
+
+    pagination_class = CommonPagination
     queryset = TaskDesignType.objects.all()
     serializer_class = TaskDesignTypeSerializer
     filter_backends = (DjangoFilterBackend,)
