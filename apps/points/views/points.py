@@ -84,7 +84,10 @@ class ProjectPointsViewSet(ModelViewSet):
 
             points_final = points_left - (points_modified - points_original)
             if points_final < 0:
-                raise Exception('剩余积分不够,请修改积分!')
+                if projectpointsex.left_points != 0:
+                    projectpointsex.left_points = 0
+                    projectpointsex.save()
+                return Response(status=status.HTTP_204_NO_CONTENT)
             else:
                # 更新剩余积分
                projectpointsex.left_points = points_final
