@@ -441,21 +441,6 @@ class ProjectAcceptView(APIView):
                 project.save()
                 BusinessPublic.create_message(project.receiver_id, project.sender_id, menu_id=2,
                                               messages='项目负责人已接手!')
-                self.update_task(project_id)
-
-    def update_task(self, project_id):
-        if project_id is not None:
-            from business.models.task import Task
-            tasks = Task.objects.filter(project_id=project_id)
-            for task in tasks:
-                if task:
-                    # 项目负责人已接手，项目正式开始
-                    task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
-                    if task.receiver.id is not None:
-                        task.save()
-
-                        BusinessPublic.create_message(task.sender_id, task.receiver.id, menu_id=2,
-                                                      messages='你有新的任务等待接手!')
 
 
 class ProjectRejectView(APIView):
