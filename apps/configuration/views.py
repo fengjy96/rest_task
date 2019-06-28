@@ -4,6 +4,7 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
+from common.custom import CommonPagination
 from configuration.models.project_conf import ProjectStatus
 from configuration.models.task_conf import TaskStep, TaskAssessment, TaskPriority, TaskQuality, TaskDesignType, TaskType, TaskStatus
 from configuration.models.reason_conf import ReasonType
@@ -100,6 +101,8 @@ class TaskQualityViewSet(ModelViewSet):
     """
     任务质量：增删改查
     """
+    # 指定分页类
+    pagination_class = CommonPagination
     queryset = TaskQuality.objects.all()
     serializer_class = TaskQualitySerializer
     permission_classes = (IsAuthenticated,)
