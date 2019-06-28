@@ -86,7 +86,7 @@ class TaskAssessment(models.Model):
     # company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     weight = models.FloatField(verbose_name='权重')
 
-    is_active = models.IntegerField(verbose_name='是否激活')
+    is_active = models.IntegerField(verbose_name='是否激活', default=1)
 
     def __str__(self):
         return self.name

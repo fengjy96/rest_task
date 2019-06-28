@@ -1,6 +1,6 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.filters import OrderingFilter
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
@@ -83,6 +83,8 @@ class TaskAssessmentViewSet(ModelViewSet):
     """
     任务评估
     """
+
+    pagination_class = CommonPagination
     queryset = TaskAssessment.objects.all()
     serializer_class = TaskAssessmentSerializer
     permission_classes = (IsAuthenticated,)
@@ -92,6 +94,8 @@ class TaskPriorityViewSet(ModelViewSet):
     """
     任务优先级：增删改查
     """
+
+    pagination_class = CommonPagination
     queryset = TaskPriority.objects.all()
     serializer_class = TaskPrioritySerializer
     permission_classes = (IsAuthenticated,)
@@ -101,7 +105,7 @@ class TaskQualityViewSet(ModelViewSet):
     """
     任务质量：增删改查
     """
-    # 指定分页类
+
     pagination_class = CommonPagination
     queryset = TaskQuality.objects.all()
     serializer_class = TaskQualitySerializer
