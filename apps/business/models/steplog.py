@@ -12,7 +12,7 @@ class StepLog(models.Model):
     step = models.ForeignKey(Step, null=True, blank=True, verbose_name='步骤标识', on_delete=models.CASCADE)
     title = models.CharField(default='', max_length=150, verbose_name='标题')
     progress = models.IntegerField(default=0, verbose_name='进度')
-    memo = models.CharField(default='', max_length=300, verbose_name='备注')
+    memo = models.CharField(null=True, blank=True, max_length=300, verbose_name='备注')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
 
