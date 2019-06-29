@@ -93,6 +93,7 @@ class TaskStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskStep
         fields = '__all__'
+        depth = 1
 
 
 class FeeSerializer(serializers.ModelSerializer):

@@ -1,10 +1,12 @@
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.filters import OrderingFilter
+from rest_framework.filters import OrderingFilter, SearchFilter
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from common.custom import CommonPagination
+from configuration.filters import TaskStepFilter
 from configuration.models.project_conf import ProjectStatus
 from configuration.models.task_conf import TaskStep, TaskAssessment, TaskPriority, TaskQuality, TaskDesignType, TaskType, TaskStatus
 from configuration.models.reason_conf import ReasonType
@@ -80,10 +82,14 @@ class TaskStepViewSet(ModelViewSet):
     任务步骤：增删改查
     """
 
-    pagination_class = CommonPagination
     queryset = TaskStep.objects.all()
-    serializer_class = TaskStepSerializer
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    ordering_fields = ('id',)
+    filter_class = TaskStepFilter
     permission_classes = (IsAuthenticated,)
+    authentication_classes = (JSONWebTokenAuthentication,)
+    pagination_class = CommonPagination
+    serializer_class = TaskStepSerializer
 
 
 class TaskAssessmentViewSet(ModelViewSet):
