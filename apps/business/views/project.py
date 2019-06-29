@@ -69,7 +69,6 @@ class ProjectViewSet(ModelViewSet):
         # 将当前登录用户作为项目创建人
         request.data['sender'] = request.user.id
         receiver_id = request.data.get('receiver', None)
-        name = request.data.get('name', None)
         # 如果存在项目负责人，则将项目接收状态置为 '已指派项目负责人'
         if receiver_id is not None:
             BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,

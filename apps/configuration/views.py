@@ -83,6 +83,7 @@ class TaskStepViewSet(ModelViewSet):
 
     queryset = TaskStep.objects.all()
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    search_fields = ('name',)
     ordering_fields = ('id',)
     filter_class = TaskStepFilter
     permission_classes = (IsAuthenticated,)
