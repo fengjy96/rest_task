@@ -16,7 +16,7 @@ router.register('task_design_types', TaskDesignTypeViewSet, basename='task_desig
 router.register('task_priorities', TaskPriorityViewSet, basename='task_priorities')
 router.register('task_qualities', TaskQualityViewSet, basename='task_qualities')
 router.register('task_steps', TaskStepViewSet, basename='task_steps')
-router.register('task_assessments', TaskAssessmentViewSet, basename='skills')
+router.register('task_assessments', TaskAssessmentViewSet, basename='task_assessments')
 
 urlpatterns = [
     # API

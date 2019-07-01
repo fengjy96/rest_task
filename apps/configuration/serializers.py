@@ -55,6 +55,17 @@ class TaskDesignTypeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class TaskDesignTypeListSerializer(serializers.ModelSerializer):
+    """
+    任务设计类型序列化
+    """
+
+    class Meta:
+        model = TaskDesignType
+        fields = '__all__'
+        depth = 1
+
+
 class TaskQualitySerializer(serializers.ModelSerializer):
     """
     任务质量序列化
@@ -83,6 +94,17 @@ class TaskAssessmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskAssessment
         fields = '__all__'
+
+
+class TaskStepListSerializer(serializers.ModelSerializer):
+    """
+    任务步骤列表序列化
+    """
+
+    class Meta:
+        model = TaskStep
+        fields = '__all__'
+        depth = 1
 
 
 class TaskStepSerializer(serializers.ModelSerializer):
