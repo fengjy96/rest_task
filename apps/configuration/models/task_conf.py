@@ -1,12 +1,11 @@
 from django.db import models
 
-# from rbac.models import Company
-
 
 class TaskStatus(models.Model):
     """
     任务状态
     """
+
     index = models.IntegerField(verbose_name='排序')
     value = models.IntegerField(verbose_name='状态真实序号')
     key = models.CharField(max_length=30, verbose_name='状态英文表示')
@@ -29,7 +28,7 @@ class TaskType(models.Model):
     name = models.CharField(max_length=30, verbose_name='类型名称')
     average_salary = models.IntegerField(default=0, verbose_name='平均工资')
     index = models.IntegerField(verbose_name='类型序号')
-    is_active = models.IntegerField(verbose_name='是否激活')
+    is_active = models.IntegerField(verbose_name='是否激活', default=1)
 
     def __str__(self):
         return self.name
@@ -86,7 +85,7 @@ class TaskAssessment(models.Model):
     # company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     weight = models.FloatField(verbose_name='权重')
 
-    is_active = models.IntegerField(verbose_name='是否激活')
+    is_active = models.IntegerField(verbose_name='是否激活', default=1)
 
     def __str__(self):
         return self.name
@@ -105,7 +104,7 @@ class TaskDesignType(models.Model):
     name = models.CharField(max_length=80, verbose_name='设计方式名称')
     index = models.IntegerField(verbose_name='设计方式序号')
 
-    is_active = models.IntegerField(verbose_name='是否激活')
+    is_active = models.IntegerField(verbose_name='是否激活', default=1)
 
     def __str__(self):
         return self.name
@@ -125,7 +124,7 @@ class TaskStep(models.Model):
     task_design_type = models.ForeignKey(TaskDesignType, null=True, blank=True, verbose_name='任务设计方式标识', on_delete=models.CASCADE)
     index = models.IntegerField(verbose_name='步骤序号')
 
-    is_active = models.IntegerField(verbose_name='是否激活')
+    is_active = models.IntegerField(verbose_name='是否激活', default=1)
 
     def __str__(self):
         return self.name
