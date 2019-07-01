@@ -209,8 +209,16 @@ class ProjectNameView(APIView):
     """
     判断项目名是否已存在
     """
+
     def post(self, request, format=None):
         name = request.data.get('name', None)
+        project_id = request.data.get('project_id', None)
+
+        if project_id is not None:
+            cur_project = Project.objects.get(id=project_id)
+            if name == cur_project.name:
+                return MykeyResponse(status=status.HTTP_200_OK, data={}, msg='请求成功')
+
         if name is not None:
             try:
                 Project.objects.get(name=name)

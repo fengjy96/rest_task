@@ -293,9 +293,17 @@ class TaskNameView(APIView):
     """
     判断任务名是否存在
     """
+
     def post(self, request, format=None):
         name = request.data.get('name', None)
         project_id = request.data.get('project_id', None)
+        task_id = request.data.get('task_id', None)
+
+        if task_id is not None:
+            cur_task = Task.objects.get(id=task_id)
+            if name == cur_task.name:
+                return MykeyResponse(status=status.HTTP_200_OK, data={}, msg='请求成功')
+
         if name is not None and project_id is not None:
             try:
                 Task.objects.get(name=name, project_id=project_id)
