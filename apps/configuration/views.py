@@ -12,7 +12,8 @@ from configuration.models.reason_conf import ReasonType
 from .serializers import (
     TaskTypeSerializer, TaskStepSerializer, TaskAssessmentSerializer,
     TaskPrioritySerializer, TaskQualitySerializer, TaskDesignTypeSerializer,
-    ProjectStatusSerializer, TaskStatusSerializer, ReasonTypeSerializer, TaskDesignTypeListSerializer)
+    ProjectStatusSerializer, TaskStatusSerializer, ReasonTypeSerializer, TaskDesignTypeListSerializer,
+    TaskStepListSerializer)
 
 
 class ReasonTypeViewSet(ModelViewSet):
@@ -91,6 +92,11 @@ class TaskStepViewSet(ModelViewSet):
     pagination_class = CommonPagination
     serializer_class = TaskStepSerializer
 
+    def get_serializer_class(self):
+        if self.action == 'list':
+            return TaskStepListSerializer
+        return TaskStepSerializer
+
 
 class TaskAssessmentViewSet(ModelViewSet):
     """
@@ -134,7 +140,7 @@ class TaskDesignTypeViewSet(ModelViewSet):
     queryset = TaskDesignType.objects.all()
     serializer_class = TaskDesignTypeSerializer
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('task_type_id',)
+    filter_fields = ('task_type',)
     permission_classes = (IsAuthenticated,)
 
     def get_serializer_class(self):

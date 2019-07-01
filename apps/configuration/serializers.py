@@ -96,6 +96,17 @@ class TaskAssessmentSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class TaskStepListSerializer(serializers.ModelSerializer):
+    """
+    任务步骤列表序列化
+    """
+
+    class Meta:
+        model = TaskStep
+        fields = '__all__'
+        depth = 1
+
+
 class TaskStepSerializer(serializers.ModelSerializer):
     """
     任务步骤序列化
@@ -104,7 +115,6 @@ class TaskStepSerializer(serializers.ModelSerializer):
     class Meta:
         model = TaskStep
         fields = '__all__'
-        depth = 1
 
 
 class FeeSerializer(serializers.ModelSerializer):
