@@ -53,7 +53,7 @@ class Role(models.Model):
     name = models.CharField(max_length=32, unique=True, verbose_name="角色")
     permissions = models.ManyToManyField("Permission", blank=True, verbose_name="权限")
     menus = models.ManyToManyField("Menu", blank=True, verbose_name="菜单")
-    desc = models.CharField(max_length=50, blank=True, null=True, verbose_name="描述")
+    desc = models.CharField(max_length=50, blank=True, default='', verbose_name="描述")
 
 
 class Organization(models.Model):
