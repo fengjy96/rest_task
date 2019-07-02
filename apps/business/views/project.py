@@ -87,7 +87,7 @@ class ProjectViewSet(ModelViewSet):
     def update(self, request, *args, **kwargs):
         project_id = str(kwargs['pk'])
         receiver_id = request.data.get('receiver', None)
-        if receiver_id is not None:
+        if receiver_id is not None and receiver_id != '':
             if project_id is not None:
                 project = Project.objects.get(id=project_id)
                 if project.receiver:
