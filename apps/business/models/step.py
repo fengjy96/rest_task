@@ -9,11 +9,19 @@ class Step(models.Model):
     """
     任务步骤
     """
+
+    LABEL_CHOICES = (
+        (0, '未开始'),
+        (1, '已更新'),
+        (2, '已反馈'),
+    )
+
     company = models.ForeignKey(Company, null=True, blank=True,verbose_name='公司标识', on_delete=models.CASCADE)
     task = models.ForeignKey(Task, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE)
     name = models.CharField(default='', max_length=80, verbose_name='步骤名称')
     index = models.IntegerField(null=True, blank=True,verbose_name='步骤序号')
     progress = models.IntegerField(verbose_name='步骤进度', default=0)
+    label = models.SmallIntegerField(choices=LABEL_CHOICES, default=0)
     task_design_type = models.ForeignKey(TaskDesignType, null=True, blank=True, verbose_name='设计方式', on_delete=models.CASCADE)
 
     is_active = models.IntegerField(default=1, verbose_name='是否激活')

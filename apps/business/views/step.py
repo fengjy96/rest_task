@@ -5,6 +5,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from business.models.step import Step
+from business.models.task import Task
 from business.serializers.step_serializer import StepSerializer, StepListSerializer
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -122,6 +123,8 @@ class StepProgressUpdateView(APIView):
                 step = Step.objects.get(id=step_id)
                 if step:
                     step.progress = progress
+                    # updated
+                    step.label = 1
                     step.save()
 
                     task_id = step.task_id
@@ -269,12 +272,25 @@ class StepLogFileFeedBackUpdateView(APIView):
             content = request.data.get('content', None)
             # 文件列表
             files = request.data.get('files', None)
+            # 步骤 id
+            step_id = request.data.get('step_id', None)
 
             # 增加日志
             if step_log_file_id is not None and type is not None and title is not None:
                 #if content or files:
                 feedback_log = FeedBackLog(step_log_file_id=step_log_file_id, type=type, title=title, memo=memo)
                 feedback_log.save()
+
+                if step_id is not None:
+                    step = Step.objects.get(id=step_id)
+                    # feedback
+                    step.label = 2
+                    step.save()
+
+                    task = Task.objects.get(id=step.task_id)
+                    # feedback
+                    task.label = 2
+                    task.save()
 
                 if files:
                     for file in files:

@@ -8,6 +8,8 @@ class StepListSerializer(serializers.ModelSerializer):
     任务步骤：查
     """
 
+    label = serializers.CharField(source='get_label_display')
+
     class Meta:
         model = Step
         fields = '__all__'

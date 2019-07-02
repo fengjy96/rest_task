@@ -12,9 +12,9 @@ class Task(models.Model):
     """
 
     LABEL_CHOICES = (
-        ('0', '未开始'),
-        ('1', '已更新'),
-        ('2', '已反馈'),
+        (0, '未开始'),
+        (1, '已更新'),
+        (2, '已反馈'),
     )
 
     company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
@@ -24,7 +24,7 @@ class Task(models.Model):
                                          on_delete=models.CASCADE)
     content = models.TextField(default='', blank=True, verbose_name='任务内容')
     progress = models.IntegerField(default=0, verbose_name='任务进度')
-    label = models.CharField(choices=LABEL_CHOICES, max_length=1, default=0)
+    label = models.SmallIntegerField(choices=LABEL_CHOICES, default=0)
     task_priority = models.ForeignKey(TaskPriority, null=True, blank=True, verbose_name='任务优先级',
                                       on_delete=models.CASCADE)
     task_quality = models.ForeignKey(TaskQuality, null=True, blank=True, verbose_name='任务质量', on_delete=models.CASCADE)
