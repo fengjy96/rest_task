@@ -9,6 +9,8 @@ class StepListSerializer(serializers.ModelSerializer):
     """
 
     label = serializers.CharField(source='get_label_display')
+    all_log_count = serializers.IntegerField()
+    today_log_count = serializers.IntegerField()
 
     class Meta:
         model = Step

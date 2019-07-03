@@ -1,3 +1,5 @@
+import datetime
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -46,6 +48,19 @@ class StepViewSet(ModelViewSet):
             return StepListSerializer
         return StepSerializer
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        self.add_logs_stat_to_step(queryset)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -79,6 +94,11 @@ class StepViewSet(ModelViewSet):
         BusinessPublic.update_progress_by_task_id(task_id)
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def add_logs_stat_to_step(self, queryset):
+        for step in queryset:
+            step.all_log_count = StepLog.objects.filter(step_id=step.id).count()
+            step.today_log_count = StepLog.objects.filter(step_id=step.id, add_time__gte=datetime.datetime.now().date()).count()
 
 
 class StepProgressUpdateView(APIView):
