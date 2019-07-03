@@ -239,7 +239,10 @@ class StepProgressUpdateLogsView(APIView):
             log_file_obj['title'] = feedback_log.title
             log_file_obj['memo'] = feedback_log.memo
             log_file_obj['add_time'] = feedback_log.add_time
-            log_file_obj['feedbacker'] = feedback_log.feedbacker.name
+            log_file_obj['feedbacker'] = {
+                "name": feedback_log.feedbacker.name,
+                "image": str(feedback_log.feedbacker.image),
+            } if feedback_log.feedbacker else {}
             log_file_obj["files"] = self.get_feedback_log_files(feedback_log.id)
             feedback_logs_list.append(log_file_obj)
 
@@ -390,7 +393,10 @@ class StepLogFileFeedBackLogView(APIView):
             log_obj['title'] = feedback_log.title
             log_obj['memo'] = feedback_log.memo
             log_obj['add_time'] = feedback_log.add_time
-            log_obj['feedbacker'] = feedback_log.feedbacker.name
+            log_obj['feedbacker'] = {
+                "name": feedback_log.feedbacker.name,
+                "image": str(feedback_log.feedbacker.image),
+            } if feedback_log.feedbacker else {}
             log_obj["files"] = self.get_feedback_log_files(feedback_log.id)
             feedback_logs_list.append(log_obj)
 
