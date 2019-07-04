@@ -152,6 +152,8 @@ class BusinessPublic:
         task = Task.objects.get(id=task_id)
         if task:
             task.progress = task_progress
+            # updated
+            task.label = 1
             if task_progress == 100:
                 task.receive_status = cls.GetTaskStatusObjectByKey('finished')
                 task.finish_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')

@@ -49,7 +49,7 @@ class UploadFilesView(views.APIView):
                                                                      path_month, path_day, extension, filename)
 
                     # 如果上传的文件是图片类型，则生成相应尺寸的缩略图
-                    img_formats = ['jpg', 'jpeg', 'png', 'bmp']
+                    img_formats = ['jpg', 'jpeg', 'png', 'bmp', 'gif']
                     if extension in img_formats:
                         img = Image.open(file)
                         img_w900 = self.make_thumb(img, 900)

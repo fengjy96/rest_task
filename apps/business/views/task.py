@@ -348,6 +348,8 @@ class TaskReceiverView(APIView):
         user_role_list = self.get_user_roles(user_id)
         users = UserProfile.objects.filter(superior_id=user_id)
 
+        users = self.filter_user(request, users)
+
         sign = True
 
         if '项目负责人' in user_role_list:
@@ -402,6 +404,18 @@ class TaskReceiverView(APIView):
             user_roles = user.roles.all()
             user_role_list = [role.name for role in user_roles]
             return user_role_list
+
+    def filter_user(self, request, queryset):
+        q = Q()
+
+        task_type_ids = request.query_params.get('task_type_ids', None)
+        if task_type_ids:
+            task_type_ids = task_type_ids.split(',')
+            q.add(Q(skills__in=task_type_ids), Q.AND)
+
+        queryset = queryset.filter(q)
+
+        return queryset.distinct()
 
 
 class TaskAcceptView(APIView):
