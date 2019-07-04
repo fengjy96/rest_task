@@ -38,7 +38,7 @@ class Task(models.Model):
     comments = models.CharField(default='', max_length=80, blank=True, verbose_name='任务评语')
     points = models.IntegerField(default=0, verbose_name='任务积分')
 
-    memo = models.CharField(null=True, blank=True, max_length=800, verbose_name='任务备注')
+    memo = models.CharField(default='', max_length=800, verbose_name='任务备注')
 
     project = models.ForeignKey(Project, null=True, blank=True, verbose_name='项目标识', on_delete=models.CASCADE)
     sender = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='发送者', on_delete=models.CASCADE,
@@ -74,6 +74,7 @@ class TaskAllocateReason(models.Model):
     """
     任务备注表模型：当发生任务转派时，用于存储转派原因
     """
+
     task = models.ForeignKey(Task, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE)
     reason = models.CharField(max_length=100, default='', verbose_name='转派原因')
     transfer_nums = models.IntegerField(default=0, verbose_name='流转次数')

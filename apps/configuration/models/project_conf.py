@@ -9,7 +9,7 @@ class ProjectStatus(models.Model):
     value = models.IntegerField(verbose_name='状态真实序号')
     key = models.CharField(max_length=30, verbose_name='状态英文表示')
     text = models.CharField(max_length=30, verbose_name='状态中文表示')
-    desc = models.CharField(max_length=50, null=True, blank=True, verbose_name='状态描述')
+    desc = models.CharField(max_length=50, default='', verbose_name='状态描述')
 
     def __str__(self):
         return self.text

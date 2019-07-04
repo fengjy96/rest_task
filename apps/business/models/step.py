@@ -16,21 +16,24 @@ class Step(models.Model):
         (2, '已反馈'),
     )
 
-    company = models.ForeignKey(Company, null=True, blank=True,verbose_name='公司标识', on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     task = models.ForeignKey(Task, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE)
     name = models.CharField(default='', max_length=80, verbose_name='步骤名称')
-    index = models.IntegerField(null=True, blank=True,verbose_name='步骤序号')
+    index = models.IntegerField(null=True, blank=True, verbose_name='步骤序号')
     progress = models.IntegerField(verbose_name='步骤进度', default=0)
     label = models.SmallIntegerField(choices=LABEL_CHOICES, default=0)
-    task_design_type = models.ForeignKey(TaskDesignType, null=True, blank=True, verbose_name='设计方式', on_delete=models.CASCADE)
+    task_design_type = models.ForeignKey(TaskDesignType, null=True, blank=True, verbose_name='设计方式',
+                                         on_delete=models.CASCADE)
 
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
     is_finished = models.IntegerField(default=0, verbose_name='是否完成')
 
-    sender = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='发送者', on_delete=models.CASCADE, related_name='step_sender')
-    receiver = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='接收者', on_delete=models.CASCADE, related_name='step_receiver')
-    # receive_status = models.IntegerField(default=0, verbose_name='接收状态')
-    auditor = models.ForeignKey(UserProfile, null=True, blank=True,verbose_name='审核员', on_delete=models.CASCADE, related_name='step_auditor')
+    sender = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='发送者', on_delete=models.CASCADE,
+                               related_name='step_sender')
+    receiver = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='接收者', on_delete=models.CASCADE,
+                                 related_name='step_receiver')
+    auditor = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='审核员', on_delete=models.CASCADE,
+                                related_name='step_auditor')
     audit_status = models.IntegerField(default=0, verbose_name='审核状态')
 
     begin_time = models.DateField(null=True, blank=True, verbose_name='开始时间')
@@ -52,6 +55,7 @@ class StepRejectReason(models.Model):
     """
     任务步骤驳回原因表模型：当发生步骤驳回时，用于存储任务驳回原因
     """
+
     step = models.ForeignKey(Step, null=True, blank=True, verbose_name='步骤标识', on_delete=models.CASCADE)
     reason = models.CharField(max_length=100, default='', verbose_name='驳回原因')
     transfer_nums = models.IntegerField(default=0, verbose_name='驳回次数')
