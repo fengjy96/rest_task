@@ -323,18 +323,17 @@ class TaskImportView(APIView):
             # 获取项目标识
             project_id = request.data.get('project_id', None)
             # 获取用户上传的文件,保存到服务器,再添加到数据库
-            #files = request.data.get('files', [])
+            files = request.data.get('files', [])
 
-            #for file in files:
-            #path = '{}{}'.format(settings.BASE_DIR, file['url'])
-            path = '{}{}'.format(settings.BASE_DIR, '/media/8a6f3aa8-6a20-46f7-b9b3-ded0bc69722c.xls')
+            for file in files:
+                path = '{}{}'.format(settings.BASE_DIR, file['url'])
 
-            if os.path.exists(path):
-                datalist = Excel.import_excel_data(project_id, path)
-                os.remove(path)
-                return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=datalist)
-            else:
-                return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='文件不存在')
+                if os.path.exists(path):
+                    datalist = Excel.import_excel_data(project_id, path)
+                    os.remove(path)
+                    return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=datalist)
+                else:
+                    return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='文件不存在')
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
 
