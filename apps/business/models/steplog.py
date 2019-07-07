@@ -2,6 +2,7 @@ from django.db import models
 
 from business.models.step import Step
 from business.models.task import Task
+from rbac.models import UserProfile
 
 
 class StepLog(models.Model):
@@ -35,6 +36,8 @@ class FeedBackLog(models.Model):
     memo = models.CharField(default='', max_length=300, verbose_name='备注')
     is_active = models.IntegerField(default=1, verbose_name='是否激活')
     add_time = models.DateTimeField(auto_now_add=True, verbose_name='添加时间')
+    feedbacker = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='反馈者', on_delete=models.CASCADE,
+                                   related_name='feedbacker')
 
     def __str__(self):
         return self.title

@@ -27,7 +27,7 @@ class Excel:
                     # 查看行值是否为空
                     if row:
                         # 判断该行值是否在数据库中重复
-                        if Task.objects.filter(name=row[0], project_id=project_id).exists():
+                        if Task.objects.filter(name=row[0].strip(), project_id=project_id, is_active=1).exists():
                             x = x + 1  # 重复值计数
                             dict_obj = {}
                             dict_obj["info"] = '第' + str(n) + '行,第1列任务名称重复'
@@ -35,25 +35,25 @@ class Excel:
                             z = z + 1
                             continue
                         else:
-                            if not TaskType.objects.filter(name=row[1]).exists():
+                            if not TaskType.objects.filter(name=row[1].strip()).exists():
                                 dict_obj = {}
                                 dict_obj["info"] = '第' + str(n) + '行,第2列任务类型不存在'
                                 DataList.append(dict_obj)
                                 z = z + 1
                                 continue
-                            if not TaskPriority.objects.filter(name=row[3]).exists():
+                            if not TaskPriority.objects.filter(name=row[3].strip()).exists():
                                 dict_obj = {}
                                 dict_obj["info"] = '第' + str(n) + '行,第4列任务优先级不存在'
                                 DataList.append(dict_obj)
                                 z = z + 1
                                 continue
-                            if not TaskQuality.objects.filter(name=row[4]).exists():
+                            if not TaskQuality.objects.filter(name=row[4].strip()).exists():
                                 dict_obj = {}
                                 dict_obj["info"] = '第' + str(n) + '行,第5列任务品质要求不存在'
                                 DataList.append(dict_obj)
                                 z = z + 1
                                 continue
-                            if not UserProfile.objects.filter(name=row[7]).exists() and row[7] != '':
+                            if not UserProfile.objects.filter(name=row[7].strip()).exists() and row[7].strip() != '':
                                 dict_obj = {}
                                 dict_obj["info"] = '第' + str(n) + '行,第8列任务负责人不存在'
                                 DataList.append(dict_obj)
@@ -71,17 +71,17 @@ class Excel:
                                 DataList.append(dict_obj)
                                 z = z + 1
                                 continue
+                            if row[7].strip() != '':
+                                task_type = TaskType.objects.get(name=row[1].strip())
+                                receiver = UserProfile.objects.get(name=row[7].strip())
+                                user_skill_ids = cls.get_user_skills(receiver.id)
 
-                            task_type = TaskType.objects.get(name=row[1])
-                            receiver = UserProfile.objects.get(name=row[7])
-                            user_skill_ids = cls.get_user_skills(receiver.id)
-
-                            if task_type.id not in user_skill_ids:
-                                dict_obj = {}
-                                dict_obj["info"] = '第' + str(n) + '行,第2列的技能不在任务负责人的技能列表'
-                                DataList.append(dict_obj)
-                                z = z + 1
-                                continue
+                                if task_type.id not in user_skill_ids:
+                                    dict_obj = {}
+                                    dict_obj["info"] = '第' + str(n) + '行,第2列的技能不在任务负责人的技能列表'
+                                    DataList.append(dict_obj)
+                                    z = z + 1
+                                    continue
                             if project_id is not None:
                                 # 根据项目 id 查项目负责人
                                 project = Project.objects.get(id=project_id)
@@ -94,7 +94,7 @@ class Excel:
 
                             # 如果创建任务时指定了任务负责人，则任务接收状态为 1 - 已安排任务负责人
                             auditor = None
-                            if row[7]:
+                            if row[7].strip() != '':
                                 if project_id is not None:
                                     # 根据项目 id 查项目审核状态
                                     project = Project.objects.get(id=project_id)
@@ -113,22 +113,26 @@ class Excel:
                                 auditor = UserProfile.objects.get(id=project_receiver_id)
 
                             project = Project.objects.get(id=project_id)
-                            task_type = TaskType.objects.get(name=row[1])
-                            task_priority = TaskPriority.objects.get(name=row[3])
-                            task_quality = TaskQuality.objects.get(name=row[4])
-                            receiver = UserProfile.objects.get(name=row[7])
-                            sender = UserProfile.objects.get(id=project_receiver_id)
+                            task_type = TaskType.objects.get(name=row[1].strip())
+                            task_priority = TaskPriority.objects.get(name=row[3].strip())
+                            task_quality = TaskQuality.objects.get(name=row[4].strip())
+                            receiver = None
+                            if row[7].strip() != '':
+                                receiver = UserProfile.objects.get(name=row[7].strip())
+                            sender = None
+                            if project_receiver_id:
+                                sender = UserProfile.objects.get(id=project_receiver_id)
 
                             WorkList.append(Task(project=project,
-                                                 name=row[0],
+                                                 name=row[0].strip(),
                                                  task_type=task_type,
-                                                 content=row[2],
+                                                 content=row[2].strip(),
                                                  task_priority=task_priority,
                                                  task_quality=task_quality,
                                                  begin_time=cls.getDate(row[5], data),
                                                  end_time=cls.getDate(row[6], data),
                                                  receiver=receiver,
-                                                 memo=row[8],
+                                                 memo=row[8].strip(),
                                                  sender=sender,
                                                  auditor=auditor,
                                                  receive_status=receive_status,

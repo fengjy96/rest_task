@@ -21,6 +21,7 @@ from business.models.step import Step
 from business.models.files import Files, ProgressTexts
 from configuration.models.task_conf import TaskStatus, TaskDesignType, TaskAssessment, TaskStep
 from business.models.steplog import TaskLog
+from points.models.projectpoints import ProjectPoints
 from business.views.excel import Excel
 from django.conf import settings
 import uuid
@@ -66,7 +67,8 @@ class TaskViewSet(ModelViewSet):
         content = request.data.get('content', None)
         # 文件
         files = request.data.get('files', None)
-
+        # 任务名称
+        name = request.data.get('name', None)
         if project_id is not None:
             # 根据项目 id 查项目负责人
             project = Project.objects.get(id=project_id)
@@ -95,6 +97,11 @@ class TaskViewSet(ModelViewSet):
         # 如果创建任务时未指定任务负责人，则任务接收状态为 0 - 未安排任务负责人
         else:
             request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
+
+        if project_id is not None:
+            if Task.objects.filter(project_id = project_id, name=name, is_active=1).exists():
+                raise Exception('任务名称已存在,请重新输入!')
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -124,18 +131,34 @@ class TaskViewSet(ModelViewSet):
         request.data['superior'] = request.user.id
         # 文件
         files = request.data.get('files', None)
+        receiver_id = request.data.get('receiver', None)
+        project_id = request.data.get('project', None)
+        task_id = str(kwargs['pk'])
 
-        if request.data.get('receiver', None):
-            project_id = request.data.get('project', None)
-            if project_id is not None:
-                # 根据项目 id 查项目审核状态
-                project = Project.objects.get(id=project_id)
-                if project.audit_status == 2:
-                    request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
-                else:
-                    request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
-        else:
-            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
+        if project_id is not None:
+            project = Project.objects.get(id=project_id)
+            if receiver_id is not None:
+                if task_id is not None:
+                    task = Task.objects.get(id=task_id)
+                    if task.receiver:
+                        if receiver_id != str(task.receiver.id):
+                            # 如果更换任务负责人,需要重新发布
+                            request.data['is_published'] = 0
+                            if project.audit_status == 2:
+                                request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
+                            else:
+                                request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
+                    else:
+                        request.data['is_published'] = 0
+                        if project.audit_status == 2:
+                            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
+                        else:
+                            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
+
+            else:
+                request.data['is_published'] = 0
+                request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
+
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
@@ -157,7 +180,7 @@ class TaskViewSet(ModelViewSet):
 
         queryset = self.filter_list_queryset(request, queryset)
 
-        queryset = self.filter_task_hall(request, queryset)
+        queryset = self.filter_task(request, queryset)
 
         page = self.paginate_queryset(queryset)
         if page is not None:
@@ -167,9 +190,9 @@ class TaskViewSet(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-    def filter_task_hall(self, request, queryset):
+    def filter_task(self, request, queryset):
         """
-        根据输入条件查询相应的任务
+        根据前端传递的查询参数过滤对应的任务
         :param request:
         :param queryset:
         :return:
@@ -190,6 +213,21 @@ class TaskViewSet(ModelViewSet):
         if task_quality_ids:
             task_quality_ids = task_quality_ids.split(',')
             q.add(Q(task_quality__in=task_quality_ids), Q.AND)
+
+        receive_status_ids = request.query_params.get('receive_status_ids', None)
+        if receive_status_ids:
+            receive_status_ids = receive_status_ids.split(',')
+            q.add(Q(receive_status__in=receive_status_ids), Q.AND)
+
+        audit_status_ids = request.query_params.get('audit_status_ids', None)
+        if audit_status_ids:
+            audit_status_ids = audit_status_ids.split(',')
+            q.add(Q(audit_status__in=audit_status_ids), Q.AND)
+
+        publish_status_ids = request.query_params.get('publish_status_ids', None)
+        if publish_status_ids:
+            publish_status_ids = publish_status_ids.split(',')
+            q.add(Q(is_published__in=publish_status_ids), Q.AND)
 
         queryset = queryset.filter(q)
 
@@ -251,6 +289,30 @@ class TaskViewSet(ModelViewSet):
             return user_role_list
 
 
+class TaskNameView(APIView):
+    """
+    判断任务名是否存在
+    """
+
+    def post(self, request, format=None):
+        name = request.data.get('name', None)
+        project_id = request.data.get('project_id', None)
+        task_id = request.data.get('task_id', None)
+
+        if task_id is not None:
+            cur_task = Task.objects.get(id=task_id)
+            if name == cur_task.name:
+                return MykeyResponse(status=status.HTTP_200_OK, data={}, msg='请求成功')
+
+        if name is not None and project_id is not None:
+            try:
+                Task.objects.get(name=name, project_id=project_id)
+                return MykeyResponse(status=status.HTTP_200_OK, data={'msg': '该任务名已存在，请重新输入'}, msg='请求成功')
+            except Exception as e:
+                return MykeyResponse(status=status.HTTP_200_OK, data={}, msg='请求成功')
+        return MykeyResponse(status=status.HTTP_200_OK, data={}, msg='请求成功')
+
+
 class TaskImportView(APIView):
     """
     上传单个Excel文件
@@ -264,7 +326,8 @@ class TaskImportView(APIView):
             files = request.data.get('files', [])
 
             for file in files:
-                path = '{}/{}'.format(settings.MEDIA_ROOT, file['name'])
+                path = '{}{}'.format(settings.BASE_DIR, file['url'])
+
                 if os.path.exists(path):
                     datalist = Excel.import_excel_data(project_id, path)
                     os.remove(path)
@@ -286,6 +349,8 @@ class TaskReceiverView(APIView):
         user_role_list = self.get_user_roles(user_id)
         users = UserProfile.objects.filter(superior_id=user_id)
 
+        users = self.filter_user(request, users)
+
         sign = True
 
         if '项目负责人' in user_role_list:
@@ -304,7 +369,7 @@ class TaskReceiverView(APIView):
         else:
             for user in users:
                 # tasks = Task.objects.filter(receiver_id=user.id, is_active=1, receive_status__lte=3)
-                tasks = Task.objects.filter(~Q(receive_status=BusinessPublic.GetTaskStatusIdByKey('accepted')),
+                tasks = Task.objects.filter(~Q(receive_status=BusinessPublic.GetTaskStatusIdByKey('checked')),
                                             receiver_id=user.id, is_active=1)
 
                 if len(tasks) > 0:
@@ -341,6 +406,18 @@ class TaskReceiverView(APIView):
             user_role_list = [role.name for role in user_roles]
             return user_role_list
 
+    def filter_user(self, request, queryset):
+        q = Q()
+
+        task_type_ids = request.query_params.get('task_type_ids', None)
+        if task_type_ids:
+            task_type_ids = task_type_ids.split(',')
+            q.add(Q(skills__in=task_type_ids), Q.AND)
+
+        queryset = queryset.filter(q)
+
+        return queryset.distinct()
+
 
 class TaskAcceptView(APIView):
     """
@@ -360,7 +437,7 @@ class TaskAcceptView(APIView):
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
     def update_task(self, request, task_id, task_design_type_id):
-        if task_id is not None:
+        if task_id is not None and task_design_type_id is not None:
             from business.models.task import Task
             task = Task.objects.get(id=task_id)
             if task is not None:
@@ -370,21 +447,21 @@ class TaskAcceptView(APIView):
                     task.receiver = request.user
                 task.task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
                 task.save()
-                self.create_step(task_id, task_design_type_id)
+                self.create_step(task_id, task_design_type_id, request.user)
                 BusinessPublic.create_message(task.receiver.id, task.sender.id, menu_id=2,
                                               messages='任务负责人已接手,任务执行中!')
 
-    def create_step(self, task_id, task_design_type_id):
-        if task_id is not None:
+    def create_step(self, task_id, task_design_type_id, receiver):
+        if task_id is not None and task_design_type_id is not None and receiver:
             task = Task.objects.get(id=task_id)
             task_design_type = TaskDesignType.objects.get(id=task_design_type_id)
 
             tasksteps = TaskStep.objects.filter(task_design_type_id=task_design_type_id)
             for taskstep in tasksteps:
                 if taskstep:
-                    step = Step.objects.filter(task_id=task.id, name=taskstep.name, task_design_type_id=taskstep.task_design_type.id)
-                    if not step.exists():
-                        Step.objects.create(name=taskstep.name,index=taskstep.index,task=task,task_design_type=task_design_type)
+                    #step = Step.objects.filter(task_id=task.id, name=taskstep.name, task_design_type_id=taskstep.task_design_type.id)
+                    #if not step.exists():
+                    Step.objects.create(name=taskstep.name,index=taskstep.index,task=task,task_design_type=task_design_type, receiver=receiver)
 
 
 class TaskRejectView(APIView):
@@ -534,12 +611,16 @@ class TaskAllocateView(APIView):
                 from business.models.task import Task
                 task = Task.objects.get(id=task_id)
                 if task is not None:
+                    old_receiver_id = task.receiver.id
                     receiver = UserProfile.objects.get(id=receiver_id)
                     task.receiver = receiver
                     task.superior_id = request.user.id
                     task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
                     task.save()
-
+                    if old_receiver_id != receiver_id:
+                        # 转移积分
+                        ProjectPoints.objects.filter(user_id=task.receiver.id, is_created=0,
+                                                     project_id=task.project.id).update(user_id=receiver_id)
                     BusinessPublic.create_message(task.superior.id, task.receiver.id, menu_id=2,
                                                   messages='已安排新的任务,请查看!')
 
@@ -668,3 +749,8 @@ class TaskPublishView(APIView):
                 task.publish_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 task.receive_status = BusinessPublic.GetTaskStatusObjectByKey('wait_accept')
                 task.save()
+
+                if task.receiver:
+                   #新增消息
+                   BusinessPublic.create_message(task.sender.id, task.receiver.id, menu_id=2,
+                                                 messages='已安排新的任务,请查看!')

@@ -1,5 +1,6 @@
 from rest_framework import status
 from points.models.projectpoints import ProjectPoints
+from points.models.projectpointsex import ProjectPointsEx
 from business.models.project import Project
 from business.models.task import Task
 from configuration.models.task_conf import TaskPriority
@@ -7,13 +8,17 @@ from configuration.models.task_conf import TaskQuality
 from utils.basic import MykeyResponse
 from rbac.models import UserProfile, Role
 from rest_framework.generics import ListAPIView
-from points.serializers import ProjectPointsSerializer, PointsSerializer
+from points.serializers import ProjectPointsSerializer, PointsSerializer, ProjectPointsExSerializer
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from common.custom import CommonPagination
 from points.models.points import Points
 from rest_framework.views import APIView
+from rest_framework.viewsets import ModelViewSet
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Sum
 
 
 class UserPointsViewSet(APIView):
@@ -25,7 +30,7 @@ class UserPointsViewSet(APIView):
         try:
             # 获取当前用户 id
             user_id = request.user.id
-            points = Points.objects.get(user_id=user_id)
+            points = Points.objects.filter(user_id=user_id).first() or {}
             serializer = PointsSerializer(points)
         except Exception as e:
             msg = e.args if e else '请求失败'
@@ -33,7 +38,76 @@ class UserPointsViewSet(APIView):
         return MykeyResponse(serializer.data, status=status.HTTP_200_OK, msg='请求成功')
 
 
-class PointsAssignmentView(ListAPIView):
+class ProjectPointsExViewSet(APIView):
+    """
+    查剩余积分
+    """
+
+    def get(self, request):
+        try:
+            project_id = request.query_params.get('project_id', None)
+            projectpointsex = ProjectPointsEx.objects.filter(project_id=project_id).first() or {}
+            serializer = ProjectPointsExSerializer(projectpointsex)
+        except Exception as e:
+            msg = e.args if e else '请求失败'
+            return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
+        return MykeyResponse(serializer.data, status=status.HTTP_200_OK, msg='请求成功')
+
+
+class ProjectPointsViewSet(ModelViewSet):
+    """
+    项目积分修改
+    """
+
+    queryset = ProjectPoints.objects.all()
+    serializer_class = ProjectPointsSerializer
+    pagination_class = CommonPagination
+    filter_backends = (DjangoFilterBackend, OrderingFilter)
+    filter_fields = ('project_id',)
+    ordering_fields = ('id',)
+    authentication_classes = (JSONWebTokenAuthentication,)
+
+    permission_classes = (IsAuthenticated,)
+
+    def update(self, request, *args, **kwargs):
+        projectpoints_id = str(kwargs['pk'])
+        # 修改后的积分
+        points_modified = request.data.get('points', None)
+
+        if projectpoints_id is not None and points_modified is not None:
+            projectpoint = ProjectPoints.objects.get(id=projectpoints_id)
+            project_id = projectpoint.project_id
+            points_original = projectpoint.points
+
+            projectpointsex = ProjectPointsEx.objects.get(project_id=project_id)
+            points_left = projectpointsex.left_points
+
+            points_final = points_left - (points_modified - points_original)
+            if points_final < 0:
+                if projectpointsex.left_points != 0:
+                    projectpointsex.left_points = 0
+                    projectpointsex.save()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            else:
+               # 更新剩余积分
+               projectpointsex.left_points = points_final
+               projectpointsex.save()
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
+
+
+class PointsAssignmentViewSet(ListAPIView):
     """
     项目积分分配
     """
@@ -46,7 +120,7 @@ class PointsAssignmentView(ListAPIView):
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
 
-    # permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated,)
 
     def post(self, request, format=None):
         try:
@@ -63,10 +137,34 @@ class PointsAssignmentView(ListAPIView):
             self.create_project_sender_points(project_id, project_points, project_sender_percentage)
             self.create_task_receiver_points(project_id, project_points, project_receiver_percentage,
                                              project_sender_percentage)
+            self.create_projectpointsex(project_id, project_points, project_receiver_percentage,
+                                        project_sender_percentage)
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
+
+    def create_projectpointsex(self, project_id, project_points, project_receiver_percentage, project_sender_percentage):
+        # 计算剩余积分
+        total_points = 0
+        projectpoints = ProjectPoints.objects.filter(project_id=project_id).aggregate(nums=Sum('points'))
+        if projectpoints['nums'] is not None:
+            total_points = projectpoints['nums']
+
+        left_points = int(project_points) - total_points
+
+        projectpointsexs = ProjectPointsEx.objects.filter(project_id=project_id)
+        if projectpointsexs.exists():
+            projectpointsex = ProjectPointsEx.objects.get(project_id=project_id)
+            projectpointsex.points = project_points
+            projectpointsex.left_points = left_points
+            projectpointsex.project_receiver_percentage = project_receiver_percentage
+            projectpointsex.project_sender_percentage = project_sender_percentage
+            projectpointsex.save()
+        else:
+            ProjectPointsEx.objects.create(project_id=project_id, points=project_points, left_points=left_points,
+                                           project_receiver_percentage=project_receiver_percentage,
+                                           project_sender_percentage=project_sender_percentage)
 
     def create_project_receiver_points(self, project_id, project_points, project_receiver_percentage):
         """
@@ -99,7 +197,7 @@ class PointsAssignmentView(ListAPIView):
             project_receiver_points = (int(project_points) * int(project_receiver_percentage)) / 100
             project_receiver_points = int(project_receiver_points)
             # 商务人员积分
-            project_sender_points = (int(project_points) * int(project_receiver_percentage)) / 100
+            project_sender_points = (int(project_points) * int(project_sender_percentage)) / 100
             project_sender_points = int(project_sender_points)
 
             # 剩余积分=总积分-项目负责人积分-商务人员积分

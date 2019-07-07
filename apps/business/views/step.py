@@ -1,3 +1,5 @@
+import datetime
+
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -5,6 +7,7 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 
 from business.models.step import Step
+from business.models.task import Task
 from business.serializers.step_serializer import StepSerializer, StepListSerializer
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -45,6 +48,19 @@ class StepViewSet(ModelViewSet):
             return StepListSerializer
         return StepSerializer
 
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        self.add_logs_stat_to_step(queryset)
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -79,6 +95,12 @@ class StepViewSet(ModelViewSet):
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
+    def add_logs_stat_to_step(self, queryset):
+        for step in queryset:
+            step.all_log_count = StepLog.objects.filter(step_id=step.id).count()
+            step.today_log_count = StepLog.objects.filter(step_id=step.id,
+                                                          add_time__gte=datetime.datetime.now().date()).count()
+
 
 class StepProgressUpdateView(APIView):
     """
@@ -102,6 +124,7 @@ class StepProgressUpdateView(APIView):
 
             # 增加步骤日志
             if step_id is not None and title is not None and progress is not None:
+                # if content or files:
                 step_log = StepLog(step_id=step_id, title=title, progress=progress, memo=memo)
                 step_log.save()
 
@@ -109,7 +132,8 @@ class StepProgressUpdateView(APIView):
                     for file in files:
                         # 增加文件表记录
                         step_log_file = Files(steplog=step_log, name=file['name'], path=file['url'],
-                                              path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
+                                              path_thumb_w200=file.get('path_thumb_w200', ''),
+                                              path_thumb_w900=file.get('path_thumb_w900', ''))
                         step_log_file.save()
 
                 # 如果存在富文本，则先添加富文本
@@ -121,6 +145,8 @@ class StepProgressUpdateView(APIView):
                 step = Step.objects.get(id=step_id)
                 if step:
                     step.progress = progress
+                    # updated
+                    step.label = 1
                     step.save()
 
                     task_id = step.task_id
@@ -213,6 +239,10 @@ class StepProgressUpdateLogsView(APIView):
             log_file_obj['title'] = feedback_log.title
             log_file_obj['memo'] = feedback_log.memo
             log_file_obj['add_time'] = feedback_log.add_time
+            log_file_obj['feedbacker'] = {
+                "name": feedback_log.feedbacker.name,
+                "image": str(feedback_log.feedbacker.image),
+            } if feedback_log.feedbacker else {}
             log_file_obj["files"] = self.get_feedback_log_files(feedback_log.id)
             feedback_logs_list.append(log_file_obj)
 
@@ -236,7 +266,6 @@ class StepProgressUpdateLogsView(APIView):
             log_file_obj['add_time'] = log_file.add_time
             feedback_log_file_list.append(log_file_obj)
 
-
         feedback_log_contents = FeedBackTexts.objects.filter(feedbacklog_id=id)
         for log_content in feedback_log_contents:
             log_text_obj = {}
@@ -256,29 +285,40 @@ class StepLogFileFeedBackUpdateView(APIView):
 
     def post(self, request):
         try:
+            user_id = request.user.id
             # 文件或者富文本标识
             step_log_file_id = request.data.get('step_log_file_id', None)
-            # 类型
             type = request.data.get('type', None)
-            # 标题
             title = request.data.get('title', None)
-            # 备注
             memo = request.data.get('memo', None)
-            # 内容
             content = request.data.get('content', None)
-            # 文件列表
             files = request.data.get('files', None)
+            step_id = request.data.get('step_id', None)
 
             # 增加日志
             if step_log_file_id is not None and type is not None and title is not None:
-                feedback_log = FeedBackLog(step_log_file_id=step_log_file_id, type=type, title=title, memo=memo)
+                # if content or files:
+                feedback_log = FeedBackLog(step_log_file_id=step_log_file_id, type=type, title=title, memo=memo,
+                                           feedbacker_id=user_id)
                 feedback_log.save()
+
+                if step_id is not None:
+                    step = Step.objects.get(id=step_id)
+                    # feedback
+                    step.label = 2
+                    step.save()
+
+                    task = Task.objects.get(id=step.task_id)
+                    # feedback
+                    task.label = 2
+                    task.save()
 
                 if files:
                     for file in files:
                         # 增加文件表记录
                         feedback_file = FeedBacks(feedbacklog=feedback_log, name=file['name'], path=file['url'],
-                                                  path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
+                                                  path_thumb_w200=file.get('path_thumb_w200', ''),
+                                                  path_thumb_w900=file.get('path_thumb_w900', ''))
                         feedback_file.save()
 
                 # 如果存在反馈富文本,则先添加反馈富文本
@@ -353,6 +393,10 @@ class StepLogFileFeedBackLogView(APIView):
             log_obj['title'] = feedback_log.title
             log_obj['memo'] = feedback_log.memo
             log_obj['add_time'] = feedback_log.add_time
+            log_obj['feedbacker'] = {
+                "name": feedback_log.feedbacker.name,
+                "image": str(feedback_log.feedbacker.image),
+            } if feedback_log.feedbacker else {}
             log_obj["files"] = self.get_feedback_log_files(feedback_log.id)
             feedback_logs_list.append(log_obj)
 

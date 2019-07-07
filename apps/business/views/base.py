@@ -118,7 +118,8 @@ class BusinessPublic:
         progress = 0
         tasks = Task.objects.filter(project_id=project_id, is_active=1)
         task_nums = tasks.count()
-        checked_tasks = tasks.filter(receive_status_id=cls.GetTaskStatusIdByKey('checked')).aggregate(nums=Sum('progress'))
+        checked_tasks = tasks.filter(receive_status_id=cls.GetTaskStatusIdByKey('checked')).aggregate(
+            nums=Sum('progress'))
         if checked_tasks['nums'] is not None:
             progress = checked_tasks['nums']
 
@@ -151,6 +152,8 @@ class BusinessPublic:
         task = Task.objects.get(id=task_id)
         if task:
             task.progress = task_progress
+            # updated
+            task.label = 1
             if task_progress == 100:
                 task.receive_status = cls.GetTaskStatusObjectByKey('finished')
                 task.finish_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -163,17 +166,19 @@ class BusinessPublic:
         # 增加日志
         if task_id is not None:
             if files or content:
-                task_log = TaskLog(task_id=task_id)
-                task_log.save()
+                if content or files:
+                    task_log = TaskLog(task_id=task_id)
+                    task_log.save()
 
-                if files:
-                    for file in files:
-                        # 增加文件表记录
-                        step_log_file = Files(tasklog=task_log, name=file['name'], path=file['url'],
-                                              path_thumb_w200=file['path_thumb_w200'], path_thumb_w900=file['path_thumb_w900'])
-                        step_log_file.save()
+                    if files:
+                        for file in files:
+                            # 增加文件表记录
+                            step_log_file = Files(tasklog=task_log, name=file['name'], path=file['url'],
+                                                  path_thumb_w200=file.get('path_thumb_w200', ''),
+                                                  path_thumb_w900=file.get('path_thumb_w900', ''))
+                            step_log_file.save()
 
-                # 如果存在富文本，则先添加富文本
-                if content:
-                    progresstexts = ProgressTexts(tasklog=task_log, content=content)
-                    progresstexts.save()
+                    # 如果存在富文本，则先添加富文本
+                    if content:
+                        progresstexts = ProgressTexts(tasklog=task_log, content=content)
+                        progresstexts.save()

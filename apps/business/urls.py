@@ -52,6 +52,8 @@ urlpatterns = [
     path(r'api/v1/project/check/pass', project.ProjectCheckPassView.as_view(), name='project_check_pass'),
     # 项目验收不通过
     path(r'api/v1/project/check/reject', project.ProjectCheckRejectView.as_view(), name='project_check_reject'),
+    # 判断项目名是否已存在
+    path(r'api/v1/project/name', project.ProjectNameView.as_view(), name='project_name_is_exist'),
 
     ## 任务相关
 
@@ -77,6 +79,8 @@ urlpatterns = [
     path(r'api/v1/task/publish', task.TaskPublishView.as_view(), name='task_publish'),
     # 导入任务数据
     path(r'api/v1/task/import', task.TaskImportView.as_view(), name='task_import'),
+    # 判断任务名是否已存在
+    path(r'api/v1/task/name', task.TaskNameView.as_view(), name='task_name_is_exist'),
 
     ## 步骤相关
 
