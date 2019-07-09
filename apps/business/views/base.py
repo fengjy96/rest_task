@@ -157,6 +157,9 @@ class BusinessPublic:
             if task_progress == 100:
                 task.receive_status = cls.GetTaskStatusObjectByKey('finished')
                 task.finish_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                task.receive_status = cls.GetTaskStatusObjectByKey('accepted')
+                task.finish_time = None
             task.save()
             project_id = task.project_id
             cls.update_progress_by_project_id(project_id)
