@@ -914,3 +914,30 @@ class ProjectCostAnalysisFinishedView(APIView):
 
 class ProjectPublishView(APIView):
     """项目发布"""
+
+
+class HasProjectView(APIView):
+    """
+    是否存在项目
+    """
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.user.id
+        projects = Project.objects.filter(sender_id=user_id)
+        if len(projects) > 0:
+            return MykeyResponse(status=status.HTTP_200_OK, data=1, msg='请求成功')
+        return MykeyResponse(status=status.HTTP_200_OK, data=0, msg='请求成功')
+
+
+class ProjectHasTaskView(APIView):
+    """
+    项目是否存在任务
+    """
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.user.id
+        project_id = request.query_params.get('project_id', None)
+        tasks = Task.objects.filter(project_id=project_id, sender_id=user_id)
+        if len(tasks) > 0:
+            return MykeyResponse(status=status.HTTP_200_OK, data=1, msg='请求成功')
+        return MykeyResponse(status=status.HTTP_200_OK, data=0, msg='请求成功')
