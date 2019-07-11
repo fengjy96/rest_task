@@ -99,7 +99,7 @@ class TaskViewSet(ModelViewSet):
             request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
 
         if project_id is not None:
-            if Task.objects.filter(project_id = project_id, name=name, is_active=1).exists():
+            if Task.objects.filter(project_id=project_id, name=name, is_active=1).exists():
                 raise Exception('任务名称已存在,请重新输入!')
 
         serializer = self.get_serializer(data=request.data)
@@ -438,10 +438,9 @@ class TaskAcceptView(APIView):
 
     def update_task(self, request, task_id, task_design_type_id):
         if task_id is not None and task_design_type_id is not None:
-            from business.models.task import Task
             task = Task.objects.get(id=task_id)
             if task is not None:
-                # 任务负责人已接手,任务执行中
+                # 任务负责人已接手，任务执行中
                 task.receive_status = TaskStatus.objects.get(key='accepted')
                 if task.receiver is None:
                     task.receiver = request.user
@@ -459,9 +458,10 @@ class TaskAcceptView(APIView):
             tasksteps = TaskStep.objects.filter(task_design_type_id=task_design_type_id)
             for taskstep in tasksteps:
                 if taskstep:
-                    #step = Step.objects.filter(task_id=task.id, name=taskstep.name, task_design_type_id=taskstep.task_design_type.id)
-                    #if not step.exists():
-                    Step.objects.create(name=taskstep.name,index=taskstep.index,task=task,task_design_type=task_design_type, receiver=receiver)
+                    # step = Step.objects.filter(task_id=task.id, name=taskstep.name, task_design_type_id=taskstep.task_design_type.id)
+                    # if not step.exists():
+                    Step.objects.create(name=taskstep.name, index=taskstep.index, task=task,
+                                        task_design_type=task_design_type, receiver=receiver)
 
 
 class TaskRejectView(APIView):
@@ -751,6 +751,6 @@ class TaskPublishView(APIView):
                 task.save()
 
                 if task.receiver:
-                   #新增消息
-                   BusinessPublic.create_message(task.sender.id, task.receiver.id, menu_id=2,
-                                                 messages='已安排新的任务,请查看!')
+                    # 新增消息
+                    BusinessPublic.create_message(task.sender.id, task.receiver.id, menu_id=2,
+                                                  messages='已安排新的任务,请查看!')

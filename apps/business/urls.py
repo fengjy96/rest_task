@@ -41,7 +41,6 @@ urlpatterns = [
     path(r'api/v1/project/fee/cost/analysis', project.ProjectFeeCostAnalysisView.as_view(), name='project_fee_cost_analysis'),
     # 项目成本分析完成
     path(r'api/v1/project/cost/analysis/finished', project.ProjectCostAnalysisFinishedView.as_view(),name='project_cost_analysis_finished'),
-
     # 接手项目
     path(r'api/v1/project/accept', project.ProjectAcceptView.as_view(), name='project_accept'),
     # 拒接项目
@@ -54,6 +53,10 @@ urlpatterns = [
     path(r'api/v1/project/check/reject', project.ProjectCheckRejectView.as_view(), name='project_check_reject'),
     # 判断项目名是否已存在
     path(r'api/v1/project/name', project.ProjectNameView.as_view(), name='project_name_is_exist'),
+    # 判断是否存在项目
+    path(r'api/v1/has_project', project.HasProjectView.as_view(), name='has_project'),
+    # 判断项目是否存在任务
+    path(r'api/v1/project/has_task', project.ProjectHasTaskView.as_view(), name='project_has_task'),
 
     ## 任务相关
 

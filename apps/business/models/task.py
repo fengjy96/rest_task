@@ -38,7 +38,7 @@ class Task(models.Model):
     comments = models.CharField(default='', max_length=80, blank=True, verbose_name='任务评语')
     points = models.IntegerField(default=0, verbose_name='任务积分')
 
-    memo = models.CharField(default='', max_length=800, verbose_name='任务备注')
+    memo = models.CharField(default='', blank=True, max_length=800, verbose_name='任务备注')
 
     project = models.ForeignKey(Project, null=True, blank=True, verbose_name='项目标识', on_delete=models.CASCADE)
     sender = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='发送者', on_delete=models.CASCADE,
