@@ -69,6 +69,8 @@ class TaskViewSet(ModelViewSet):
         files = request.data.get('files', None)
         # 任务名称
         name = request.data.get('name', None)
+        # 是否创建并发布任务
+        is_publish = request.data.get('is_publish', False)
         if project_id is not None:
             # 根据项目 id 查项目负责人
             project = Project.objects.get(id=project_id)
@@ -89,7 +91,11 @@ class TaskViewSet(ModelViewSet):
                 # 根据项目 id 查项目审核状态
                 project = Project.objects.get(id=project_id)
                 if project.audit_status == 2:
-                    request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
+                    if is_publish:
+                        request.data['is_published'] = 1
+                        request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
+                    else:
+                        request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
                 else:
                     request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
             else:
@@ -133,30 +139,35 @@ class TaskViewSet(ModelViewSet):
         files = request.data.get('files', None)
         receiver_id = request.data.get('receiver', None)
         project_id = request.data.get('project', None)
+        # 是否创建并发布任务
+        is_publish = request.data.get('is_publish', False)
         task_id = str(kwargs['pk'])
 
         if project_id is not None:
             project = Project.objects.get(id=project_id)
+            request.data['is_published'] = 0
             if receiver_id is not None:
-                if task_id is not None:
-                    task = Task.objects.get(id=task_id)
-                    if task.receiver:
-                        if receiver_id != str(task.receiver.id):
-                            # 如果更换任务负责人,需要重新发布
-                            request.data['is_published'] = 0
-                            if project.audit_status == 2:
+                task = Task.objects.get(id=task_id)
+                if task.receiver:
+                    if receiver_id != str(task.receiver.id):
+                        if project.audit_status == 2:
+                            if is_publish:
+                                request.data['is_published'] = 1
                                 request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
                             else:
                                 request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
-                    else:
-                        request.data['is_published'] = 0
-                        if project.audit_status == 2:
+                        else:
+                            request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
+                else:
+                    if project.audit_status == 2:
+                        if is_publish:
+                            request.data['is_published'] = 1
                             request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('wait_accept')
                         else:
                             request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
-
+                    else:
+                        request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('assigned')
             else:
-                request.data['is_published'] = 0
                 request.data['receive_status'] = BusinessPublic.GetTaskStatusIdByKey('unassigned')
 
         partial = kwargs.pop('partial', False)
