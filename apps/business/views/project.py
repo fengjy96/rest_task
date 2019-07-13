@@ -1,4 +1,5 @@
 from django.db.models import Q
+
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -6,26 +7,27 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+
+from django_filters.rest_framework import DjangoFilterBackend
+
+from business.models.project import Project, ProjectFee, ProjectRejectReason
+from business.models.task import Task
+from points.models.projectpoints import ProjectPoints
+from points.models.pointsdetail import PointsDetail
+from points.models.points import Points
+from configuration.models.project_conf import ProjectStatus, Fee
+from configuration.models.task_conf import TaskType, TaskAssessment
+from rbac.models import UserProfile
+
+from business.serializers.project_serializer import (
+    ProjectListSerializer, ProjectRejectReasonSerializer, ProjectFeeSerializer, ProjectReceiverListSerializer,
+    ProjectSerializer, ProjectAuditorListSerializer)
+from business.views.base import BusinessPublic
+from business.filters import ProjectFilter
 
 from common.custom import CommonPagination
 from utils.basic import MykeyResponse
-from business.models.project import Project, ProjectFee, ProjectRejectReason
-from business.serializers.project_serializer import (
-    ProjectListSerializer, ProjectRejectReasonSerializer, ProjectFeeSerializer, ProjectReceiverListSerializer,
-    ProjectSerializer,
-    ProjectAuditorListSerializer)
-from business.views.base import BusinessPublic
-from business.filters import ProjectFilter
-from rbac.models import UserProfile
-from business.models.task import Task
-from points.models.projectpoints import ProjectPoints
-from points.models.projectpointsex import ProjectPointsEx
-from points.models.points import Points
-from points.models.pointsdetail import PointsDetail
-from configuration.models.project_conf import ProjectStatus, Fee
-from configuration.models.task_conf import TaskType, TaskAssessment
 
 # 项目人员成本
 list_project_person_objects = []
@@ -38,45 +40,22 @@ class ProjectViewSet(ModelViewSet):
     项目：增删改查
     """
 
-    # 获取查询集
     queryset = Project.objects.all()
-    # 指定分页类
     pagination_class = CommonPagination
-    # 指定过滤 backends
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    # 指定搜索字段
     search_fields = ('name',)
-    # 对指定的字段进行排序：使用 ordering_fields 属性明确指定可以对哪些字段执行排序，
-    # 这有助于防止意外的数据泄露
     ordering_fields = ('id',)
-    # 指定筛选类
     filter_class = ProjectFilter
-    # 指定授权类
     permission_classes = (IsAuthenticated,)
-    # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
     def get_serializer_class(self):
-        """
-        根据请求类型动态变更 serializer
-        :return:
-        """
         if self.action == 'list':
             return ProjectListSerializer
         return ProjectSerializer
 
     def create(self, request, *args, **kwargs):
-        # 将当前登录用户作为项目创建人
-        request.data['sender'] = request.user.id
-        receiver_id = request.data.get('receiver', None)
-        # 如果存在项目负责人，则将项目接收状态置为 '已指派项目负责人'
-        if receiver_id is not None:
-            BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
-                                          messages='你有新的项目等待接手!')
-            request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
-        # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
-        else:
-            request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
+        self.before_create(request)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -84,7 +63,36 @@ class ProjectViewSet(ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    def before_create(self, request):
+        # 将当前登录用户作为项目创建人
+        request.data['sender'] = request.user.id
+
+        receiver_id = request.data.get('receiver', None)
+        # 如果存在项目负责人，则将项目接收状态置为 '待接手'
+        if receiver_id is not None:
+            BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2, messages='你有新的项目等待接手!')
+            request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
+        # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
+        else:
+            request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
+
     def update(self, request, *args, **kwargs):
+        self.before_update(request, kwargs)
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
+
+    def before_update(self, request, kwargs):
         project_id = str(kwargs['pk'])
         receiver_id = request.data.get('receiver', None)
         if receiver_id is not None and receiver_id != '':
@@ -106,19 +114,6 @@ class ProjectViewSet(ModelViewSet):
             request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
         else:
             request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
-
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        if getattr(instance, '_prefetched_objects_cache', None):
-            # If 'prefetch_related' has been applied to a queryset, we need to
-            # forcibly invalidate the prefetch cache on the instance.
-            instance._prefetched_objects_cache = {}
-
-        return Response(serializer.data)
 
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset()).filter(is_active=1).order_by('-add_time')
