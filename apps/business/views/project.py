@@ -121,7 +121,7 @@ class ProjectViewSet(ModelViewSet):
         return Response(serializer.data)
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset()).order_by('-add_time')
+        queryset = self.filter_queryset(self.get_queryset()).filter(is_active=1).order_by('-add_time')
 
         queryset = self.filter_list_queryset(request, queryset)
 
@@ -134,6 +134,15 @@ class ProjectViewSet(ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.is_active = 0
+        instance.save()
+
+        # self.perform_destroy(instance)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def filter_project(self, request, queryset):
         """

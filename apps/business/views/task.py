@@ -102,8 +102,10 @@ class TaskViewSet(ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+        instance.is_active = 0
+        instance.save()
 
-        self.perform_destroy(instance)
+        # self.perform_destroy(instance)
 
         project_id = instance.project_id
         BusinessPublic.update_progress_by_project_id(project_id)
@@ -159,7 +161,7 @@ class TaskViewSet(ModelViewSet):
         BusinessPublic.create_task_file_texts(serializer.data['id'], files, content)
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset()).order_by('-add_time').order_by('-task_priority_id')
+        queryset = self.filter_queryset(self.get_queryset()).filter(is_active=1).order_by('-add_time').order_by('-task_priority_id')
 
         queryset = self.filter_list_queryset(request, queryset)
 
