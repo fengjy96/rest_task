@@ -72,12 +72,6 @@ class UploadFilesView(views.APIView):
                             f.write(c)
                         f.close()
 
-                    # 如果上传的文件是视频类型（目前只处理 mp4 视频文件，将 mp4 格式的文件统一转码为 h264 格式）
-                    video_formats = ['mp4']
-                    if extension in video_formats:
-                        comm = 'ffmpeg -i {0} -vcodec h264 {1} -y'.format(file_path_server, file_path_server)
-                        os.system(comm)
-
                 data = {'files': upload_files}
 
                 return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=data)
@@ -92,12 +86,6 @@ class UploadFilesView(views.APIView):
             height = int(height / delta)
             img.thumbnail((width, height), Image.ANTIALIAS)
         return img
-
-    def handle_image_file(self):
-        pass
-
-    def handle_video_file(self):
-        pass
 
 
 class UploadRteFilesView(views.APIView):
