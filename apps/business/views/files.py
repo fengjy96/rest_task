@@ -75,7 +75,7 @@ class UploadFilesView(views.APIView):
                     # 如果上传的文件是视频类型（目前只处理 mp4 视频文件，将 mp4 格式的文件统一转码为 h264 格式）
                     video_formats = ['mp4']
                     if extension in video_formats:
-                        comm = 'ffmpeg -i {0} -strict -2 {1} -y'.format(file_path_server, file_path_server)
+                        comm = 'ffmpeg -i {0} -vcodec h264 {1} -y'.format(file_path_server, file_path_server)
                         os.system(comm)
 
                 data = {'files': upload_files}
