@@ -239,8 +239,6 @@ class ProjectReceiverListView(ListAPIView):
 
     queryset = UserProfile.objects.filter(roles__id=7)
     serializer_class = ProjectReceiverListSerializer
-
-    # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
 
@@ -251,8 +249,6 @@ class ProjectAuditorListView(ListAPIView):
 
     queryset = UserProfile.objects.filter(roles__id=5)
     serializer_class = ProjectAuditorListSerializer
-
-    # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
 
@@ -260,6 +256,7 @@ class ProjectFeeViewSet(ModelViewSet):
     """
     项目费用：增删改查
     """
+
     queryset = ProjectFee.objects.all()
     serializer_class = ProjectFeeSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
@@ -268,10 +265,7 @@ class ProjectFeeViewSet(ModelViewSet):
     permission_classes = (IsAuthenticated,)
 
     def list(self, request, *args, **kwargs):
-        project_id = request.query_params.get('project_id', None)
-        is_first = request.query_params.get('is_first', None)
-        if is_first == 'true':
-            self.create_project_fee(project_id)
+        self.before_list(request)
 
         queryset = self.filter_queryset(self.get_queryset())
 
@@ -283,20 +277,23 @@ class ProjectFeeViewSet(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    def before_list(self, request):
+        project_id = request.query_params.get('project_id', None)
+        is_first = request.query_params.get('is_first', None)
+        if is_first == 'true' and project_id is not None:
+            self.create_project_fee(project_id)
+
     def create_project_fee(self, project_id):
-        if project_id is not None:
-            fees = Fee.objects.all()
-            if fees:
-                for fee in fees:
-                    if fee:
-                        projectfee = ProjectFee.objects.filter(project_id=project_id, name=fee.name)
-                        if not projectfee.exists():
-                            project_fee_create = ProjectFee(
-                                project_id=project_id,
-                                name=fee.name,
-                                value=fee.value,
-                            )
-                            project_fee_create.save()
+        fees = Fee.objects.all()
+        for fee in fees:
+            projectfee = ProjectFee.objects.filter(project_id=project_id, name=fee.name)
+            if not projectfee.exists():
+                project_fee_create = ProjectFee(
+                    project_id=project_id,
+                    name=fee.name,
+                    value=fee.value,
+                )
+                project_fee_create.save()
 
 
 class ProjectRejectReasonViewSet(ModelViewSet):
@@ -319,12 +316,8 @@ class ProjectAuditSubmitView(APIView):
 
     def post(self, request, format=None):
         try:
-            # 项目标识
             project_id = request.data.get('project_id')
-            # 审核员标识
             auditor_id = request.data.get('auditor_id')
-            # 发送者标识
-            # sender_id = request.data.get('sender_id')
 
             if project_id is not None and auditor_id is not None:
                 self.update_project(project_id, auditor_id)
@@ -340,15 +333,14 @@ class ProjectAuditSubmitView(APIView):
         """
         更新项目审核信息
         """
-        if project_id is not None and auditor_id is not None:
-            from business.models.project import Project
-            project = Project.objects.get(id=project_id)
-            if project:
-                auditor = UserProfile.objects.get(id=auditor_id)
-                project.auditor = auditor
-                # 审核中
-                project.audit_status = 1
-                project.save()
+
+        project = Project.objects.get(id=project_id)
+        if project:
+            auditor = UserProfile.objects.get(id=auditor_id)
+            project.auditor = auditor
+            # 审核中
+            project.audit_status = 1
+            project.save()
 
 
 class ProjectAuditPassView(APIView):
@@ -389,9 +381,7 @@ class ProjectAuditRejectView(APIView):
 
     def post(self, request, format=None):
         try:
-            # 项目标识
             project_id = request.data.get('project_id')
-            # 驳回原因
             reason = request.data.get('reason') or ''
 
             self.update_project(project_id, reason)
@@ -402,18 +392,17 @@ class ProjectAuditRejectView(APIView):
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
     def update_project(self, project_id, reason):
-        if project_id is not None:
-            project = Project.objects.get(id=project_id)
-            if project is not None:
-                # 驳回
-                project.audit_status = 3
-                project.save()
+        project = Project.objects.get(id=project_id)
+        if project:
+            # 驳回
+            project.audit_status = 3
+            project.save()
 
-                BusinessPublic.create_reason(project.id, project.auditor.id, project.sender.id,
-                                             BusinessPublic.GetReasonTypeIdByKey('project_audit_reject'),
-                                             reason)
-                BusinessPublic.create_message(project.auditor.id, project.sender.id, menu_id=2,
-                                              messages='你的项目已被驳回，请尽快处理!')
+            BusinessPublic.create_reason(project.id, project.auditor.id, project.sender.id,
+                                         BusinessPublic.GetReasonTypeIdByKey('project_audit_reject'),
+                                         reason)
+            BusinessPublic.create_message(project.auditor.id, project.sender.id, menu_id=2,
+                                          messages='你的项目已被驳回，请尽快处理!')
 
 
 class ProjectAcceptView(APIView):
@@ -423,22 +412,21 @@ class ProjectAcceptView(APIView):
 
     def post(self, request, format=None):
         try:
-            project_id = request.data.get('project_id')
-            self.update_project(project_id)
+            project_id = request.data.get('project_id', None)
+            if project_id is not None:
+                self.update_project(project_id)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
     def update_project(self, project_id):
-        if project_id is not None:
-            from business.models.project import Project
-            project = Project.objects.get(id=project_id)
-            if project is not None:
-                # 项目负责人已接手,项目正式开始
-                project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('accepted')
-                project.save()
-                BusinessPublic.create_message(project.receiver_id, project.sender_id, menu_id=2,
-                                              messages='项目负责人已接手!')
+        project = Project.objects.get(id=project_id)
+        if project:
+            # 项目负责人已接手,项目正式开始
+            project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('accepted')
+            project.save()
+            BusinessPublic.create_message(project.receiver_id, project.sender_id, menu_id=2,
+                                          messages='项目负责人已接手!')
 
 
 class ProjectRejectView(APIView):
@@ -453,7 +441,8 @@ class ProjectRejectView(APIView):
             # 驳回原因
             reason = request.data.get('reason', '')
 
-            self.update_project(project_id, reason)
+            if project_id is not None:
+                self.update_project(project_id, reason)
 
         except Exception as e:
             msg = e.args if e else '请求失败'
@@ -461,18 +450,17 @@ class ProjectRejectView(APIView):
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
     def update_project(self, project_id, reason):
-        if project_id is not None:
-            project = Project.objects.get(id=project_id)
-            if project is not None:
-                # 拒接
-                project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('rejected')
-                project.save()
+        project = Project.objects.get(id=project_id)
+        if project is not None:
+            # 拒接
+            project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('rejected')
+            project.save()
 
-                reason_type_id = BusinessPublic.GetReasonTypeIdByKey('project_reject')
+            reason_type_id = BusinessPublic.GetReasonTypeIdByKey('project_reject')
 
-                BusinessPublic.create_reason(project.id, project.receiver.id, project.sender.id, reason_type_id, reason)
-                BusinessPublic.create_message(project.receiver.id, project.sender.id, menu_id=2,
-                                              messages='项目负责人拒接了你的项目，请尽快处理!')
+            BusinessPublic.create_reason(project.id, project.receiver.id, project.sender.id, reason_type_id, reason)
+            BusinessPublic.create_message(project.receiver.id, project.sender.id, menu_id=2,
+                                          messages='项目负责人拒接了你的项目，请尽快处理!')
 
 
 class ProjectCheckSubmitView(APIView):
