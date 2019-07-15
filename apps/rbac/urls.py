@@ -1,7 +1,8 @@
 from django.urls import path, include
+from rest_framework import routers
+
 from rbac.views import user, organization, menu, role, permission
 from cmdb.views import dict
-from rest_framework import routers
 
 router = routers.SimpleRouter()
 # 用户相关

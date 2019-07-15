@@ -1,12 +1,15 @@
 """
 基于 RBAC 的用户权限管理：用户视图
 """
+
 import os
 import time
 
 from PIL import Image
 from django.contrib.auth.hashers import check_password
 from rest_framework.generics import ListAPIView
+from rest_framework.response import Response
+
 from common.custom import CommonPagination, RbacPermission
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.decorators import action
@@ -361,23 +364,14 @@ class UserViewSet(ModelViewSet):
         {'put': 'user_edit'},
         {'delete': 'user_delete'}
     )
-    # 获取查询集
     queryset = UserProfile.objects.all()
-    # 指定序列化类
     serializer_class = UserListSerializer
-    # 指定分页类
     pagination_class = CommonPagination
-    # 指定过滤 backends
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    # 指定过滤字段
     filter_fields = ('is_active',)
-    # 指定搜索字段
     search_fields = ('username', 'name', 'mobile', 'email')
-    # 指定排序字段
     ordering_fields = ('id',)
-    # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
-    # 指定权限类
     permission_classes = (RbacPermission,)
 
     def get_serializer_class(self):
@@ -392,24 +386,23 @@ class UserViewSet(ModelViewSet):
         return UserModifySerializer
 
     def create(self, request, *args, **kwargs):
+        self.before_create(request)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+
+        # 自定义返回响应数据
+        return XopsResponse(serializer.data, status=CREATED, headers=headers)
+
+    def before_create(self, request):
         """
-        创建用户
-        默认添加密码 123456
+        创建用户时指定默认密码为 123456
         :param request:
-        :param args:
-        :param kwargs:
         :return:
         """
         request.data['password'] = '123456'
-        # 根据请求方法获取相应的序列化数据
-        serializer = self.get_serializer(data=request.data)
-        # 验证序列化数据是否通过验证
-        serializer.is_valid(raise_exception=True)
-        # 根据序列化数据在数据库中创建一条数据
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        # 创建成功则返回该数据给前端
-        return XopsResponse(serializer.data, status=CREATED, headers=headers)
 
     def destroy(self, request, *args, **kwargs):
         """
