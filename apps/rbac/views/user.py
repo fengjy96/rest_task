@@ -6,39 +6,42 @@ import os
 import time
 
 from PIL import Image
-from django.contrib.auth.hashers import check_password
-from rest_framework.generics import ListAPIView
-from rest_framework.response import Response
 
-from common.custom import CommonPagination, RbacPermission
-from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth.hashers import check_password
+from django.contrib.auth import authenticate
+from django.db.models import Q
+
 from rest_framework.decorators import action
 from rest_framework.views import APIView
-
-from rest_xops import settings
-from rest_xops.basic import XopsResponse
+from rest_framework.generics import ListAPIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework_jwt.authentication import JSONWebTokenAuthentication
-from django.contrib.auth import authenticate
-from rest_framework_jwt.settings import api_settings
 from rest_framework.permissions import IsAuthenticated
-from rest_xops.settings import SECRET_KEY
-from operator import itemgetter
-from rest_xops.code import *
-from deployment.models import Project
-from cmdb.models import ConnectionInfo
-from django.db.models import Q
+
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+from rest_framework_jwt.settings import api_settings
+from django_filters.rest_framework import DjangoFilterBackend
+
 # JSON Web Token（JWT）是一个轻量级的认证规范，是目前最流行的跨域认证解决方案
 # 这个规范允许我们使用 JWT 在用户和服务器之间传递安全可靠的信息
 # 一般放在 HTTP 的 headers 参数里面的 authorization 里面，值的前面加 Bearer 关键字和空格
 # 除此之外，也可以在 url 和 request body 中传递
 import jwt
+from operator import itemgetter
 
-from ..models import UserProfile, Menu
-from ..serializers.user_serializer import (
-    UserListSerializer, UserCreateSerializer, UserModifySerializer, UserInfoListSerializer)
-from ..serializers.menu_serializer import MenuSerializer
+from rest_xops import settings
+from rest_xops.settings import SECRET_KEY
+from rest_xops.basic import XopsResponse
+from rest_xops.code import *
+
+from deployment.models import Project
+from cmdb.models import ConnectionInfo
+from rbac.models import UserProfile, Menu
+from rbac.serializers.user_serializer import (UserListSerializer, UserCreateSerializer,
+                                              UserModifySerializer, UserInfoListSerializer)
+from rbac.serializers.menu_serializer import MenuSerializer
+
+from common.custom import CommonPagination, RbacPermission
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
@@ -50,11 +53,9 @@ class UserAuthView(APIView):
     """
 
     def post(self, request, *args, **kwargs):
-        # 获取前端传递过来的用户名
         username = request.data.get('username')
-        # 获取前端传递过来的用户密码
         password = request.data.get('password')
-        # 如果用户名和密码用过验证，则返回一个用户对象
+
         user = authenticate(username=username, password=password)
         if user:
             payload = jwt_payload_handler(user)
@@ -365,7 +366,6 @@ class UserViewSet(ModelViewSet):
         {'delete': 'user_delete'}
     )
     queryset = UserProfile.objects.all()
-    serializer_class = UserListSerializer
     pagination_class = CommonPagination
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     filter_fields = ('is_active',)
@@ -405,14 +405,20 @@ class UserViewSet(ModelViewSet):
         request.data['password'] = '123456'
 
     def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        self.before_destroy(request, kwargs)
+
+        self.perform_destroy(instance)
+        return XopsResponse(status=NO_CONTENT)
+
+    def before_destroy(self, request, kwargs):
         """
         删除用户时，同时删除其他与该用户关联的表
         :param request:
-        :param args:
         :param kwargs:
         :return:
         """
-        instance = self.get_object()
         id = str(kwargs['pk'])
         projects = Project.objects.filter(
             Q(user_id__icontains=id + ',') | Q(user_id__in=id) | Q(user_id__endswith=',' + id)
@@ -424,9 +430,6 @@ class UserViewSet(ModelViewSet):
                 user_id = ','.join(user_id)
                 Project.objects.filter(id=project['id']).update(user_id=user_id)
         ConnectionInfo.objects.filter(uid_id=id).delete()
-        # 在用户表中删除该用户
-        self.perform_destroy(instance)
-        return XopsResponse(status=NO_CONTENT)
 
     @action(
         methods=['post'], detail=True, permission_classes=[IsAuthenticated],
