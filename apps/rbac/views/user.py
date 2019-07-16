@@ -22,10 +22,6 @@ from rest_framework_jwt.authentication import JSONWebTokenAuthentication
 from rest_framework_jwt.settings import api_settings
 from django_filters.rest_framework import DjangoFilterBackend
 
-# JSON Web Token（JWT）是一个轻量级的认证规范，是目前最流行的跨域认证解决方案
-# 这个规范允许我们使用 JWT 在用户和服务器之间传递安全可靠的信息
-# 一般放在 HTTP 的 headers 参数里面的 authorization 里面，值的前面加 Bearer 关键字和空格
-# 除此之外，也可以在 url 和 request body 中传递
 import jwt
 from operator import itemgetter
 
@@ -67,37 +63,8 @@ class UserAuthView(APIView):
 
 class UserInfoView(APIView):
     """
-    获取当前用户相关信息和权限
-    用户在登录成功后会同时请求该数据
+    获取当前用户相关信息
     """
-
-    @classmethod
-    def get_permission_from_role(self, request):
-        try:
-            if request.user:
-                # 存储权限列表
-                perms_list = []
-                # 查询与当前用户关联的角色所拥有的权限
-                for item in request.user.roles.values('permissions__method').distinct():
-                    perms_list.append(item['permissions__method'])
-                # 返回权限列表，如 ['admin', 'user_all', 'user_edit', ...]
-                return perms_list
-        except AttributeError:
-            return None
-
-    @classmethod
-    def get_skills(self, request):
-        try:
-            if request.user:
-                # 存储权限列表
-                skill_list = []
-                for item in request.user.skills.values().distinct():
-                    skill_list.append(item)
-                return skill_list
-            else:
-                return []
-        except AttributeError:
-            return None
 
     def get(self, request):
         if request.user.id is not None:
@@ -119,11 +86,47 @@ class UserInfoView(APIView):
         else:
             return XopsResponse('请登录后访问!', status=FORBIDDEN)
 
+    @classmethod
+    def get_permission_from_role(self, request):
+        try:
+            if request.user:
+                # 存储权限列表
+                perms_list = []
+                # 查询与当前用户关联的角色所拥有的权限
+                for item in request.user.roles.values('permissions__method').distinct():
+                    perms_list.append(item['permissions__method'])
+                # 返回权限列表，如 ['admin', 'user_all', 'user_edit', ...]
+                return perms_list
+        except AttributeError:
+            return None
+
+    @classmethod
+    def get_skills(self, request):
+        try:
+            if request.user:
+                # 存储权限列表
+                skill_list = []
+                for item in request.user.skills.values():
+                    skill_list.append({'id': item['id'], 'name': item['name']})
+                return skill_list
+            else:
+                return []
+        except AttributeError:
+            return None
+
 
 class UserBuildMenuView(APIView):
     """
-    获取当前用户所拥有的权限构建菜单，返回给前端
+    获取当前用户所拥有的权限，构建菜单，返回给前端
     """
+
+    def get(self, request):
+        if request.user.id is not None:
+            # 获取当前用户所拥有的所有菜单数据
+            menu_data = self.get_all_menus(request)
+            return XopsResponse(menu_data, status=OK)
+        else:
+            return XopsResponse('请登录后访问!', status=FORBIDDEN)
 
     def get_menu_from_role(self, request):
         """
@@ -143,7 +146,7 @@ class UserBuildMenuView(APIView):
                 'menus__icon',
                 'menus__sort',
                 'menus__pid'
-            ).distinct()
+            )
             for item in menus:
                 if item['menus__pid'] is None:
                     if item['menus__is_frame']:
@@ -341,14 +344,6 @@ class UserBuildMenuView(APIView):
             else:
                 tree_data.append(tree_dict[i])
         return tree_data
-
-    def get(self, request):
-        if request.user.id is not None:
-            # 获取当前用户所拥有的所有菜单数据
-            menu_data = self.get_all_menus(request)
-            return XopsResponse(menu_data, status=OK)
-        else:
-            return XopsResponse('请登录后访问!', status=FORBIDDEN)
 
 
 class UserViewSet(ModelViewSet):
