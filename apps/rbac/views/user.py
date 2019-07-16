@@ -106,8 +106,8 @@ class UserInfoView(APIView):
             if request.user:
                 # 存储权限列表
                 skill_list = []
-                for item in request.user.skills.values():
-                    skill_list.append({'id': item['id'], 'name': item['name']})
+                for item in request.user.skills.values('id', 'name'):
+                    skill_list.append(item)
                 return skill_list
             else:
                 return []
@@ -127,6 +127,37 @@ class UserBuildMenuView(APIView):
             return XopsResponse(menu_data, status=OK)
         else:
             return XopsResponse('请登录后访问!', status=FORBIDDEN)
+
+    def get_all_menus(self, request):
+        """
+        获取当前用户所拥有的所有菜单
+        :param request: 当前用户请求
+        :return: 当前用户所拥有的菜单数据
+        """
+
+        # 根据当前用户所属的角色，获取相应的权限列表，如 ['admin', 'user_all', 'user_edit', ...]
+        perms = UserInfoView.get_permission_from_role(request)
+        tree_data = []
+        # 如果 'admin' 在权限列表中，或当前用户是超级管理员，则获取所有菜单数据
+        if 'admin' in perms or request.user.is_superuser:
+            tree_dict = self.get_all_menu_dict()
+        # 否则，根据当前用户所属的角色获取菜单数据
+        else:
+            tree_dict = self.get_menu_from_role(request)
+        for i in tree_dict:
+            if tree_dict[i]['pid']:
+                pid = tree_dict[i]['pid']
+                # parent = tree_dict[pid]
+                parent = tree_dict.get(pid, -1)
+                if parent == -1:
+                    continue
+                parent.setdefault('redirect', 'noredirect')
+                parent.setdefault('alwaysShow', True)
+                parent.setdefault('children', []).append(tree_dict[i])
+                parent['children'] = sorted(parent['children'], key=itemgetter('sort'))
+            else:
+                tree_data.append(tree_dict[i])
+        return tree_data
 
     def get_menu_from_role(self, request):
         """
@@ -313,37 +344,6 @@ class UserBuildMenuView(APIView):
                     }
                 tree_dict[item['id']] = children_menu
         return tree_dict
-
-    def get_all_menus(self, request):
-        """
-        获取当前用户所拥有的所有菜单
-        :param request: 当前用户请求
-        :return: 当前用户所拥有的菜单数据
-        """
-
-        # 根据当前用户所属的角色，获取相应的权限列表，如 ['admin', 'user_all', 'user_edit', ...]
-        perms = UserInfoView.get_permission_from_role(request)
-        tree_data = []
-        # 如果 'admin' 在权限列表中，或当前用户是超级管理员，则获取所有菜单数据
-        if 'admin' in perms or request.user.is_superuser:
-            tree_dict = self.get_all_menu_dict()
-        # 否则，根据当前用户所属的角色获取菜单数据
-        else:
-            tree_dict = self.get_menu_from_role(request)
-        for i in tree_dict:
-            if tree_dict[i]['pid']:
-                pid = tree_dict[i]['pid']
-                # parent = tree_dict[pid]
-                parent = tree_dict.get(pid, -1)
-                if parent == -1:
-                    continue
-                parent.setdefault('redirect', 'noredirect')
-                parent.setdefault('alwaysShow', True)
-                parent.setdefault('children', []).append(tree_dict[i])
-                parent['children'] = sorted(parent['children'], key=itemgetter('sort'))
-            else:
-                tree_data.append(tree_dict[i])
-        return tree_data
 
 
 class UserViewSet(ModelViewSet):
