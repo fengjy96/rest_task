@@ -177,7 +177,7 @@ class UserBuildMenuView(APIView):
                 'menus__icon',
                 'menus__sort',
                 'menus__pid'
-            )
+            ).distinct()
             for item in menus:
                 if item['menus__pid'] is None:
                     if item['menus__is_frame']:
