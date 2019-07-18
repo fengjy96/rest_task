@@ -137,6 +137,7 @@ class UserBuildMenuView(APIView):
 
         # 根据当前用户所属的角色，获取相应的权限列表，如 ['admin', 'user_all', 'user_edit', ...]
         perms = UserInfoView.get_permission_from_role(request)
+
         tree_data = []
         # 如果 'admin' 在权限列表中，或当前用户是超级管理员，则获取所有菜单数据
         if 'admin' in perms or request.user.is_superuser:
@@ -144,6 +145,7 @@ class UserBuildMenuView(APIView):
         # 否则，根据当前用户所属的角色获取菜单数据
         else:
             tree_dict = self.get_menu_from_role(request)
+
         for i in tree_dict:
             if tree_dict[i]['pid']:
                 pid = tree_dict[i]['pid']
@@ -258,11 +260,13 @@ class UserBuildMenuView(APIView):
             return menu_dict
 
     def get_all_menu_dict(self):
-        '''
+        """
         获取所有菜单数据，重组结构
-        '''
+        :return:
+        """
         menus = Menu.objects.all()
         serializer = MenuSerializer(menus, many=True)
+
         tree_dict = {}
         for item in serializer.data:
             if item['pid'] is None:

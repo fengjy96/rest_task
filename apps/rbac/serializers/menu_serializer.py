@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from ..models import Menu
+from rbac.models import Menu
 
 
 class MenuSerializer(serializers.ModelSerializer):
