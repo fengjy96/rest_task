@@ -7,9 +7,9 @@ from deployment.views import project, deploy, applog
 router = routers.SimpleRouter()
 
 # 项目相关
-router.register(r'projects', project.ProjectViewSet, base_name="projects")
+router.register(r'projects', project.ProjectViewSet, basename="projects")
 # 部署记录相关
-router.register(r'deploy/records', deploy.DeployRecordViewSet, base_name="deploy_record")
+router.register(r'deploy/records', deploy.DeployRecordViewSet, basename="deploy_record")
 
 urlpatterns = [
     path(r'api/', include(router.urls)),

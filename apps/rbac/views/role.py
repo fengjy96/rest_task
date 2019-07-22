@@ -1,10 +1,11 @@
-from common.custom import CommonPagination, RbacPermission
+from rest_framework.viewsets import ModelViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
-from rest_framework.viewsets import ModelViewSet
 
-from ..models import Role
-from ..serializers.role_serializer import RoleListSerializer, RoleModifySerializer
+from common.custom import CommonPagination, RbacPermission
+
+from rbac.models import Role
+from rbac.serializers.role_serializer import RoleListSerializer, RoleModifySerializer
 
 
 class RoleViewSet(ModelViewSet):
@@ -23,11 +24,11 @@ class RoleViewSet(ModelViewSet):
     queryset = Role.objects.all()
     serializer_class = RoleListSerializer
     pagination_class = CommonPagination
+    permission_classes = (RbacPermission,)
+    authentication_classes = (JSONWebTokenAuthentication,)
     filter_backends = (SearchFilter, OrderingFilter)
     search_fields = ('name',)
     ordering_fields = ('id',)
-    authentication_classes = (JSONWebTokenAuthentication,)
-    permission_classes = (RbacPermission,)
 
     def get_serializer_class(self):
         if self.action == 'list':
