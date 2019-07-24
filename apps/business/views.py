@@ -6,9 +6,11 @@ from business.models.task import Task, TaskAllocateReason
 from business.models.step import Step, StepRejectReason
 from business.models.message import Message
 
-from business.serializers import (
-    ProjectSerializer, ProjectFeeSerializer, ProjectRejectReasonSerializer, TaskAllocateReasonSerializer,
-    TaskSerializer, MessageSerializer, StepRejectReasonSerializer, StepSerializer)
+from business.serializers.project_serializer import (ProjectSerializer, ProjectFeeSerializer,
+                                                     ProjectRejectReasonSerializer)
+from business.serializers.task_serializer import (TaskAllocateReasonSerializer, TaskSerializer)
+from business.serializers.step_serializer import (StepRejectReasonSerializer, StepSerializer)
+from business.serializers.message_serializer import MessageSerializer
 
 
 class ProjectViewSet(ModelViewSet):
