@@ -140,7 +140,7 @@ class TaskDesignTypeViewSet(ModelViewSet):
     queryset = TaskDesignType.objects.all()
     serializer_class = TaskDesignTypeSerializer
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('task_type',)
+    filterset_fields = ('task_type',)
     permission_classes = (IsAuthenticated,)
 
     def get_serializer_class(self):

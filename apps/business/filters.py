@@ -1,4 +1,4 @@
-import django_filters
+from django_filters import rest_framework as filters
 
 from business.models.project import Project
 from business.models.task import Task
@@ -8,7 +8,7 @@ from business.models.message import Message
 from business.models.reason import Reason
 
 
-class ProjectFilter(django_filters.rest_framework.FilterSet):
+class ProjectFilter(filters.FilterSet):
     """
     自定义过滤器需要继承 django_filters.rest_framework.FilterSet 类来写
 
@@ -18,9 +18,9 @@ class ProjectFilter(django_filters.rest_framework.FilterSet):
     例如 icontains 为包含，忽略大小写，例如 NumberFilter 则可以有 gte，gt，lte，lt，
     year__gt，year__lt 等
     """
-    name = django_filters.CharFilter('name', lookup_expr='icontains')
-    style = django_filters.CharFilter('style', lookup_expr='icontains')
-    customer = django_filters.CharFilter('customer', lookup_expr='icontains')
+    name = filters.CharFilter('name', lookup_expr='icontains')
+    style = filters.CharFilter('style', lookup_expr='icontains')
+    customer = filters.CharFilter('customer', lookup_expr='icontains')
 
     class Meta:
         """
@@ -32,33 +32,33 @@ class ProjectFilter(django_filters.rest_framework.FilterSet):
                   'audit_status', 'is_active', 'receive_status']
 
 
-class TaskFilter(django_filters.rest_framework.FilterSet):
-    name = django_filters.CharFilter('name', lookup_expr='icontains')
+class TaskFilter(filters.FilterSet):
+    name = filters.CharFilter('name', lookup_expr='icontains')
 
     class Meta:
         model = Task
         fields = ['name', 'receiver', 'sender', 'project', 'receive_status', 'audit_status', 'is_published', 'superior']
 
 
-class StepFilter(django_filters.rest_framework.FilterSet):
+class StepFilter(filters.FilterSet):
     class Meta:
         model = Step
         fields = ['task', 'sender']
 
 
-class FilesFilter(django_filters.rest_framework.FilterSet):
+class FilesFilter(filters.FilterSet):
     class Meta:
         model = Files
         fields = ['tasklog', 'steplog']
 
 
-class MessageFilter(django_filters.rest_framework.FilterSet):
+class MessageFilter(filters.FilterSet):
     class Meta:
         model = Message
         fields = ['receiver', ]
 
 
-class ReasonFilter(django_filters.rest_framework.FilterSet):
+class ReasonFilter(filters.FilterSet):
     class Meta:
         model = Reason
         fields = ['type_id', 'link_id']

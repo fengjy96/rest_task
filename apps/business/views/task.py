@@ -659,7 +659,7 @@ class TaskAllocateReasonViewSet(ModelViewSet):
     queryset = TaskAllocateReason.objects.all()
     serializer_class = TaskAllocateReasonSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('task_id', 'receiver_id')
+    filterset_fields = ('task_id', 'receiver_id')
     ordering_fields = ('id',)
     # permission_classes = [IsAuthenticated]
 

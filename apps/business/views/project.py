@@ -260,7 +260,7 @@ class ProjectFeeViewSet(ModelViewSet):
     queryset = ProjectFee.objects.all()
     serializer_class = ProjectFeeSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('project_id',)
+    filterset_fields = ('project_id',)
     ordering_fields = ('id',)
     permission_classes = (IsAuthenticated,)
 
@@ -305,7 +305,7 @@ class ProjectRejectReasonViewSet(ModelViewSet):
     serializer_class = ProjectRejectReasonSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering = ('-add_time',)
-    filter_fields = ('project_id',)
+    filterset_fields = ('project_id',)
     permission_classes = (IsAuthenticated,)
 
 

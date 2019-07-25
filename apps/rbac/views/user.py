@@ -367,7 +367,7 @@ class UserViewSet(ModelViewSet):
     queryset = UserProfile.objects.all()
     pagination_class = CommonPagination
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    filter_fields = ('is_active',)
+    filterset_fields = ('is_active',)
     search_fields = ('username', 'name', 'mobile', 'email')
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -468,7 +468,7 @@ class UserListView(ListAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserInfoListSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('name',)
+    filterset_fields = ('name',)
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)
