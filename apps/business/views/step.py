@@ -31,7 +31,7 @@ class StepViewSet(ModelViewSet):
     ordering_fields = ('id',)
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     # 指定筛选类
-    filter_class = StepFilter
+    filterset_class = StepFilter
     # 指定分页类
     pagination_class = CommonPagination
     # 指定授权类

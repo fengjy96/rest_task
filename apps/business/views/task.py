@@ -37,7 +37,7 @@ class TaskViewSet(ModelViewSet):
     serializer_class = TaskSerializer
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     ordering_fields = ('id',)
-    filter_class = TaskFilter
+    filterset_class = TaskFilter
     pagination_class = CommonPagination
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JSONWebTokenAuthentication,)

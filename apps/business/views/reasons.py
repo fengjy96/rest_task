@@ -14,5 +14,5 @@ class ReasonViewSet(ListAPIView):
     # permission_classes = (IsAuthenticated,)
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     # 指定筛选类
-    filter_class = ReasonFilter
+    filterset_class = ReasonFilter
     ordering = ('-add_time',)

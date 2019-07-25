@@ -29,7 +29,7 @@ class MessageViewSet(ModelViewSet):
 
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     # 指定筛选类
-    filter_class = MessageFilter
+    filterset_class = MessageFilter
     ordering = ('-add_time',)
     ordering_fields = ('-add_time',)
 

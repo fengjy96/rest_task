@@ -45,7 +45,7 @@ class ProjectViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     search_fields = ('name',)
     ordering_fields = ('id',)
-    filter_class = ProjectFilter
+    filterset_class = ProjectFilter
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JSONWebTokenAuthentication,)
 
