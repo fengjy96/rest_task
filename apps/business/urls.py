@@ -1,23 +1,17 @@
 from django.urls import path, include
+
 from rest_framework import routers
-from business.views import task
-from business.views.project import ProjectViewSet, ProjectRejectReasonViewSet, ProjectFeeViewSet
-from business.views import project
-from business.views.task import TaskViewSet, TaskAllocateReasonViewSet
-from business.views.step import StepViewSet
-from business.views import files
-from business.views.message import MessageViewSet, MessageUpdateViewSet
-from business.views import step
-from business.views import reasons
+
+from business.views import project, task, step, message, reasons, files
 
 router = routers.DefaultRouter()
-router.register('art_projects', ProjectViewSet, basename='projects')
-router.register('project_reject_reason', ProjectRejectReasonViewSet, basename='project_reject_reason')
-router.register('project_fee', ProjectFeeViewSet, basename='project_fee')
-router.register('tasks', TaskViewSet, basename='tasks')
-router.register('task_allocate_reason', TaskAllocateReasonViewSet, basename='task_allocate_reason')
-router.register('steps', StepViewSet, basename='steps')
-router.register('messages', MessageViewSet, basename='messages')
+router.register('art_projects', project.ProjectViewSet, basename='projects')
+router.register('project_reject_reason', project.ProjectRejectReasonViewSet, basename='project_reject_reason')
+router.register('project_fee', project.ProjectFeeViewSet, basename='project_fee')
+router.register('tasks', task.TaskViewSet, basename='tasks')
+router.register('task_allocate_reason', task.TaskAllocateReasonViewSet, basename='task_allocate_reason')
+router.register('steps', step.StepViewSet, basename='steps')
+router.register('messages', message.MessageViewSet, basename='messages')
 
 
 urlpatterns = [
@@ -110,7 +104,7 @@ urlpatterns = [
     ## 消息相关
 
     # 消息查询
-    path(r'api/v1/message/update', MessageUpdateViewSet.as_view(), name='message_update'),
+    path(r'api/v1/message/update', message.MessageUpdateViewSet.as_view(), name='message_update'),
 
     ## 原因相关
     path(r'api/v1/reasons', reasons.ReasonViewSet.as_view(), name='reasons'),
