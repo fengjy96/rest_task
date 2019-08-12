@@ -1,41 +1,43 @@
 """
 基于 RBAC 的用户权限管理：用户视图
 """
+
 import os
 import time
 
 from PIL import Image
+
 from django.contrib.auth.hashers import check_password
-from rest_framework.generics import ListAPIView
-from common.custom import CommonPagination, RbacPermission
-from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth import authenticate
+from django.db.models import Q
+
 from rest_framework.decorators import action
 from rest_framework.views import APIView
-
-from rest_xops import settings
-from rest_xops.basic import XopsResponse
+from rest_framework.generics import ListAPIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework_jwt.authentication import JSONWebTokenAuthentication
-from django.contrib.auth import authenticate
-from rest_framework_jwt.settings import api_settings
 from rest_framework.permissions import IsAuthenticated
-from rest_xops.settings import SECRET_KEY
+
+from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+from rest_framework_jwt.settings import api_settings
+from django_filters.rest_framework import DjangoFilterBackend
+
+import jwt
 from operator import itemgetter
+
+from rest_xops import settings
+from rest_xops.settings import SECRET_KEY
+from rest_xops.basic import XopsResponse
 from rest_xops.code import *
+
 from deployment.models import Project
 from cmdb.models import ConnectionInfo
-from django.db.models import Q
-# JSON Web Token（JWT）是一个轻量级的认证规范，是目前最流行的跨域认证解决方案
-# 这个规范允许我们使用 JWT 在用户和服务器之间传递安全可靠的信息
-# 一般放在 HTTP 的 headers 参数里面的 authorization 里面，值的前面加 Bearer 关键字和空格
-# 除此之外，也可以在 url 和 request body 中传递
-import jwt
+from rbac.models import UserProfile, Menu
+from rbac.serializers.user_serializer import (UserListSerializer, UserCreateSerializer,
+                                              UserModifySerializer, UserInfoListSerializer)
+from rbac.serializers.menu_serializer import MenuSerializer
 
-from ..models import UserProfile, Menu
-from ..serializers.user_serializer import (
-    UserListSerializer, UserCreateSerializer, UserModifySerializer, UserInfoListSerializer)
-from ..serializers.menu_serializer import MenuSerializer
+from common.custom import CommonPagination, RbacPermission
 
 jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
 jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
@@ -47,11 +49,9 @@ class UserAuthView(APIView):
     """
 
     def post(self, request, *args, **kwargs):
-        # 获取前端传递过来的用户名
         username = request.data.get('username')
-        # 获取前端传递过来的用户密码
         password = request.data.get('password')
-        # 如果用户名和密码用过验证，则返回一个用户对象
+
         user = authenticate(username=username, password=password)
         if user:
             payload = jwt_payload_handler(user)
@@ -63,37 +63,8 @@ class UserAuthView(APIView):
 
 class UserInfoView(APIView):
     """
-    获取当前用户相关信息和权限
-    用户在登录成功后会同时请求该数据
+    获取当前用户相关信息
     """
-
-    @classmethod
-    def get_permission_from_role(self, request):
-        try:
-            if request.user:
-                # 存储权限列表
-                perms_list = []
-                # 查询与当前用户关联的角色所拥有的权限
-                for item in request.user.roles.values('permissions__method').distinct():
-                    perms_list.append(item['permissions__method'])
-                # 返回权限列表，如 ['admin', 'user_all', 'user_edit', ...]
-                return perms_list
-        except AttributeError:
-            return None
-
-    @classmethod
-    def get_skills(self, request):
-        try:
-            if request.user:
-                # 存储权限列表
-                skill_list = []
-                for item in request.user.skills.values().distinct():
-                    skill_list.append(item)
-                return skill_list
-            else:
-                return []
-        except AttributeError:
-            return None
 
     def get(self, request):
         if request.user.id is not None:
@@ -115,11 +86,80 @@ class UserInfoView(APIView):
         else:
             return XopsResponse('请登录后访问!', status=FORBIDDEN)
 
+    @classmethod
+    def get_permission_from_role(self, request):
+        try:
+            if request.user:
+                # 存储权限列表
+                perms_list = []
+                # 查询与当前用户关联的角色所拥有的权限
+                for item in request.user.roles.values('permissions__method').distinct():
+                    perms_list.append(item['permissions__method'])
+                # 返回权限列表，如 ['admin', 'user_all', 'user_edit', ...]
+                return perms_list
+        except AttributeError:
+            return None
+
+    @classmethod
+    def get_skills(self, request):
+        try:
+            if request.user:
+                # 存储权限列表
+                skill_list = []
+                for item in request.user.skills.values('id', 'name'):
+                    skill_list.append(item)
+                return skill_list
+            else:
+                return []
+        except AttributeError:
+            return None
+
 
 class UserBuildMenuView(APIView):
     """
-    获取当前用户所拥有的权限构建菜单，返回给前端
+    获取当前用户所拥有的权限，构建菜单，返回给前端
     """
+
+    def get(self, request):
+        if request.user.id is not None:
+            # 获取当前用户所拥有的所有菜单数据
+            menu_data = self.get_all_menus(request)
+            return XopsResponse(menu_data, status=OK)
+        else:
+            return XopsResponse('请登录后访问!', status=FORBIDDEN)
+
+    def get_all_menus(self, request):
+        """
+        获取当前用户所拥有的所有菜单
+        :param request: 当前用户请求
+        :return: 当前用户所拥有的菜单数据
+        """
+
+        # 根据当前用户所属的角色，获取相应的权限列表，如 ['admin', 'user_all', 'user_edit', ...]
+        perms = UserInfoView.get_permission_from_role(request)
+
+        tree_data = []
+        # 如果 'admin' 在权限列表中，或当前用户是超级管理员，则获取所有菜单数据
+        if 'admin' in perms or request.user.is_superuser:
+            tree_dict = self.get_all_menu_dict()
+        # 否则，根据当前用户所属的角色获取菜单数据
+        else:
+            tree_dict = self.get_menu_from_role(request)
+
+        for i in tree_dict:
+            if tree_dict[i]['pid']:
+                pid = tree_dict[i]['pid']
+                # parent = tree_dict[pid]
+                parent = tree_dict.get(pid, -1)
+                if parent == -1:
+                    continue
+                parent.setdefault('redirect', 'noredirect')
+                parent.setdefault('alwaysShow', True)
+                parent.setdefault('children', []).append(tree_dict[i])
+                parent['children'] = sorted(parent['children'], key=itemgetter('sort'))
+            else:
+                tree_data.append(tree_dict[i])
+        return tree_data
 
     def get_menu_from_role(self, request):
         """
@@ -220,11 +260,13 @@ class UserBuildMenuView(APIView):
             return menu_dict
 
     def get_all_menu_dict(self):
-        '''
+        """
         获取所有菜单数据，重组结构
-        '''
+        :return:
+        """
         menus = Menu.objects.all()
         serializer = MenuSerializer(menus, many=True)
+
         tree_dict = {}
         for item in serializer.data:
             if item['pid'] is None:
@@ -307,45 +349,6 @@ class UserBuildMenuView(APIView):
                 tree_dict[item['id']] = children_menu
         return tree_dict
 
-    def get_all_menus(self, request):
-        """
-        获取当前用户所拥有的所有菜单
-        :param request: 当前用户请求
-        :return: 当前用户所拥有的菜单数据
-        """
-
-        # 根据当前用户所属的角色，获取相应的权限列表，如 ['admin', 'user_all', 'user_edit', ...]
-        perms = UserInfoView.get_permission_from_role(request)
-        tree_data = []
-        # 如果 'admin' 在权限列表中，或当前用户是超级管理员，则获取所有菜单数据
-        if 'admin' in perms or request.user.is_superuser:
-            tree_dict = self.get_all_menu_dict()
-        # 否则，根据当前用户所属的角色获取菜单数据
-        else:
-            tree_dict = self.get_menu_from_role(request)
-        for i in tree_dict:
-            if tree_dict[i]['pid']:
-                pid = tree_dict[i]['pid']
-                # parent = tree_dict[pid]
-                parent = tree_dict.get(pid, -1)
-                if parent == -1:
-                    continue
-                parent.setdefault('redirect', 'noredirect')
-                parent.setdefault('alwaysShow', True)
-                parent.setdefault('children', []).append(tree_dict[i])
-                parent['children'] = sorted(parent['children'], key=itemgetter('sort'))
-            else:
-                tree_data.append(tree_dict[i])
-        return tree_data
-
-    def get(self, request):
-        if request.user.id is not None:
-            # 获取当前用户所拥有的所有菜单数据
-            menu_data = self.get_all_menus(request)
-            return XopsResponse(menu_data, status=OK)
-        else:
-            return XopsResponse('请登录后访问!', status=FORBIDDEN)
-
 
 class UserViewSet(ModelViewSet):
     """
@@ -361,23 +364,13 @@ class UserViewSet(ModelViewSet):
         {'put': 'user_edit'},
         {'delete': 'user_delete'}
     )
-    # 获取查询集
     queryset = UserProfile.objects.all()
-    # 指定序列化类
-    serializer_class = UserListSerializer
-    # 指定分页类
     pagination_class = CommonPagination
-    # 指定过滤 backends
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    # 指定过滤字段
-    filter_fields = ('is_active',)
-    # 指定搜索字段
+    filterset_fields = ('is_active',)
     search_fields = ('username', 'name', 'mobile', 'email')
-    # 指定排序字段
     ordering_fields = ('id',)
-    # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
-    # 指定权限类
     permission_classes = (RbacPermission,)
 
     def get_serializer_class(self):
@@ -392,34 +385,39 @@ class UserViewSet(ModelViewSet):
         return UserModifySerializer
 
     def create(self, request, *args, **kwargs):
+        self.before_create(request)
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+
+        # 自定义返回响应数据
+        return XopsResponse(serializer.data, status=CREATED, headers=headers)
+
+    def before_create(self, request):
         """
-        创建用户
-        默认添加密码 123456
+        创建用户时指定默认密码为 123456
         :param request:
-        :param args:
-        :param kwargs:
         :return:
         """
         request.data['password'] = '123456'
-        # 根据请求方法获取相应的序列化数据
-        serializer = self.get_serializer(data=request.data)
-        # 验证序列化数据是否通过验证
-        serializer.is_valid(raise_exception=True)
-        # 根据序列化数据在数据库中创建一条数据
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        # 创建成功则返回该数据给前端
-        return XopsResponse(serializer.data, status=CREATED, headers=headers)
 
     def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        self.before_destroy(request, kwargs)
+
+        self.perform_destroy(instance)
+        return XopsResponse(status=NO_CONTENT)
+
+    def before_destroy(self, request, kwargs):
         """
         删除用户时，同时删除其他与该用户关联的表
         :param request:
-        :param args:
         :param kwargs:
         :return:
         """
-        instance = self.get_object()
         id = str(kwargs['pk'])
         projects = Project.objects.filter(
             Q(user_id__icontains=id + ',') | Q(user_id__in=id) | Q(user_id__endswith=',' + id)
@@ -431,9 +429,6 @@ class UserViewSet(ModelViewSet):
                 user_id = ','.join(user_id)
                 Project.objects.filter(id=project['id']).update(user_id=user_id)
         ConnectionInfo.objects.filter(uid_id=id).delete()
-        # 在用户表中删除该用户
-        self.perform_destroy(instance)
-        return XopsResponse(status=NO_CONTENT)
 
     @action(
         methods=['post'], detail=True, permission_classes=[IsAuthenticated],
@@ -473,7 +468,7 @@ class UserListView(ListAPIView):
     queryset = UserProfile.objects.all()
     serializer_class = UserInfoListSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('name',)
+    filterset_fields = ('name',)
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)

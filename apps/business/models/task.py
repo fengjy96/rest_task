@@ -11,6 +11,12 @@ class Task(models.Model):
     任务表模型
     """
 
+    LABEL_CHOICES = (
+        (0, '未开始'),
+        (1, '已更新'),
+        (2, '已反馈'),
+    )
+
     company = models.ForeignKey(Company, null=True, blank=True, verbose_name='公司标识', on_delete=models.CASCADE)
     name = models.CharField(default='', max_length=80, verbose_name='任务名称')
     task_type = models.ForeignKey(TaskType, null=True, blank=True, verbose_name='任务类型标识', on_delete=models.CASCADE)
@@ -18,6 +24,7 @@ class Task(models.Model):
                                          on_delete=models.CASCADE)
     content = models.TextField(default='', blank=True, verbose_name='任务内容')
     progress = models.IntegerField(default=0, verbose_name='任务进度')
+    label = models.SmallIntegerField(choices=LABEL_CHOICES, default=0)
     task_priority = models.ForeignKey(TaskPriority, null=True, blank=True, verbose_name='任务优先级',
                                       on_delete=models.CASCADE)
     task_quality = models.ForeignKey(TaskQuality, null=True, blank=True, verbose_name='任务质量', on_delete=models.CASCADE)
@@ -31,7 +38,7 @@ class Task(models.Model):
     comments = models.CharField(default='', max_length=80, blank=True, verbose_name='任务评语')
     points = models.IntegerField(default=0, verbose_name='任务积分')
 
-    memo = models.CharField(null=True, blank=True, max_length=800, verbose_name='任务备注')
+    memo = models.CharField(default='', blank=True, max_length=800, verbose_name='任务备注')
 
     project = models.ForeignKey(Project, null=True, blank=True, verbose_name='项目标识', on_delete=models.CASCADE)
     sender = models.ForeignKey(UserProfile, null=True, blank=True, verbose_name='发送者', on_delete=models.CASCADE,
@@ -67,6 +74,7 @@ class TaskAllocateReason(models.Model):
     """
     任务备注表模型：当发生任务转派时，用于存储转派原因
     """
+
     task = models.ForeignKey(Task, null=True, blank=True, verbose_name='任务标识', on_delete=models.CASCADE)
     reason = models.CharField(max_length=100, default='', verbose_name='转派原因')
     transfer_nums = models.IntegerField(default=0, verbose_name='流转次数')

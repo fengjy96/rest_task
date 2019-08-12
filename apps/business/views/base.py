@@ -1,19 +1,19 @@
-from django.contrib.auth import get_user_model
+import datetime
 
-from business.models.message import Message
+from django.contrib.auth import get_user_model
+from django.db.models import Sum
+
+from rbac.models import UserProfile
+from business.models.message import Message, Menu
 from business.models.project import Project
 from business.models.task import Task
 from business.models.step import Step
-from rbac.models import UserProfile
-from business.models.message import Menu
 from business.models.reason import Reason
+from business.models.steplog import TaskLog
+from business.models.files import Files, ProgressTexts
 from configuration.models.project_conf import ProjectStatus
 from configuration.models.task_conf import TaskStatus
 from configuration.models.reason_conf import ReasonType
-from business.models.steplog import TaskLog
-from business.models.files import Files, ProgressTexts
-from django.db.models import Sum
-import datetime
 
 User = get_user_model()
 
@@ -80,50 +80,35 @@ class BusinessPublic:
 
     @classmethod
     def GetProjectStatusIdByKey(cls, key):
-        """
-        根据key值取项目状态表id值
-        """
         return ProjectStatus.objects.get(key=key).id
 
     @classmethod
     def GetProjectStatusObjectByKey(cls, key):
-        """
-        根据key值取项目状态表对像
-        """
         return ProjectStatus.objects.get(key=key)
 
     @classmethod
     def GetTaskStatusIdByKey(cls, key):
-        """
-        根据key值取任务状态表id值
-        """
         return TaskStatus.objects.get(key=key).id
 
     @classmethod
     def GetTaskStatusObjectByKey(cls, key):
-        """
-        根据key值取任务状态表对像
-        """
         return TaskStatus.objects.get(key=key)
 
     @classmethod
     def GetReasonTypeIdByKey(cls, key):
-        """
-        根据key值取原因类型表id值
-        """
         return ReasonType.objects.get(key=key).id
 
     @classmethod
     def update_progress_by_project_id(cls, project_id):
-        progress = 0
+        progress_sum = 0
         tasks = Task.objects.filter(project_id=project_id, is_active=1)
         task_nums = tasks.count()
-        checked_tasks = tasks.filter(receive_status_id=cls.GetTaskStatusIdByKey('checked')).aggregate(
-            nums=Sum('progress'))
-        if checked_tasks['nums'] is not None:
-            progress = checked_tasks['nums']
+        checked_tasks = tasks.filter(receive_status_id=cls.GetTaskStatusIdByKey('checked'))
+        checked_tasks_progress_sum = checked_tasks.aggregate(progress_sum=Sum('progress'))
+        if checked_tasks_progress_sum['progress_sum'] is not None:
+            progress_sum = checked_tasks_progress_sum['progress_sum']
 
-        project_progress = progress / (task_nums * 100)
+        project_progress = progress_sum / (task_nums * 100)
         project_progress = round(project_progress, 2)
         project_progress = int(project_progress * 100)
 
@@ -133,6 +118,9 @@ class BusinessPublic:
             if project_progress == 100:
                 project.receive_status = cls.GetProjectStatusObjectByKey('finished')
                 project.finish_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                project.receive_status = cls.GetProjectStatusObjectByKey('accepted')
+                project.finish_time = None
             project.save()
 
     @classmethod
@@ -152,9 +140,14 @@ class BusinessPublic:
         task = Task.objects.get(id=task_id)
         if task:
             task.progress = task_progress
+            # updated
+            task.label = 1
             if task_progress == 100:
                 task.receive_status = cls.GetTaskStatusObjectByKey('finished')
                 task.finish_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            else:
+                task.receive_status = cls.GetTaskStatusObjectByKey('accepted')
+                task.finish_time = None
             task.save()
             project_id = task.project_id
             cls.update_progress_by_project_id(project_id)

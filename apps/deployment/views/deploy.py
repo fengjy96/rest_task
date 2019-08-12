@@ -34,7 +34,7 @@ class DeployRecordViewSet(ReadOnlyModelViewSet):
     serializer_class = DeployRecordSerializer
     pagination_class = CommonPagination
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('project_id', 'status',)
+    filterset_fields = ('project_id', 'status',)
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (RbacPermission,)

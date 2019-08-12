@@ -8,7 +8,7 @@ class XopsResponse(Response):
                  template_name=None, headers=None,
                  exception=False, content_type=None):
 
-        super(Response, self).__init__(None, status=status)
+        super().__init__(None, status=status)
 
         if isinstance(data, Serializer):
             msg = (

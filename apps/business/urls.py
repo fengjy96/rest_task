@@ -1,23 +1,17 @@
 from django.urls import path, include
+
 from rest_framework import routers
-from business.views import task
-from business.views.project import ProjectViewSet, ProjectRejectReasonViewSet, ProjectFeeViewSet
-from business.views import project
-from business.views.task import TaskViewSet, TaskAllocateReasonViewSet
-from business.views.step import StepViewSet
-from business.views import files
-from business.views.message import MessageViewSet, MessageUpdateViewSet
-from business.views import step
-from business.views import reasons
+
+from business.views import project, task, step, message, reasons, files
 
 router = routers.DefaultRouter()
-router.register('art_projects', ProjectViewSet, basename='projects')
-router.register('project_reject_reason', ProjectRejectReasonViewSet, basename='project_reject_reason')
-router.register('project_fee', ProjectFeeViewSet, basename='project_fee')
-router.register('tasks', TaskViewSet, basename='tasks')
-router.register('task_allocate_reason', TaskAllocateReasonViewSet, basename='task_allocate_reason')
-router.register('steps', StepViewSet, basename='steps')
-router.register('messages', MessageViewSet, basename='messages')
+router.register('art_projects', project.ProjectViewSet, basename='projects')
+router.register('project_reject_reason', project.ProjectRejectReasonViewSet, basename='project_reject_reason')
+router.register('project_fee', project.ProjectFeeViewSet, basename='project_fee')
+router.register('tasks', task.TaskViewSet, basename='tasks')
+router.register('task_allocate_reason', task.TaskAllocateReasonViewSet, basename='task_allocate_reason')
+router.register('steps', step.StepViewSet, basename='steps')
+router.register('messages', message.MessageViewSet, basename='messages')
 
 
 urlpatterns = [
@@ -41,7 +35,6 @@ urlpatterns = [
     path(r'api/v1/project/fee/cost/analysis', project.ProjectFeeCostAnalysisView.as_view(), name='project_fee_cost_analysis'),
     # 项目成本分析完成
     path(r'api/v1/project/cost/analysis/finished', project.ProjectCostAnalysisFinishedView.as_view(),name='project_cost_analysis_finished'),
-
     # 接手项目
     path(r'api/v1/project/accept', project.ProjectAcceptView.as_view(), name='project_accept'),
     # 拒接项目
@@ -54,6 +47,10 @@ urlpatterns = [
     path(r'api/v1/project/check/reject', project.ProjectCheckRejectView.as_view(), name='project_check_reject'),
     # 判断项目名是否已存在
     path(r'api/v1/project/name', project.ProjectNameView.as_view(), name='project_name_is_exist'),
+    # 判断是否存在项目
+    path(r'api/v1/has_project', project.HasProjectView.as_view(), name='has_project'),
+    # 判断项目是否存在任务
+    path(r'api/v1/project/has_task', project.ProjectHasTaskView.as_view(), name='project_has_task'),
 
     ## 任务相关
 
@@ -107,7 +104,7 @@ urlpatterns = [
     ## 消息相关
 
     # 消息查询
-    path(r'api/v1/message/update', MessageUpdateViewSet.as_view(), name='message_update'),
+    path(r'api/v1/message/update', message.MessageUpdateViewSet.as_view(), name='message_update'),
 
     ## 原因相关
     path(r'api/v1/reasons', reasons.ReasonViewSet.as_view(), name='reasons'),

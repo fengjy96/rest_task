@@ -10,12 +10,12 @@ class Menu(models.Model):
     """
 
     name = models.CharField(max_length=30, unique=True, verbose_name="菜单名")
-    icon = models.CharField(max_length=50, null=True, blank=True, verbose_name="图标")
-    path = models.CharField(max_length=158, null=True, blank=True, verbose_name="链接地址")
+    icon = models.CharField(max_length=50, default='', blank=True, verbose_name="图标")
+    path = models.CharField(max_length=158, default='', blank=True, verbose_name="链接地址")
     is_frame = models.BooleanField(default=False, verbose_name="外部菜单")
     is_show = models.BooleanField(default=True, verbose_name="显示标记")
     sort = models.IntegerField(null=True, blank=True, verbose_name="排序标记")
-    component = models.CharField(max_length=200, null=True, blank=True, verbose_name="组件")
+    component = models.CharField(max_length=200, default='', blank=True, verbose_name="组件")
     pid = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, verbose_name="父菜单")
 
     def __str__(self):
@@ -85,13 +85,14 @@ class UserProfile(AbstractUser):
     name = models.CharField(max_length=20, default="", verbose_name="姓名")
     mobile = models.CharField(max_length=11, default="", verbose_name="手机号码")
     email = models.EmailField(max_length=50, verbose_name="邮箱")
-    image = models.ImageField(upload_to="", default="avatar/image/default.png", max_length=100, null=True, blank=True)
-    department = models.ForeignKey("Organization", null=True, blank=True, on_delete=models.SET_NULL, verbose_name="部门")
-    position = models.CharField(max_length=50, null=True, blank=True, verbose_name="职位")
-    superior = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, verbose_name="上级主管")
-    roles = models.ManyToManyField("Role", verbose_name="角色", blank=True)
+    image = models.ImageField(upload_to="", default="avatar/image/default.png", max_length=100, blank=True, verbose_name='头像')
+    position = models.CharField(max_length=50, default='', blank=True, verbose_name="职位")
     base_salary = models.IntegerField(null=True, blank=True, verbose_name="基本工资")
 
+    department = models.ForeignKey("Organization", null=True, blank=True, on_delete=models.SET_NULL, verbose_name="部门")
+    superior = models.ForeignKey("self", null=True, blank=True, on_delete=models.SET_NULL, verbose_name="上级主管")
+
+    roles = models.ManyToManyField("Role", verbose_name="角色", blank=True)
     skills = models.ManyToManyField(TaskType, verbose_name="技能", blank=True)
 
     class Meta:

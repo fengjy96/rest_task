@@ -15,8 +15,10 @@ class TaskSerializer(serializers.ModelSerializer):
 
 class TaskListSerializer(serializers.ModelSerializer):
     """
-    项目：查
+    任务：查
     """
+
+    label = serializers.CharField(source='get_label_display')
 
     class Meta:
         model = Task

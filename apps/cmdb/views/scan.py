@@ -129,7 +129,7 @@ class DeviceScanInfoViewSet(ListModelMixin, DestroyModelMixin, RetrieveModelMixi
     serializer_class = DeviceScanInfoSerializer
     pagination_class = CommonPagination
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    filter_fields = ('status',)
+    filterset_fields = ('status',)
     search_fields = ('sys_hostname', 'hostname', 'os_type')
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
