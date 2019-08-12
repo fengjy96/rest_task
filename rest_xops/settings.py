@@ -107,12 +107,12 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         # 数据库名
         'NAME': 'rest_xops',
-        # 'HOST': '192.168.1.110',
-        'HOST': HOST,
+        'HOST': '192.168.1.110',
+        # 'HOST': HOST,
         'USER': 'root',
-        'PASSWORD': 'mysql',
+        # 'PASSWORD': 'mysql',
         # 内网 centos mysql 密码
-        # 'PASSWORD': 'mikai',
+        'PASSWORD': 'mikai',
         'PORT': '3306',
         'OPTIONS': {'init_command': 'SET storage_engine=INNODB; SET foreign_key_checks = 0;'}
     }

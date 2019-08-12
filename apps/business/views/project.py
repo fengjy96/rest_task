@@ -1,4 +1,5 @@
 from django.db.models import Q
+
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.permissions import IsAuthenticated
@@ -6,26 +7,27 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.filters import SearchFilter, OrderingFilter
-from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework_jwt.authentication import JSONWebTokenAuthentication
+
+from django_filters.rest_framework import DjangoFilterBackend
+
+from business.models.project import Project, ProjectFee, ProjectRejectReason
+from business.models.task import Task
+from points.models.projectpoints import ProjectPoints
+from points.models.pointsdetail import PointsDetail
+from points.models.points import Points
+from configuration.models.project_conf import ProjectStatus, Fee
+from configuration.models.task_conf import TaskType, TaskAssessment
+from rbac.models import UserProfile
+
+from business.serializers.project_serializer import (
+    ProjectListSerializer, ProjectRejectReasonSerializer, ProjectFeeSerializer, ProjectReceiverListSerializer,
+    ProjectSerializer, ProjectAuditorListSerializer)
+from business.views.base import BusinessPublic
+from business.filters import ProjectFilter
 
 from common.custom import CommonPagination
 from utils.basic import MykeyResponse
-from business.models.project import Project, ProjectFee, ProjectRejectReason
-from business.serializers.project_serializer import (
-    ProjectListSerializer, ProjectRejectReasonSerializer, ProjectFeeSerializer, ProjectReceiverListSerializer,
-    ProjectSerializer,
-    ProjectAuditorListSerializer)
-from business.views.base import BusinessPublic
-from business.filters import ProjectFilter
-from rbac.models import UserProfile
-from business.models.task import Task
-from points.models.projectpoints import ProjectPoints
-from points.models.projectpointsex import ProjectPointsEx
-from points.models.points import Points
-from points.models.pointsdetail import PointsDetail
-from configuration.models.project_conf import ProjectStatus, Fee
-from configuration.models.task_conf import TaskType, TaskAssessment
 
 # 项目人员成本
 list_project_person_objects = []
@@ -38,45 +40,22 @@ class ProjectViewSet(ModelViewSet):
     项目：增删改查
     """
 
-    # 获取查询集
     queryset = Project.objects.all()
-    # 指定分页类
     pagination_class = CommonPagination
-    # 指定过滤 backends
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    # 指定搜索字段
     search_fields = ('name',)
-    # 对指定的字段进行排序：使用 ordering_fields 属性明确指定可以对哪些字段执行排序，
-    # 这有助于防止意外的数据泄露
     ordering_fields = ('id',)
-    # 指定筛选类
-    filter_class = ProjectFilter
-    # 指定授权类
+    filterset_class = ProjectFilter
     permission_classes = (IsAuthenticated,)
-    # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
     def get_serializer_class(self):
-        """
-        根据请求类型动态变更 serializer
-        :return:
-        """
         if self.action == 'list':
             return ProjectListSerializer
         return ProjectSerializer
 
     def create(self, request, *args, **kwargs):
-        # 将当前登录用户作为项目创建人
-        request.data['sender'] = request.user.id
-        receiver_id = request.data.get('receiver', None)
-        # 如果存在项目负责人，则将项目接收状态置为 '已指派项目负责人'
-        if receiver_id is not None:
-            BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
-                                          messages='你有新的项目等待接手!')
-            request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
-        # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
-        else:
-            request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
+        self.before_create(request)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -84,28 +63,21 @@ class ProjectViewSet(ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    def update(self, request, *args, **kwargs):
-        project_id = str(kwargs['pk'])
+    def before_create(self, request):
+        # 将当前登录用户作为项目创建人
+        request.data['sender'] = request.user.id
+
         receiver_id = request.data.get('receiver', None)
-        if receiver_id is not None and receiver_id != '':
-            if project_id is not None:
-                project = Project.objects.get(id=project_id)
-                if project.receiver:
-                    # 如果是驳回状态，需要重新发送消息
-                    if receiver_id == str(project.receiver.id) and project.receive_status.id == 5:
-                        # 新增消息
-                        BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
-                                              messages='你有新的项目等待接手!')
-                    elif receiver_id != str(project.receiver.id):
-                        # 新增消息
-                        BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
-                                              messages='你有新的项目等待接手!')
-                else:
-                        BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
-                                                      messages='你有新的项目等待接手!')
+        # 如果存在项目负责人，则将项目接收状态置为 '待接手'
+        if receiver_id is not None:
+            BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2, messages='你有新的项目等待接手!')
             request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
+        # 如果不存在项目负责人，则将项目接手状态置为 '未指派项目负责人'
         else:
             request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
+
+    def update(self, request, *args, **kwargs):
+        self.before_update(request, kwargs)
 
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
@@ -120,8 +92,31 @@ class ProjectViewSet(ModelViewSet):
 
         return Response(serializer.data)
 
+    def before_update(self, request, kwargs):
+        project_id = str(kwargs['pk'])
+        receiver_id = request.data.get('receiver', None)
+        if receiver_id is not None and receiver_id != '':
+            if project_id is not None:
+                project = Project.objects.get(id=project_id)
+                if project.receiver:
+                    # 如果是驳回状态，需要重新发送消息
+                    if receiver_id == str(project.receiver.id) and project.receive_status.id == 5:
+                        # 新增消息
+                        BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
+                                                      messages='你有新的项目等待接手!')
+                    elif receiver_id != str(project.receiver.id):
+                        # 新增消息
+                        BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
+                                                      messages='你有新的项目等待接手!')
+                else:
+                    BusinessPublic.create_message(request.user.id, receiver_id, menu_id=2,
+                                                  messages='你有新的项目等待接手!')
+            request.data['receive_status'] = ProjectStatus.objects.get(key='wait_accept').id
+        else:
+            request.data['receive_status'] = ProjectStatus.objects.get(key='unassigned').id
+
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset()).order_by('-add_time')
+        queryset = self.filter_queryset(self.get_queryset()).filter(is_active=1).order_by('-add_time')
 
         queryset = self.filter_list_queryset(request, queryset)
 
@@ -134,6 +129,15 @@ class ProjectViewSet(ModelViewSet):
 
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.is_active = 0
+        instance.save()
+
+        # self.perform_destroy(instance)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def filter_project(self, request, queryset):
         """
@@ -235,8 +239,6 @@ class ProjectReceiverListView(ListAPIView):
 
     queryset = UserProfile.objects.filter(roles__id=7)
     serializer_class = ProjectReceiverListSerializer
-
-    # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
 
@@ -247,8 +249,6 @@ class ProjectAuditorListView(ListAPIView):
 
     queryset = UserProfile.objects.filter(roles__id=5)
     serializer_class = ProjectAuditorListSerializer
-
-    # 指定认证类
     authentication_classes = (JSONWebTokenAuthentication,)
 
 
@@ -256,18 +256,16 @@ class ProjectFeeViewSet(ModelViewSet):
     """
     项目费用：增删改查
     """
+
     queryset = ProjectFee.objects.all()
     serializer_class = ProjectFeeSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('project_id',)
+    filterset_fields = ('project_id',)
     ordering_fields = ('id',)
     permission_classes = (IsAuthenticated,)
 
     def list(self, request, *args, **kwargs):
-        project_id = request.query_params.get('project_id', None)
-        is_first = request.query_params.get('is_first', None)
-        if is_first == 'true':
-            self.create_project_fee(project_id)
+        self.before_list(request)
 
         queryset = self.filter_queryset(self.get_queryset())
 
@@ -279,20 +277,23 @@ class ProjectFeeViewSet(ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    def before_list(self, request):
+        project_id = request.query_params.get('project_id', None)
+        is_first = request.query_params.get('is_first', None)
+        if is_first == 'true' and project_id is not None:
+            self.create_project_fee(project_id)
+
     def create_project_fee(self, project_id):
-        if project_id is not None:
-            fees = Fee.objects.all()
-            if fees:
-                for fee in fees:
-                      if fee:
-                          projectfee = ProjectFee.objects.filter(project_id=project_id, name=fee.name)
-                          if not projectfee.exists():
-                              project_fee_create = ProjectFee(
-                                  project_id=project_id,
-                                  name=fee.name,
-                                  value=fee.value,
-                              )
-                              project_fee_create.save()
+        fees = Fee.objects.all()
+        for fee in fees:
+            projectfee = ProjectFee.objects.filter(project_id=project_id, name=fee.name)
+            if not projectfee.exists():
+                project_fee_create = ProjectFee(
+                    project_id=project_id,
+                    name=fee.name,
+                    value=fee.value,
+                )
+                project_fee_create.save()
 
 
 class ProjectRejectReasonViewSet(ModelViewSet):
@@ -304,7 +305,7 @@ class ProjectRejectReasonViewSet(ModelViewSet):
     serializer_class = ProjectRejectReasonSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
     ordering = ('-add_time',)
-    filter_fields = ('project_id',)
+    filterset_fields = ('project_id',)
     permission_classes = (IsAuthenticated,)
 
 
@@ -315,12 +316,8 @@ class ProjectAuditSubmitView(APIView):
 
     def post(self, request, format=None):
         try:
-            # 项目标识
             project_id = request.data.get('project_id')
-            # 审核员标识
             auditor_id = request.data.get('auditor_id')
-            # 发送者标识
-            #sender_id = request.data.get('sender_id')
 
             if project_id is not None and auditor_id is not None:
                 self.update_project(project_id, auditor_id)
@@ -336,15 +333,14 @@ class ProjectAuditSubmitView(APIView):
         """
         更新项目审核信息
         """
-        if project_id is not None and auditor_id is not None:
-            from business.models.project import Project
-            project = Project.objects.get(id=project_id)
-            if project:
-                auditor = UserProfile.objects.get(id=auditor_id)
-                project.auditor = auditor
-                # 审核中
-                project.audit_status = 1
-                project.save()
+
+        project = Project.objects.get(id=project_id)
+        if project:
+            auditor = UserProfile.objects.get(id=auditor_id)
+            project.auditor = auditor
+            # 审核中
+            project.audit_status = 1
+            project.save()
 
 
 class ProjectAuditPassView(APIView):
@@ -354,41 +350,28 @@ class ProjectAuditPassView(APIView):
 
     def post(self, request, format=None):
         try:
-            # 项目标识
-            project_id = request.data.get('project_id')
-            # 项目积分
-            #points = request.data.get('points')
-
-            # 更新项目
-            self.update_project(project_id)
+            project_ids = request.data.get('project_ids', [])
+            self.update_project(project_ids)
 
         except Exception as e:
             msg = e.args if e else '请求失败'
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg=msg)
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
-    def update_project(self, project_id):
-        """
-        更新项目表信息
-        """
-        if project_id is not None:
-            from business.models.project import Project
-            project = Project.objects.get(id=project_id)
-            if project is not None:
+    def update_project(self, project_ids):
+        if len(project_ids) > 0:
+            for project_id in project_ids:
+                project = Project.objects.get(id=project_id)
                 if project.receiver is None:
                     raise Exception('未填写项目负责人!')
                 # 已审核
                 project.audit_status = 2
-                # 等待项目负责人接手项目
-                # project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('wait_accept')
-                # 项目积分
-                # project.points = points
                 project.save()
 
-                #BusinessPublic.create_message(project.auditor.id, project.sender.id, menu_id=2,
-                #                              messages='你有新的项目等待接手!')
-                BusinessPublic.create_message(project.auditor.id, project.receiver.id, menu_id=2,
-                                              messages='项目已通过审核!')
+                BusinessPublic.create_message(
+                    project.auditor.id, project.receiver.id,
+                    menu_id=2, messages='项目已通过审核!'
+                )
 
 
 class ProjectAuditRejectView(APIView):
@@ -398,9 +381,7 @@ class ProjectAuditRejectView(APIView):
 
     def post(self, request, format=None):
         try:
-            # 项目标识
             project_id = request.data.get('project_id')
-            # 驳回原因
             reason = request.data.get('reason') or ''
 
             self.update_project(project_id, reason)
@@ -411,18 +392,17 @@ class ProjectAuditRejectView(APIView):
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
     def update_project(self, project_id, reason):
-        if project_id is not None:
-            project = Project.objects.get(id=project_id)
-            if project is not None:
-                # 驳回
-                project.audit_status = 3
-                project.save()
+        project = Project.objects.get(id=project_id)
+        if project:
+            # 驳回
+            project.audit_status = 3
+            project.save()
 
-                BusinessPublic.create_reason(project.id, project.auditor.id, project.sender.id,
-                                             BusinessPublic.GetReasonTypeIdByKey('project_audit_reject'),
-                                             reason)
-                BusinessPublic.create_message(project.auditor.id, project.sender.id, menu_id=2,
-                                              messages='你的项目已被驳回，请尽快处理!')
+            BusinessPublic.create_reason(project.id, project.auditor.id, project.sender.id,
+                                         BusinessPublic.GetReasonTypeIdByKey('project_audit_reject'),
+                                         reason)
+            BusinessPublic.create_message(project.auditor.id, project.sender.id, menu_id=2,
+                                          messages='你的项目已被驳回，请尽快处理!')
 
 
 class ProjectAcceptView(APIView):
@@ -432,22 +412,21 @@ class ProjectAcceptView(APIView):
 
     def post(self, request, format=None):
         try:
-            project_id = request.data.get('project_id')
-            self.update_project(project_id)
+            project_id = request.data.get('project_id', None)
+            if project_id is not None:
+                self.update_project(project_id)
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
     def update_project(self, project_id):
-        if project_id is not None:
-            from business.models.project import Project
-            project = Project.objects.get(id=project_id)
-            if project is not None:
-                # 项目负责人已接手,项目正式开始
-                project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('accepted')
-                project.save()
-                BusinessPublic.create_message(project.receiver_id, project.sender_id, menu_id=2,
-                                              messages='项目负责人已接手!')
+        project = Project.objects.get(id=project_id)
+        if project:
+            # 项目负责人已接手,项目正式开始
+            project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('accepted')
+            project.save()
+            BusinessPublic.create_message(project.receiver_id, project.sender_id, menu_id=2,
+                                          messages='项目负责人已接手!')
 
 
 class ProjectRejectView(APIView):
@@ -462,7 +441,8 @@ class ProjectRejectView(APIView):
             # 驳回原因
             reason = request.data.get('reason', '')
 
-            self.update_project(project_id, reason)
+            if project_id is not None:
+                self.update_project(project_id, reason)
 
         except Exception as e:
             msg = e.args if e else '请求失败'
@@ -470,24 +450,24 @@ class ProjectRejectView(APIView):
         return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功')
 
     def update_project(self, project_id, reason):
-        if project_id is not None:
-            project = Project.objects.get(id=project_id)
-            if project is not None:
-                # 拒接
-                project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('rejected')
-                project.save()
+        project = Project.objects.get(id=project_id)
+        if project is not None:
+            # 拒接
+            project.receive_status = BusinessPublic.GetProjectStatusObjectByKey('rejected')
+            project.save()
 
-                reason_type_id = BusinessPublic.GetReasonTypeIdByKey('project_reject')
+            reason_type_id = BusinessPublic.GetReasonTypeIdByKey('project_reject')
 
-                BusinessPublic.create_reason(project.id, project.receiver.id, project.sender.id, reason_type_id, reason)
-                BusinessPublic.create_message(project.receiver.id, project.sender.id, menu_id=2,
-                                              messages='项目负责人拒接了你的项目，请尽快处理!')
+            BusinessPublic.create_reason(project.id, project.receiver.id, project.sender.id, reason_type_id, reason)
+            BusinessPublic.create_message(project.receiver.id, project.sender.id, menu_id=2,
+                                          messages='项目负责人拒接了你的项目，请尽快处理!')
 
 
 class ProjectCheckSubmitView(APIView):
     """
     项目验收提交
     """
+
     def post(self, request, format=None):
         try:
             # 项目标识
@@ -516,6 +496,7 @@ class ProjectCheckRejectView(APIView):
     """
     项目验收不通过
     """
+
     def post(self, request, format=None):
         try:
             # 项目标识
@@ -549,6 +530,7 @@ class ProjectCheckPassView(APIView):
     """
     项目验收成功
     """
+
     def post(self, request, format=None):
         try:
             # 项目标识
@@ -570,21 +552,22 @@ class ProjectCheckPassView(APIView):
                 project.save()
 
                 # 商务人员以及项目经理积分及米值分配
-                projectpoints = ProjectPoints.objects.filter(project_id=project_id, task__isnull=True, is_created = 0)
+                projectpoints = ProjectPoints.objects.filter(project_id=project_id, task__isnull=True, is_created=0)
                 if projectpoints:
                     for projectpoint in projectpoints:
-                         if projectpoint:
-                             self.create_user_points(None, projectpoint.user.id, projectpoint.points, 1, 1,projectpoint.type)
-                             project_points = ProjectPoints.objects.get(id=projectpoint.id)
-                             project_points.is_created = 1
-                             project_points.save()
+                        if projectpoint:
+                            self.create_user_points(None, projectpoint.user.id, projectpoint.points, 1, 1,
+                                                    projectpoint.type)
+                            project_points = ProjectPoints.objects.get(id=projectpoint.id)
+                            project_points.is_created = 1
+                            project_points.save()
 
                 # 任务负责人积分及米值分配
                 taskpoints = Task.objects.filter(project_id=project_id, is_active=1)
                 if taskpoints:
                     for taskpoint in taskpoints:
-                         if taskpoint:
-                             self.create_user_points(taskpoint.task.id,taskpoint.receiver.id, taskpoint.points, 1, 1,1)
+                        if taskpoint:
+                            self.create_user_points(taskpoint.task.id, taskpoint.receiver.id, taskpoint.points, 1, 1, 1)
 
                 BusinessPublic.create_message(project.auditor_id, project.receiver_id, menu_id=2,
                                               messages='恭喜,你的项目已验收通过!')
@@ -619,17 +602,18 @@ class ProjectCheckPassView(APIView):
 
                 user_point.total_points = user_point.total_points + total_points
                 user_point.available_points = user_point.available_points + total_points
-                total_coins = round(total_points / 1000,3)
-                user_total_coins = round(user_point.total_coins,3)
+                total_coins = round(total_points / 1000, 3)
+                user_total_coins = round(user_point.total_coins, 3)
                 user_point.total_coins = user_total_coins + total_coins
                 user_point.save()
 
-                self.create_user_pointsdetail(user_id,total_points,operation_type,points_status,points_type)
+                self.create_user_pointsdetail(user_id, total_points, operation_type, points_status, points_type)
             else:
-                Points.objects.create(user=user, total_points=total_points,available_points=available_points, total_coins=total_coins)
-                self.create_user_pointsdetail(user_id,point,operation_type,points_status,points_type)
+                Points.objects.create(user=user, total_points=total_points, available_points=available_points,
+                                      total_coins=total_coins)
+                self.create_user_pointsdetail(user_id, point, operation_type, points_status, points_type)
 
-    def create_user_pointsdetail(self, user_id, points,operation_type, points_type, points_status, points_source=0):
+    def create_user_pointsdetail(self, user_id, points, operation_type, points_type, points_status, points_source=0):
         """
         创建用户积分明细
         :param user_id:用户标识
@@ -651,10 +635,9 @@ class ProjectCheckPassView(APIView):
                                         points_status=points_status,
                                         points_source=points_source)
 
-
     def user_total_points(self, task_id, points):
         assessment_weight = 0
-        if  task_id is not None:
+        if task_id is not None:
             task = Task.objects.get(id=task_id)
             if task:
                 # 取任务的评级
@@ -670,6 +653,7 @@ class ProjectCostAnalysisView(APIView):
     """
     项目人员工资成本
     """
+
     def get(self, request, format=None):
         try:
             list_project_person_objects.clear()
@@ -681,9 +665,9 @@ class ProjectCostAnalysisView(APIView):
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功',data=list_project_person_objects)
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=list_project_person_objects)
 
-    def get_all_cost(self,project_id):
+    def get_all_cost(self, project_id):
         """
         计算所有成本
         """
@@ -700,8 +684,8 @@ class ProjectCostAnalysisView(APIView):
         if project_id is not None:
             project = Project.objects.get(id=project_id)
             if project is not None:
-                #计算天数
-                duration = BusinessPublic.Caltime(project.end_time,project.begin_time)
+                # 计算天数
+                duration = BusinessPublic.Caltime(project.end_time, project.begin_time)
                 if project.receiver:
                     receiver_id = project.receiver.id
 
@@ -731,7 +715,6 @@ class ProjectCostAnalysisView(APIView):
 
                         return int(total_fee)
 
-
     def get_market_manager_cost(self, project_id):
         """
         计算商务人员平均工资
@@ -742,7 +725,7 @@ class ProjectCostAnalysisView(APIView):
             if project is not None:
                 if project.sender:
 
-                    duration = BusinessPublic.Caltime(project.end_time,project.begin_time)
+                    duration = BusinessPublic.Caltime(project.end_time, project.begin_time)
                     sender_id = project.sender.id
 
                     user = UserProfile.objects.get(id=sender_id)
@@ -781,10 +764,10 @@ class ProjectCostAnalysisView(APIView):
 
             project = Project.objects.get(id=project_id)
             if project is not None:
-                duration = BusinessPublic.Caltime(project.end_time,project.begin_time)
+                duration = BusinessPublic.Caltime(project.end_time, project.begin_time)
 
             from business.models.task import Task
-            tasks = Task.objects.filter(project_id=project_id,is_active=1)
+            tasks = Task.objects.filter(project_id=project_id, is_active=1)
             all_total_fee = 0
             salary = 0
 
@@ -831,6 +814,7 @@ class ProjectFeeCostAnalysisView(APIView):
     """
     项目其它费用成本
     """
+
     def get(self, request, format=None):
         try:
             list_project_fee_objects.clear()
@@ -841,16 +825,16 @@ class ProjectFeeCostAnalysisView(APIView):
 
         except Exception as e:
             return MykeyResponse(status=status.HTTP_400_BAD_REQUEST, msg='请求失败')
-        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功',data=list_project_fee_objects)
+        return MykeyResponse(status=status.HTTP_200_OK, msg='请求成功', data=list_project_fee_objects)
 
     def get_projectfee_cost(self, project_id):
         if project_id is not None:
             project = Project.objects.get(id=project_id)
             if project:
-                duration = BusinessPublic.Caltime(project.end_time,project.begin_time)
+                duration = BusinessPublic.Caltime(project.end_time, project.begin_time)
 
                 all_total_fee = 0
-                tasks = Task.objects.filter(project_id=project_id, is_active = 1)
+                tasks = Task.objects.filter(project_id=project_id, is_active=1)
                 if tasks:
                     # 项目总人数 = 任务总人数 + 项目负责人 + 商务人员
                     project_person_nums = tasks.count() + 2
@@ -863,24 +847,24 @@ class ProjectFeeCostAnalysisView(APIView):
                         fees = ProjectFee.objects.filter(project_id=project.id)
                         if fees:
                             for fee in fees:
-                                 aveage_fee = fee.value / company_person_nums
-                                 aveage_fee = aveage_fee / 30
-                                 aveage_fee = round(aveage_fee, 2)
+                                aveage_fee = fee.value / company_person_nums
+                                aveage_fee = aveage_fee / 30
+                                aveage_fee = round(aveage_fee, 2)
 
-                                 total_fee = aveage_fee * project_person_nums * duration
-                                 total_fee = round(total_fee, 2)
+                                total_fee = aveage_fee * project_person_nums * duration
+                                total_fee = round(total_fee, 2)
 
-                                 fee_obj = {}
-                                 fee_obj["id"] = ''
-                                 fee_obj["person_nums"] = project_person_nums
-                                 fee_obj["duration"] = duration
-                                 fee_obj["name"] = fee.name
-                                 fee_obj["fee"] = int(aveage_fee)
-                                 fee_obj["total_fee"] = int(total_fee)
-                                 fee_obj["type"] = 1
-                                 list_project_fee_objects.append(fee_obj)
+                                fee_obj = {}
+                                fee_obj["id"] = ''
+                                fee_obj["person_nums"] = project_person_nums
+                                fee_obj["duration"] = duration
+                                fee_obj["name"] = fee.name
+                                fee_obj["fee"] = int(aveage_fee)
+                                fee_obj["total_fee"] = int(total_fee)
+                                fee_obj["type"] = 1
+                                list_project_fee_objects.append(fee_obj)
 
-                                 all_total_fee = all_total_fee + int(total_fee)
+                                all_total_fee = all_total_fee + int(total_fee)
 
                 return all_total_fee
 
@@ -922,3 +906,30 @@ class ProjectCostAnalysisFinishedView(APIView):
 
 class ProjectPublishView(APIView):
     """项目发布"""
+
+
+class HasProjectView(APIView):
+    """
+    是否存在项目
+    """
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.user.id
+        projects = Project.objects.filter(sender_id=user_id)
+        if len(projects) > 0:
+            return MykeyResponse(status=status.HTTP_200_OK, data=1, msg='请求成功')
+        return MykeyResponse(status=status.HTTP_200_OK, data=0, msg='请求成功')
+
+
+class ProjectHasTaskView(APIView):
+    """
+    项目是否存在任务
+    """
+
+    def get(self, request, *args, **kwargs):
+        user_id = request.user.id
+        project_id = request.query_params.get('project_id', None)
+        tasks = Task.objects.filter(project_id=project_id, sender_id=user_id)
+        if len(tasks) > 0:
+            return MykeyResponse(status=status.HTTP_200_OK, data=1, msg='请求成功')
+        return MykeyResponse(status=status.HTTP_200_OK, data=0, msg='请求成功')

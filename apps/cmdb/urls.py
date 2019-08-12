@@ -6,19 +6,19 @@ from cmdb.views import dict, scan, asset, connection, business, group, label
 
 router = routers.SimpleRouter()
 # 字典相关
-router.register(r'dicts', dict.DictViewSet, base_name="dicts")
+router.register(r'dicts', dict.DictViewSet, basename="dicts")
 # 扫描设备相关
-router.register(r'scan/devices', scan.DeviceScanInfoViewSet, base_name="scan_devices")
+router.register(r'scan/devices', scan.DeviceScanInfoViewSet, basename="scan_devices")
 # 设备相关
-router.register(r'devices', asset.DeviceInfoViewSet, base_name="devices")
+router.register(r'devices', asset.DeviceInfoViewSet, basename="devices")
 # 连接相关
-router.register(r'connections', connection.ConnectionInfoViewSet, base_name="connections")
+router.register(r'connections', connection.ConnectionInfoViewSet, basename="connections")
 # 业务相关
-router.register(r'businesses', business.BusinessViewSet, base_name="businesses")
+router.register(r'businesses', business.BusinessViewSet, basename="businesses")
 # 组相关
-router.register(r'groups', group.DeviceGroupViewSet, base_name="groups")
+router.register(r'groups', group.DeviceGroupViewSet, basename="groups")
 # 标签相关
-router.register(r'labels', label.LabelViewSet, base_name="labels")
+router.register(r'labels', label.LabelViewSet, basename="labels")
 
 urlpatterns = [
     path(r'api/', include(router.urls)),

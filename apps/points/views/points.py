@@ -63,7 +63,7 @@ class ProjectPointsViewSet(ModelViewSet):
     serializer_class = ProjectPointsSerializer
     pagination_class = CommonPagination
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('project_id',)
+    filterset_fields = ('project_id',)
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
 
@@ -116,7 +116,7 @@ class PointsAssignmentViewSet(ListAPIView):
     serializer_class = ProjectPointsSerializer
     pagination_class = CommonPagination
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('project_id',)
+    filterset_fields = ('project_id',)
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
 

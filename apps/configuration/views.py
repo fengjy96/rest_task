@@ -86,7 +86,7 @@ class TaskStepViewSet(ModelViewSet):
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     search_fields = ('name',)
     ordering_fields = ('id',)
-    filter_class = TaskStepFilter
+    filterset_class = TaskStepFilter
     permission_classes = (IsAuthenticated,)
     authentication_classes = (JSONWebTokenAuthentication,)
     pagination_class = CommonPagination
@@ -140,7 +140,7 @@ class TaskDesignTypeViewSet(ModelViewSet):
     queryset = TaskDesignType.objects.all()
     serializer_class = TaskDesignTypeSerializer
     filter_backends = (DjangoFilterBackend,)
-    filter_fields = ('task_type',)
+    filterset_fields = ('task_type',)
     permission_classes = (IsAuthenticated,)
 
     def get_serializer_class(self):

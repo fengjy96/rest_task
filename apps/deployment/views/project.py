@@ -27,7 +27,7 @@ class ProjectViewSet(ModelViewSet):
     serializer_class = ProjectSerializer
     pagination_class = CommonPagination
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    filter_fields = ('environment', 'status',)
+    filterset_fields = ('environment', 'status',)
     search_fields = ('name',)
     ordering_fields = ('id',)
 

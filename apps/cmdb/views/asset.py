@@ -31,7 +31,7 @@ class DeviceInfoViewSet(ModelViewSet):
     serializer_class = DeviceInfoSerializer
     pagination_class = CommonPagination
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    filter_fields = ('status', 'os_type', 'device_type', 'groups', 'businesses', 'labels')
+    filterset_fields = ('status', 'os_type', 'device_type', 'groups', 'businesses', 'labels')
     search_fields = ('hostname', 'os_type')
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
@@ -65,7 +65,7 @@ class DeviceListView(ListAPIView):
     queryset = DeviceInfo.objects.all()
     serializer_class = DeviceListSerializer
     filter_backends = (DjangoFilterBackend, OrderingFilter)
-    filter_fields = ('os_type',)
+    filterset_fields = ('os_type',)
     ordering_fields = ('id',)
     authentication_classes = (JSONWebTokenAuthentication,)
     permission_classes = (IsAuthenticated,)

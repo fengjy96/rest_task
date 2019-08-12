@@ -31,7 +31,7 @@ class StepViewSet(ModelViewSet):
     ordering_fields = ('id',)
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     # 指定筛选类
-    filter_class = StepFilter
+    filterset_class = StepFilter
     # 指定分页类
     pagination_class = CommonPagination
     # 指定授权类
@@ -49,7 +49,7 @@ class StepViewSet(ModelViewSet):
         return StepSerializer
 
     def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(self.get_queryset()).filter(is_active=1)
 
         self.add_logs_stat_to_step(queryset)
 
@@ -88,7 +88,10 @@ class StepViewSet(ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        self.perform_destroy(instance)
+        instance.is_active = 0
+        instance.save()
+
+        # self.perform_destroy(instance)
 
         task_id = instance.task_id
         BusinessPublic.update_progress_by_task_id(task_id)
