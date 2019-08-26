@@ -66,7 +66,7 @@ class UserInfoView(APIView):
     获取当前用户相关信息
     """
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         if request.user.id is not None:
             # 根据当前用户所拥有的角色，返回相应的权限列表
             perms = self.get_permission_from_role(request)
@@ -120,7 +120,7 @@ class UserBuildMenuView(APIView):
     获取当前用户所拥有的权限，构建菜单，返回给前端
     """
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         if request.user.id is not None:
             # 获取当前用户所拥有的所有菜单数据
             menu_data = self.get_all_menus(request)

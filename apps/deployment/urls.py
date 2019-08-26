@@ -12,13 +12,13 @@ router.register(r'projects', project.ProjectViewSet, basename="projects")
 router.register(r'deploy/records', deploy.DeployRecordViewSet, basename="deploy_record")
 
 urlpatterns = [
-    path(r'api/', include(router.urls)),
+    path(r'', include(router.urls)),
     # 部署执行相关
-    path(r'api/deploy/excu/', deploy.DeployView.as_view(), name='deploy'),
+    path(r'deploy/excu/', deploy.DeployView.as_view(), name='deploy'),
     # 部署版本相关
-    path(r'api/deploy/ver/', deploy.VersionView.as_view(), name='version'),
+    path(r'deploy/ver/', deploy.VersionView.as_view(), name='version'),
     # 远程应用日志相关
-    path(r'api/deploy/applog/', applog.AppLogView.as_view(), name='applog'),
+    path(r'deploy/applog/', applog.AppLogView.as_view(), name='applog'),
     # 项目拷贝相关
-    path(r'api/project/copy/', project.ProjectCopy.as_view(), name='project_copy')
+    path(r'project/copy/', project.ProjectCopy.as_view(), name='project_copy')
 ]

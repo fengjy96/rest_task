@@ -20,5 +20,5 @@ router.register('task_assessments', TaskAssessmentViewSet, basename='task_assess
 
 urlpatterns = [
     # API
-    path(r'api/v1/', include(router.urls))
+    path(r'', include(router.urls))
 ]
