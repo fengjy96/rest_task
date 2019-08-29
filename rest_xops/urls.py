@@ -19,3 +19,7 @@ urlpatterns = [
     # 接口文档
     path('docs/', include_docs_urls()),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns.insert(0, path("__debug__/", include(debug_toolbar.urls)))

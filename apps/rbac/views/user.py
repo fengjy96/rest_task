@@ -25,8 +25,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 import jwt
 from operator import itemgetter
 
-from rest_xops import settings
-from rest_xops.settings import SECRET_KEY
+from django.conf import settings
 from rest_xops.basic import XopsResponse
 from rest_xops.code import *
 
@@ -56,7 +55,7 @@ class UserAuthView(APIView):
         if user:
             payload = jwt_payload_handler(user)
             # 用户登录成功后，返回生成好的 token 给前端（token 是动态生成的，每次用户登录成功后，值都是不同的）
-            return XopsResponse({'token': jwt.encode(payload, SECRET_KEY)}, status=OK)
+            return XopsResponse({'token': jwt.encode(payload, settings.SECRET_KEY)}, status=OK)
         else:
             return XopsResponse('用户名或密码错误!', status=BAD)
 
