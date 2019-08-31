@@ -326,3 +326,10 @@ FILE_UPLOAD_PERMISSIONS = None
 # see https://docs.python.org/3/library/os.html#files-and-directories.
 # 文件夹权限
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = None
+
+## 微信消息推送相关配置
+WECHAT_CONFIG = {
+    'app_id': config('APP_ID'),
+    'app_secret': config('APP_SECRET'),
+    'redirect_uri': config('REDIRECT_URI'),
+}
