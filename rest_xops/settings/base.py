@@ -1,34 +1,18 @@
-from .celery import *
+from ..celery import *
 import os, sys, datetime
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from decouple import config
+
+
+# Project Base Path
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# sys.path --> A list of strings that specifies the search path for modules
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
-# 密钥，用于 hash 算法
-SECRET_KEY = 'x^*!*=ao%3t2ay-0zw-21!&oz=%4gwu0=&*omt@zi%3t^dyd8!'
+SECRET_KEY = config('SECRET_KEY')
 
-# 是否开启 DEBUG 模式（生产环境中需要关闭）
-DEBUG = True
-
-# 一个字符串列表，用来表示 Django 站点可以服务的 host/domain
-# 这是一个安全措施，用来预防 HTTP Host header attacks
-ALLOWED_HOSTS = ['*']
-
-# mini 对外 ip
-# HOST = '192.168.1.117'
-# 内网 centOS 服务器对外 IP
-# HOST = '192.168.1.110'
 # 本地 ip
 HOST = '127.0.0.1'
-# pro 对外 ip
-# HOST = '192.168.1.165'
-# 内网 centos 对外 ip
-# HOST = '192.168.1.110'
-# others
-# HOST = '172.17.80.6'
-# HOST = '192.168.1.104'
-# HOST = '192.168.125.105'
 
 ## 在 Django 项目中需要安装的应用列表
 INSTALLED_APPS = [
@@ -38,39 +22,45 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'channels',
-    # 应用：解决跨域问题
+
+    # 第三方应用：用于实现 websocket
+    # 'channels',
+    # 第三方应用：解决跨域问题
     'corsheaders',
-    # 应用：包括一个 DjangoFilterBackend 类，它支持 REST 框架的高度可定制的字段过滤
+    # 第三方应用：包括一个 DjangoFilterBackend 类，它支持 REST 框架的高度可定制的字段过滤
     'django_filters',
-    # 应用：基于角色的访问权限控制
+
+    # 自定义应用：基于角色的访问权限控制
     'rbac',
-    # 应用：配置管理数据库
+    # 自定义应用：配置管理数据库
     'cmdb',
-    # 应用：部署
+    # 自定义应用：部署
     'deployment',
-    # 应用：项目管理系统业务
+    # 自定义应用：项目管理系统业务
     'business',
-    # 应用：积分
+    # 自定义应用：积分
     'points',
-    # 应用：项目管理系统业务配置
+    # 自定义应用：项目管理系统业务配置
     'configuration',
 ]
 
-# 中间件
+## 中间件
 MIDDLEWARE = [
     # 跨域中间件
     'corsheaders.middleware.CorsMiddleware',
-    # 安全中间件
+    # 安全中间件：一些安全设置，比如 XSS 脚本过滤
     'django.middleware.security.SecurityMiddleware',
-    # 会话中间件
+    # 会话中间件：加入这个中间件，会在数据库中生成一个 django_session 的表
     'django.contrib.sessions.middleware.SessionMiddleware',
+    # 通用中间件：会处理一些 URL，如为 URL 加 www 前缀，或在 URL 尾部加反斜线
     'django.middleware.common.CommonMiddleware',
+    # 跨域请求伪造中间件：防 CSRF 攻击
     'django.middleware.csrf.CsrfViewMiddleware',
-    # 认证中间件
+    # 认证中间件：会在每个 HttpRequest 对象到达 view 之前添加当前登录用户的 user 属性
     'django.contrib.auth.middleware.AuthenticationMiddleware',
-    # 消息中间件
+    # 消息中间件：展示一些后台信息给前端页面
     'django.contrib.messages.middleware.MessageMiddleware',
+    # 防点击劫持中间件：防止通过浏览器页面跨Frame出现clickjacking（欺骗点击）攻击出现
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     # 操作记录中间件
     'simple_history.middleware.HistoryRequestMiddleware',
@@ -99,25 +89,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'rest_xops.wsgi.application'
 
-## 数据库相关配置
-DATABASES = {
-    # 指定默认的数据库
-    'default': {
-        # 数据库引擎
-        'ENGINE': 'django.db.backends.mysql',
-        # 数据库名
-        'NAME': 'rest_xops',
-        'HOST': '192.168.1.110',
-        # 'HOST': HOST,
-        'USER': 'root',
-        # 'PASSWORD': 'mysql',
-        # 内网 centos mysql 密码
-        'PASSWORD': 'mikai',
-        'PORT': '3306',
-        'OPTIONS': {'init_command': 'SET storage_engine=INNODB; SET foreign_key_checks = 0;'}
-    }
-}
-
 # Password validation
 # https://docs.djangoproject.com/en/2.1/ref/settings/#auth-password-validators
 
@@ -137,6 +108,14 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 REST_FRAMEWORK = {
+    ## 版本配置
+    # 默认版本类
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
+    # 允许的版本
+    'ALLOWED_VERSIONS': ['v1', 'v2'],
+    # 版本参数
+    'VERSION_PARAM': 'version',
+
     ## 指定默认的认证类
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # jwt 认证
@@ -174,9 +153,6 @@ JWT_AUTH = {
 
 ## redis 数据库相关设置
 REDIS_HOST = HOST
-# REDIS_HOST = HOST
-# 内网 centOS
-# REDIS_HOST = '192.168.1.110'
 REDIS_PORT = 6379
 REDIS_DB = 0
 REDIS_PASSWORD = None
@@ -278,11 +254,37 @@ LOGGING = {
     },
 }
 
+# 将 sql 语句打印到控制台
+
+# LOGGING = {
+#     'version': 1,
+#     'disable_existing_loggers': False,
+#     'formatters': {
+#         'standard': {
+#             'format': '[%(asctime)s][%(levelname)s]''[%(filename)s:%(lineno)d][%(message)s]'
+#         },
+#         'simple': {
+#             'format': '[%(levelname)s][%(asctime)s]%(message)s'
+#         },
+#     },
+#     'handlers': {
+#         'console': {
+#             'level': 'DEBUG',
+#             'class': 'logging.StreamHandler',
+#         },
+#     },
+#     'loggers': {
+#         'django.db.backends': {
+#             'handlers': ['console'],
+#             'propagate': True,
+#             'level': 'DEBUG',
+#         }
+#     },
+# }
+
 # FILE_UPLOAD_MAX_MEMORY_SIZE = 50*1024*1024
 
 # ################## 默认文件上传配置 ########################
-from django.core.files.uploadhandler import MemoryFileUploadHandler
-from django.core.files.uploadhandler import TemporaryFileUploadHandler
 
 # List of upload handler classes to be applied in order.
 FILE_UPLOAD_HANDLERS = [
@@ -324,3 +326,10 @@ FILE_UPLOAD_PERMISSIONS = None
 # see https://docs.python.org/3/library/os.html#files-and-directories.
 # 文件夹权限
 FILE_UPLOAD_DIRECTORY_PERMISSIONS = None
+
+## 微信消息推送相关配置
+WECHAT_CONFIG = {
+    'app_id': config('APP_ID'),
+    'app_secret': config('APP_SECRET'),
+    'redirect_uri': config('REDIRECT_URI'),
+}

@@ -55,7 +55,7 @@ class FilesFilter(filters.FilterSet):
 class MessageFilter(filters.FilterSet):
     class Meta:
         model = Message
-        fields = ['receiver', ]
+        fields = ['receiver']
 
 
 class ReasonFilter(filters.FilterSet):

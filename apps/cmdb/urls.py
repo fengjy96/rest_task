@@ -21,13 +21,13 @@ router.register(r'groups', group.DeviceGroupViewSet, basename="groups")
 router.register(r'labels', label.LabelViewSet, basename="labels")
 
 urlpatterns = [
-    path(r'api/', include(router.urls)),
+    path(r'', include(router.urls)),
     # 获取字典树
-    path(r'api/dict/tree/', dict.DictTreeView.as_view(), name='dict_tree'),
+    path(r'dict/tree/', dict.DictTreeView.as_view(), name='dict_tree'),
     # 扫描设置相关
-    path(r'api/scan/setting/', scan.ScanSettingView.as_view(), name='scan_setting'),
+    path(r'scan/setting/', scan.ScanSettingView.as_view(), name='scan_setting'),
     # 设备入库和扫描相关
-    path(r'api/scan/excu/', scan.ScanExcuView.as_view(), name='scan_excu'),
+    path(r'scan/excu/', scan.ScanExcuView.as_view(), name='scan_excu'),
     # 获取设备列表
-    path(r'api/device/list/', asset.DeviceListView.as_view(), name='device_list'),
+    path(r'device/list/', asset.DeviceListView.as_view(), name='device_list'),
 ]

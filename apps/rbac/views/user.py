@@ -25,8 +25,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 import jwt
 from operator import itemgetter
 
-from rest_xops import settings
-from rest_xops.settings import SECRET_KEY
+from django.conf import settings
 from rest_xops.basic import XopsResponse
 from rest_xops.code import *
 
@@ -56,7 +55,7 @@ class UserAuthView(APIView):
         if user:
             payload = jwt_payload_handler(user)
             # 用户登录成功后，返回生成好的 token 给前端（token 是动态生成的，每次用户登录成功后，值都是不同的）
-            return XopsResponse({'token': jwt.encode(payload, SECRET_KEY)}, status=OK)
+            return XopsResponse({'token': jwt.encode(payload, settings.SECRET_KEY)}, status=OK)
         else:
             return XopsResponse('用户名或密码错误!', status=BAD)
 
@@ -66,7 +65,7 @@ class UserInfoView(APIView):
     获取当前用户相关信息
     """
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         if request.user.id is not None:
             # 根据当前用户所拥有的角色，返回相应的权限列表
             perms = self.get_permission_from_role(request)
@@ -120,7 +119,7 @@ class UserBuildMenuView(APIView):
     获取当前用户所拥有的权限，构建菜单，返回给前端
     """
 
-    def get(self, request):
+    def get(self, request, *args, **kwargs):
         if request.user.id is not None:
             # 获取当前用户所拥有的所有菜单数据
             menu_data = self.get_all_menus(request)
